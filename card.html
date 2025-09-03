@@ -20,52 +20,82 @@
         나벨 카드첩
     </button>
 
-    <div id="result" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
+    <div id="result-container"></div>
 
     <script>
-        console.log("스크립트 시작");
-
         const venusBtn = document.getElementById('venusBtn');
-        const resultDiv = document.getElementById('result');
+        const resultContainer = document.getElementById('result-container');
 
-        console.log("버튼 요소:", venusBtn);
-        console.log("결과 표시 영역:", resultDiv);
+        const cardItems = [
+            '황금의 광채 베누스 카드',
+            '미의 여신 베누스 카드',
+            '무결한 죽음 비시마 카드',
+            '다정한 죽음 세니르 카드',
+            '폭음 크래시머 카드',
+            '일각수 크라켄 카드',
+            '적아 울라드 카드',
+            '땅지기 카메린 카드'
+        ];
 
-        if (venusBtn) {
-            venusBtn.addEventListener('click', async () => {
-                console.log("버튼 클릭됨!");
-                const itemName = '적아 울라드 카드';
-                resultDiv.innerHTML = '최저가 검색 중...';
-
-                try {
-                    console.log("API 함수 호출 시도");
-                    const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
-                    console.log("API 함수 응답 받음:", response);
-                    
-                    if (!response.ok) {
-                        throw new Error(`서버 응답 오류: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    console.log("응답 데이터:", data);
-
-                    if (data.rows && data.rows.length > 0) {
-                        const lowestPrice = data.rows[0].unitPrice;
-                        const formattedPrice = lowestPrice.toLocaleString('en-US');
-                        resultDiv.innerHTML = `${formattedPrice} 골드`;
-                    } else {
-                        resultDiv.innerHTML = `'${itemName}'의 매물을 찾을 수 없습니다.`;
-                    }
-
-                } catch (error) {
-                    console.error('가격 조회 중 에러 발생:', error);
-                    resultDiv.innerHTML = `가격을 불러오는 데 실패했습니다.`;
+        // 아이템 하나의 가격을 조회하는 함수
+        async function fetchPrice(itemName) {
+            try {
+                const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
+                if (!response.ok) return { name: itemName, price: 0 }; // API 실패 시 가격 0
+                const data = await response.json();
+                if (data.rows && data.rows.length > 0) {
+                    return { name: itemName, price: data.rows[0].unitPrice };
                 }
-            });
-            console.log("버튼에 이벤트 리스너 추가 완료");
-        } else {
-            console.error("'venusBtn' ID를 가진 버튼을 찾을 수 없습니다.");
+                return { name: itemName, price: 0 }; // 매물이 없는 경우 가격 0
+            } catch (error) {
+                console.error(`${itemName} 가격 조회 실패:`, error);
+                return { name: itemName, price: 0 }; // 기타 에러 시 가격 0
+            }
         }
+
+        venusBtn.addEventListener('click', async () => {
+            resultContainer.innerHTML = `<p>카드 8종의 최저가를 검색 중입니다...</p>`;
+
+            try {
+                // 8개 아이템 가격 동시 조회
+                const pricePromises = cardItems.map(fetchPrice);
+                const results = await Promise.all(pricePromises);
+
+                // 가격이 0이 아닌 (조회 성공한) 아이템만 필터링
+                const foundItems = results.filter(item => item.price > 0);
+
+                if (foundItems.length === 0) {
+                    resultContainer.innerHTML = `<p>모든 아이템의 매물을 찾을 수 없습니다.</p>`;
+                    return;
+                }
+
+                // 가격 내림차순으로 정렬
+                foundItems.sort((a, b) => b.price - a.price);
+
+                // 평균 및 손익분기점 계산
+                const totalPrice = foundItems.reduce((sum, item) => sum + item.price, 0);
+                const averagePrice = totalPrice / foundItems.length;
+                const breakEvenPoint = (averagePrice * 0.97) / 1.2903;
+
+                // 결과를 표시할 HTML 생성
+                let tableHTML = '<div class="results-container"><table><thead><tr><th>아이템 이름</th><th>최저가</th></tr></thead><tbody>';
+                foundItems.forEach(item => {
+                    tableHTML += `<tr><td>${item.name}</td><td>${item.price.toLocaleString('en-US')} G</td></tr>`;
+                });
+                tableHTML += '</tbody></table></div>';
+
+                let summaryHTML = `<div class="summary">
+                    <div><strong>평균 가격:</strong> ${Math.round(averagePrice).toLocaleString('en-US')} G</div>
+                    <div><strong>손익 분기점:</strong> ${Math.round(breakEvenPoint).toLocaleString('en-US')} G</div>
+                </div>`;
+
+                resultContainer.innerHTML = tableHTML + summaryHTML;
+
+            } catch (error) {
+                console.error('전체 작업 중 에러 발생:', error);
+                resultContainer.innerHTML = `<p>데이터를 불러오는 중 오류가 발생했습니다.</p>`;
+            }
+        });
     </script>
 
 </body>

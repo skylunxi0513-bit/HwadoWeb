@@ -43,3 +43,51 @@ button img {
     height: 24px;
     margin-right: 10px;
 }
+
+/* --- Result Table Styles --- */
+.results-container {
+    margin-top: 30px;
+    display: inline-block;
+    width: 460px; /* Button width * 2 + margin */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+th {
+    background-color: #e9e9e9;
+    font-weight: bold;
+}
+
+td:last-child {
+    text-align: right;
+    font-family: monospace;
+    font-size: 15px;
+}
+
+.summary {
+    margin-top: 20px;
+    text-align: right;
+    font-size: 16px;
+    padding-right: 10px;
+}
+
+.summary div {
+    margin-bottom: 8px;
+}
