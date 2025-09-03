@@ -109,26 +109,26 @@
             tracePriceDisplay.innerHTML = `${tracePrice.toLocaleString('en-US')} 골드`;
 
             // Dynamically update the label for '요괴 섬멸(c)'
-            dLabel.innerHTML = `요괴 섬멸(${tracePrice.toLocaleString('en-US')}) 골드:`;
+            dLabel.innerHTML = `요괴 섬멸(${tracePrice.toLocaleString('en-US')}):`; // Removed '골드'
 
             // Calculations
             const a = cluePrice * 0.97;
             const b = 389288 + tracePrice * 2.89;
-            // const c = tracePrice; // No longer needed as a separate variable for display
             const d = 258643 + tracePrice * 29.019;
 
             const e = parseInt(targetTraceCountInput.value) || 0;
             const f = e / 29.019;
-            const h = e * tracePrice; // Use tracePrice directly
-            const i = f * (cluePrice - 258643); // Updated formula for i
+            const h = e * tracePrice;
+            const i = f * cluePrice; // Rollback formula for i
+            const j = f * 258643; // New calculation for j
 
             // Update displays
             aValueDisplay.innerHTML = `${Math.round(a).toLocaleString('en-US')} 골드`;
             bValueDisplay.innerHTML = `${Math.round(b).toLocaleString('en-US')} 골드`;
             dValueDisplay.innerHTML = `${Math.round(d).toLocaleString('en-US')} 골드`;
             hValueDisplay.innerHTML = `${Math.round(h).toLocaleString('en-US')} 골드`;
-            fValueDisplay.innerHTML = `${Math.ceil(f).toLocaleString('en-US')} 개`; // Round up for '개'
-            iValueDisplay.innerHTML = `${Math.round(i).toLocaleString('en-US')} 골드`;
+            fValueDisplay.innerHTML = `${Math.ceil(f).toLocaleString('en-US')} 개`;
+            iValueDisplay.innerHTML = `${Math.round(i).toLocaleString('en-US')} 골드 (${Math.round(j).toLocaleString('en-US')} 골드 회수)`; // Updated display for i
         }
 
         // --- Initial Load & Event Listeners ---
