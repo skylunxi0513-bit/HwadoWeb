@@ -109,7 +109,8 @@ td:last-child button {
     padding: 20px 30px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    display: inline-block;
+    display: block; /* Changed to block */
+    margin: 20px auto; /* Centered */
     text-align: left;
     width: 500px;
 }
@@ -201,6 +202,7 @@ select, input[type="number"] {
 }
 
 .header-link {
-    /* Removed display: inline-block; */
-    /* Removed margin: 0 auto; */
+    display: block; /* Make it a block element */
+    margin: 0 auto; /* Center the block element */
+    width: fit-content; /* Make it only as wide as its content */
 }
