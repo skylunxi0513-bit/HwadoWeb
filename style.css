@@ -85,6 +85,11 @@ td:last-child button {
     display: block; /* Make it a block element to center */
 }
 
+.copy-btn {
+    padding: 5px 10px; /* Reduced padding */
+    font-size: 14px; /* Slightly smaller font */
+}
+
 .summary {
     margin-bottom: 20px;
     text-align: center;
