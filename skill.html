@@ -19,7 +19,7 @@
 
     <div id="skillCodeTableContainer" class="results-container">
         <p>데이터를 불러오는 중...</p>
-    </div>
+    </div
 
     <script>
         const mainAccountBtn = document.getElementById('mainAccountBtn');
@@ -50,6 +50,13 @@
                     skillCodeTableContainer.innerHTML = '<p>해당 계정의 데이터를 찾을 수 없습니다.</p>';
                     return;
                 }
+
+                // B열(인덱스 1) 값을 기준으로 내림차순 정렬 (2 > 1 > 0)
+                data.sort((a, b) => {
+                    const bValueA = parseInt(a[1]) || 0; // Column B (index 1)
+                    const bValueB = parseInt(b[1]) || 0;
+                    return bValueB - bValueA; 
+                });
 
                 // 테이블 생성
                 let tableHTML = '<table><thead><tr><th>닉네임</th><th>직업</th><th>복사</th></tr></thead><tbody>';
