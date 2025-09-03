@@ -15,8 +15,8 @@
         <div class="calc-section">
             <div class="options-grid">
                 <label for="rev-count">
-                    <img src="images/rev.png" alt="화려한 종말의 문패" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 5px;">
-                    화려한 종말의 문패:
+                    <img src="images/rev.png" alt="영롱한 종말의 문패" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 5px;">
+                    영롱한 종말의 문패:
                 </label>
                 <input type="number" id="rev-count" value="0" min="0">
 
@@ -27,8 +27,8 @@
                 <input type="number" id="rev2-count" value="0" min="0">
 
                 <label for="rev3-count">
-                    <img src="images/rev3.png" alt="영롱한 종말의 문패" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 5px;">
-                    영롱한 종말의 문패:
+                    <img src="images/rev3.png" alt="화려한 종말의 문패" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 5px;">
+                    화려한 종말의 문패:
                 </label>
                 <input type="number" id="rev3-count" value="0" min="0">
             </div>
@@ -50,15 +50,14 @@
         // --- Main Calculation Function ---
         function calculateAndDisplay() {
             // Get values from inputs based on their IDs
-            const count_rev = parseInt(revCountInput.value) || 0;   // 화려한
-            const count_rev2 = parseInt(rev2CountInput.value) || 0; // 찬란한
-            const count_rev3 = parseInt(rev3CountInput.value) || 0; // 영롱한
+            const count_rev = parseInt(revCountInput.value) || 0;   // 영롱한 (750)
+            const count_rev2 = parseInt(rev2CountInput.value) || 0; // 찬란한 (350)
+            const count_rev3 = parseInt(rev3CountInput.value) || 0; // 화려한 (85)
 
             // Calculate n using the correct coefficients for each type
-            // Based on user's latest clarification:
-            // rev (화려한) -> 750
-            // rev2 (찬란한) -> 350
-            // rev3 (영롱한) -> 85
+            // rev3.png (화려한) -> 85
+            // rev2.png (찬란한) -> 350
+            // rev.png (영롱한) -> 750
             const n = (count_rev3 * 85) + (count_rev2 * 350) + (count_rev * 750);
 
             totalRevDisplay.innerHTML = `${n.toLocaleString('en-US')} 개`;
