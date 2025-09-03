@@ -13,6 +13,8 @@ body {
 
 h1 {
     color: #1a1a1a;
+    display: inline-block; /* Added */
+    margin: 0 auto; /* Added */
 }
 
 button {
@@ -199,6 +201,6 @@ select, input[type="number"] {
 }
 
 .header-link {
-    display: inline-block; /* Make it only as wide as its content */
-    margin: 0 auto; /* Center the block itself */
+    /* Removed display: inline-block; */
+    /* Removed margin: 0 auto; */
 }
