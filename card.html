@@ -11,7 +11,7 @@
         <h1>화도웹</h1>
     </a>
 
-    <button>
+    <button id="venusBtn">
         <img src="images/card.webp" alt="베누스 카드첩 아이콘">
         베누스 카드첩
     </button>
@@ -19,6 +19,41 @@
         <img src="images/card.webp" alt="나벨 카드첩 아이콘">
         나벨 카드첩
     </button>
+
+    <div id="result" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
+
+    <script>
+        const venusBtn = document.getElementById('venusBtn');
+        const resultDiv = document.getElementById('result');
+
+        venusBtn.addEventListener('click', async () => {
+            const itemName = '적아 울라드 카드';
+            resultDiv.innerHTML = '최저가 검색 중...';
+
+            try {
+                // Netlify에 배포된 우리 중계 서버(serverless function)를 호출합니다.
+                const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`서버 응답 오류: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.rows && data.rows.length > 0) {
+                    const lowestPrice = data.rows[0].unitPrice;
+                    const formattedPrice = lowestPrice.toLocaleString('en-US');
+                    resultDiv.innerHTML = `${formattedPrice} 골드`;
+                } else {
+                    resultDiv.innerHTML = `'${itemName}'의 매물을 찾을 수 없습니다.`;
+                }
+
+            } catch (error) {
+                console.error('Error fetching auction data:', error);
+                resultDiv.innerHTML = `가격을 불러오는 데 실패했습니다.`;
+            }
+        });
+    </script>
 
 </body>
 </html>
