@@ -9,16 +9,16 @@
 <body>
     <a href="index.html">
         <h1>화도웹</h1>
-    </a>
+    </h1>
 
     <div class="calculator-container">
         <div class="calc-section">
             <div class="options-grid">
                 <label>형상화된 요기의 단서:</label>
-                <div id="clue-price" class="expectation-value">불러오는 중...</div>
+                <input type="number" id="clue-price" class="expectation-value" value="0" min="0">
 
                 <label>교환 가능 요기의 잔흔:</label>
-                <div id="trace-price" class="expectation-value">불러오는 중...</div>
+                <input type="number" id="trace-price" class="expectation-value" value="0" min="0">
             </div>
         </div>
 
@@ -39,7 +39,6 @@
             <div class="options-grid">
                 <label for="target-trace-count">목표 잔흔:</label>
                 <input type="number" id="target-trace-count" value="0" min="0">
-                <!-- Removed <div>개</div> -->
                 <div></div> <!-- Empty div for alignment -->
                 <div></div> <!-- Empty div for alignment -->
 
@@ -57,20 +56,16 @@
 
     <script>
         // --- DOM Elements ---
-        const cluePriceDisplay = document.getElementById('clue-price');
-        const tracePriceDisplay = document.getElementById('trace-price');
+        const cluePriceInput = document.getElementById('clue-price');
+        const tracePriceInput = document.getElementById('trace-price');
         const aValueDisplay = document.getElementById('a-value');
         const bValueDisplay = document.getElementById('b-value');
-        const dLabel = document.getElementById('d-label'); // New element
+        const dLabel = document.getElementById('d-label');
         const dValueDisplay = document.getElementById('d-value');
         const targetTraceCountInput = document.getElementById('target-trace-count');
         const hValueDisplay = document.getElementById('h-value');
         const fValueDisplay = document.getElementById('f-value');
         const iValueDisplay = document.getElementById('i-value');
-
-        // --- Global Price Variables ---
-        let cluePrice = 0;
-        let tracePrice = 0;
 
         // --- Helper to fetch price ---
         async function fetchItemPrice(itemName) {
@@ -90,36 +85,21 @@
 
         // --- Main Calculation Function ---
         function calculateAndDisplay() {
-            // Ensure prices are loaded
-            if (cluePrice === 0 && tracePrice === 0) {
-                // Prices not yet loaded, or not found. Display loading/error.
-                cluePriceDisplay.innerHTML = '불러오는 중...';
-                tracePriceDisplay.innerHTML = '불러오는 중...';
-                aValueDisplay.innerHTML = '0 골드';
-                bValueDisplay.innerHTML = '0 골드';
-                dValueDisplay.innerHTML = '0 골드';
-                hValueDisplay.innerHTML = '0 골드';
-                fValueDisplay.innerHTML = '0 개';
-                iValueDisplay.innerHTML = '0 골드';
-                return;
-            }
-
-            // Display fetched prices
-            cluePriceDisplay.innerHTML = `${cluePrice.toLocaleString('en-US')} 골드`;
-            tracePriceDisplay.innerHTML = `${tracePrice.toLocaleString('en-US')} 골드`;
+            const currentCluePrice = parseInt(cluePriceInput.value) || 0;
+            const currentTracePrice = parseInt(tracePriceInput.value) || 0;
 
             // Dynamically update the label for '요괴 섬멸(c)'
-            dLabel.innerHTML = `요괴 섬멸(${tracePrice.toLocaleString('en-US')}):`;
+            dLabel.innerHTML = `요괴 섬멸(${currentTracePrice.toLocaleString('en-US')}):`;
 
             // Calculations
-            const a = cluePrice * 0.97;
-            const b = 389288 + tracePrice * 2.89;
-            const d = 258643 + tracePrice * 29.019;
+            const a = currentCluePrice * 0.97;
+            const b = 389288 + currentTracePrice * 2.89;
+            const d = 258643 + currentTracePrice * 29.019;
 
             const e = parseInt(targetTraceCountInput.value) || 0;
             const f = e / 29.019;
-            const h = e * tracePrice;
-            const i = f * cluePrice;
+            const h = e * currentTracePrice;
+            const i = f * currentCluePrice;
             const j = f * 258643;
 
             // Update displays
@@ -128,7 +108,7 @@
             dValueDisplay.innerHTML = `${Math.round(d).toLocaleString('en-US')} 골드`;
             hValueDisplay.innerHTML = `${Math.round(h).toLocaleString('en-US')} 골드`;
             fValueDisplay.innerHTML = `${Math.ceil(f).toLocaleString('en-US')} 개`;
-            iValueDisplay.innerHTML = `${Math.round(i).toLocaleString('en-US')} 골드<br>(${Math.round(j).toLocaleString('en-US')} 골드 회수)`; // Added <br>
+            iValueDisplay.innerHTML = `${Math.round(i).toLocaleString('en-US')} 골드<br>(${Math.round(j).toLocaleString('en-US')} 골드 회수)`;
         }
 
         // --- Initial Load & Event Listeners ---
@@ -142,9 +122,12 @@
                 itemNames.map(fetchItemPrice)
             );
 
-            cluePrice = fetchedCluePrice;
-            tracePrice = fetchedTracePrice;
+            cluePriceInput.value = fetchedCluePrice;
+            tracePriceInput.value = fetchedTracePrice;
 
+            // Add event listeners to the new input fields
+            cluePriceInput.addEventListener('input', calculateAndDisplay);
+            tracePriceInput.addEventListener('input', calculateAndDisplay);
             targetTraceCountInput.addEventListener('input', calculateAndDisplay);
 
             calculateAndDisplay(); // Initial calculation
