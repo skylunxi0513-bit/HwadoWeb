@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+
 
 exports.handler = async function(event, context) {
   // 1. 웹사이트에서 요청한 아이템 이름을 가져옵니다.
