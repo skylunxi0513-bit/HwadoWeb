@@ -1,0 +1,12 @@
+{
+  "name": "hwadoweb",
+  "version": "1.0.0",
+  "description": "HwadoWeb static site with Netlify Functions",
+  "main": "index.html",
+  "scripts": {
+    "start": "netlify dev"
+  },
+  "dependencies": {
+    "googleapis": "^128.0.0"
+  }
+}

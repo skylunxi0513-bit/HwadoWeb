@@ -1,9 +1,0 @@
-{
-  "name": "functions",
-  "version": "1.0.0",
-  "description": "Netlify functions for HwadoWeb",
-  "main": "./sheets.js",
-  "dependencies": {
-    "googleapis": "^128.0.0"
-  }
-}
