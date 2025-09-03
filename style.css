@@ -77,17 +77,77 @@ th {
 
 td:last-child {
     text-align: right;
-    /* font-family: monospace; --- Removed for default font */
     font-size: 15px;
 }
 
 .summary {
-    margin-bottom: 20px; /* Switched from margin-top */
+    margin-bottom: 20px;
     text-align: center;
-    font-size: 22px;     /* Increased font size */
-    font-weight: bold;   /* Added bold font */
+    font-size: 22px;
+    font-weight: bold;
 }
 
 .summary div {
     margin-bottom: 8px;
+}
+
+/* --- Calculator Page Styles --- */
+.calculator-container {
+    background-color: #ffffff;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: inline-block;
+    text-align: left;
+    width: 500px;
+}
+
+.calc-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+}
+.calc-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 10px;
+}
+
+.options-grid, .inputs-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 15px 20px;
+    align-items: center;
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    justify-self: center;
+}
+
+select, input[type="number"] {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    max-width: 200px;
+}
+
+#runs-per-char-display {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0056b3;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.expectation-value {
+    font-weight: bold;
+    color: #333;
+    font-size: 18px;
 }

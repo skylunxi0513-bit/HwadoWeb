@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>헬 계산기 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a href="index.html">
+        <h1>화도웹</h1>
+    </a>
+
+    <div class="calculator-container">
+        <div class="calc-section">
+            <div class="options-grid">
+                <label for="pc-room">PC방</label>
+                <input type="checkbox" id="pc-room">
+                
+                <label for="potion">영약</label>
+                <input type="checkbox" id="potion">
+
+                <label for="weekend">주말</label>
+                <input type="checkbox" id="weekend">
+
+                <label for="gaze">주시</label>
+                <select id="gaze">
+                    <option value="none">안돔</option>
+                    <option value="first">먼저 돔</option>
+                    <option value="last">마지막에 돔</option>
+                    <option value="profit">극한의 이득</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="calc-section">
+            <div style="text-align: center;"><label>캐릭 당 헬 판수</label></div>
+            <div id="runs-per-char-display">20</div>
+        </div>
+
+        <div class="calc-section">
+            <div class="inputs-grid">
+                <label for="char-count">현재 돈 캐릭터 수</label>
+                <input type="number" id="char-count" value="0" min="0">
+
+                <label>레전더리 기댓값</label>
+                <div id="legendary-exp" class="expectation-value">0</div>
+
+                <label>에픽 기댓값</label>
+                <div id="epic-exp" class="expectation-value">0</div>
+
+                <label>태초 기댓값</label>
+                <div id="primal-exp" class="expectation-value">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const pcRoomCheck = document.getElementById('pc-room');
+        const potionCheck = document.getElementById('potion');
+        const weekendCheck = document.getElementById('weekend');
+        const gazeSelect = document.getElementById('gaze');
+        const runsDisplay = document.getElementById('runs-per-char-display');
+        const charCountInput = document.getElementById('char-count');
+        const legendaryExpDisplay = document.getElementById('legendary-exp');
+        const epicExpDisplay = document.getElementById('epic-exp');
+        const primalExpDisplay = document.getElementById('primal-exp');
+
+        // --- Constants ---
+        const EXP_LEGENDARY = 0.03649;
+        const EXP_EPIC = 0.01756;
+        const EXP_PRIMAL = 0.001602;
+
+        // --- Main Calculation Function ---
+        function calculateAndDisplay() {
+            // 1. Calculate Runs Per Character
+            let runsPerChar = 20;
+            if (pcRoomCheck.checked) runsPerChar += 10;
+            if (potionCheck.checked) runsPerChar += 4;
+            if (weekendCheck.checked) runsPerChar += 3;
+
+            switch (gazeSelect.value) {
+                case 'first': runsPerChar -= 4; break;
+                case 'last': runsPerChar -= 3; break;
+                case 'profit': runsPerChar -= 2; break;
+            }
+            runsDisplay.innerHTML = runsPerChar;
+
+            // 2. Calculate Expectations
+            const charCount = parseInt(charCountInput.value) || 0;
+            const totalRuns = charCount * runsPerChar;
+
+            const legendaryExp = totalRuns * EXP_LEGENDARY;
+            const epicExp = totalRuns * EXP_EPIC;
+            const primalExp = totalRuns * EXP_PRIMAL;
+
+            legendaryExpDisplay.innerHTML = legendaryExp.toFixed(2);
+            epicExpDisplay.innerHTML = epicExp.toFixed(2);
+            primalExpDisplay.innerHTML = primalExp.toFixed(3);
+        }
+
+        // --- Event Listeners ---
+        const allInputs = [pcRoomCheck, potionCheck, weekendCheck, gazeSelect, charCountInput];
+        allInputs.forEach(input => {
+            input.addEventListener('change', calculateAndDisplay);
+            input.addEventListener('input', calculateAndDisplay); // For number input
+        });
+
+        // --- Initial Setup ---
+        function initialize() {
+            const today = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+            if (today === 0 || today === 6) {
+                weekendCheck.checked = true;
+            }
+            calculateAndDisplay(); // Initial calculation on page load
+        }
+
+        initialize();
+    </script>
+
+</body>
+</html>
