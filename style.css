@@ -113,7 +113,7 @@ td:last-child {
     padding-bottom: 10px;
 }
 
-.options-grid, .inputs-grid {
+.options-grid {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 15px 20px;
@@ -150,4 +150,31 @@ select, input[type="number"] {
     font-weight: bold;
     color: #333;
     font-size: 18px;
+}
+
+/* Comparison styles */
+.comparison-plus {
+    color: green;
+}
+
+.comparison-minus {
+    color: red;
+}
+
+/* Adjust inputs-grid for 4 columns */
+.inputs-grid {
+    grid-template-columns: auto 1fr auto 1fr; /* Label, Input, Label, Value */
+    gap: 15px 20px;
+    align-items: center;
+}
+
+/* Specific styles for the new input fields */
+.inputs-grid input[type="number"] {
+    max-width: 100px; /* Make them a bit smaller */
+}
+
+.inputs-grid .expectation-value,
+.inputs-grid .comparison-value {
+    text-align: right; /* Align values to the right */
+    padding-right: 5px;
 }
