@@ -1,8 +1,6 @@
 a {
     text-decoration: none;
     color: inherit;
-    display: inline-block; /* Added */
-    margin: 0 auto; /* Added */
 }
 
 body {
@@ -198,4 +196,9 @@ select, input[type="number"] {
     gap: 20px; /* Space between buttons */
     max-width: 720px; /* 3 buttons * 220px + 2*20px gap */
     margin: 20px auto; /* Center the container */
+}
+
+.header-link {
+    display: inline-block; /* Make it only as wide as its content */
+    margin: 0 auto; /* Center the block itself */
 }
