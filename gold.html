@@ -30,7 +30,7 @@
                 <label>요괴 섬멸(5000):</label>
                 <div id="b-value" class="expectation-value">0 골드</div>
 
-                <label>요괴 섬멸(c):</label>
+                <label id="d-label">요괴 섬멸(c):</label>
                 <div id="d-value" class="expectation-value">0 골드</div>
             </div>
         </div>
@@ -39,7 +39,9 @@
             <div class="options-grid">
                 <label for="target-trace-count">목표 잔흔:</label>
                 <input type="number" id="target-trace-count" value="0" min="0">
-                <div>개</div>
+                <!-- Removed <div>개</div> -->
+                <div></div> <!-- Empty div for alignment -->
+                <div></div> <!-- Empty div for alignment -->
 
                 <label>직접 구매시:</label>
                 <div id="h-value" class="expectation-value">0 골드</div>
@@ -59,6 +61,7 @@
         const tracePriceDisplay = document.getElementById('trace-price');
         const aValueDisplay = document.getElementById('a-value');
         const bValueDisplay = document.getElementById('b-value');
+        const dLabel = document.getElementById('d-label'); // New element
         const dValueDisplay = document.getElementById('d-value');
         const targetTraceCountInput = document.getElementById('target-trace-count');
         const hValueDisplay = document.getElementById('h-value');
@@ -105,16 +108,19 @@
             cluePriceDisplay.innerHTML = `${cluePrice.toLocaleString('en-US')} 골드`;
             tracePriceDisplay.innerHTML = `${tracePrice.toLocaleString('en-US')} 골드`;
 
+            // Dynamically update the label for '요괴 섬멸(c)'
+            dLabel.innerHTML = `요괴 섬멸(${tracePrice.toLocaleString('en-US')}) 골드:`;
+
             // Calculations
             const a = cluePrice * 0.97;
             const b = 389288 + tracePrice * 2.89;
-            const c = tracePrice; // For clarity in formulas
+            // const c = tracePrice; // No longer needed as a separate variable for display
             const d = 258643 + tracePrice * 29.019;
 
             const e = parseInt(targetTraceCountInput.value) || 0;
             const f = e / 29.019;
-            const h = e * c;
-            const i = f * cluePrice;
+            const h = e * tracePrice; // Use tracePrice directly
+            const i = f * (cluePrice - 258643); // Updated formula for i
 
             // Update displays
             aValueDisplay.innerHTML = `${Math.round(a).toLocaleString('en-US')} 골드`;
