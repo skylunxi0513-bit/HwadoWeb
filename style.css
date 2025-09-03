@@ -48,7 +48,7 @@ button img {
 .results-container {
     margin-top: 30px;
     display: inline-block;
-    width: 460px; /* Button width * 2 + margin */
+    width: 700px; /* Button width * 3 + margins */
 }
 
 table {
@@ -83,9 +83,8 @@ td:last-child {
 
 .summary {
     margin-bottom: 20px; /* Switched from margin-top */
-    text-align: left;
-    font-size: 18px;     /* Increased font size */
-    padding-left: 10px;
+    text-align: center;
+    font-size: 22px;     /* Increased font size */
     font-weight: bold;   /* Added bold font */
 }
 
