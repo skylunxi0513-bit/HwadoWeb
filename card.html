@@ -23,36 +23,49 @@
     <div id="result" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
 
     <script>
+        console.log("스크립트 시작");
+
         const venusBtn = document.getElementById('venusBtn');
         const resultDiv = document.getElementById('result');
 
-        venusBtn.addEventListener('click', async () => {
-            const itemName = '적아 울라드 카드';
-            resultDiv.innerHTML = '최저가 검색 중...';
+        console.log("버튼 요소:", venusBtn);
+        console.log("결과 표시 영역:", resultDiv);
 
-            try {
-                // Netlify에 배포된 우리 중계 서버(serverless function)를 호출합니다.
-                const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
-                
-                if (!response.ok) {
-                    throw new Error(`서버 응답 오류: ${response.status}`);
+        if (venusBtn) {
+            venusBtn.addEventListener('click', async () => {
+                console.log("버튼 클릭됨!");
+                const itemName = '적아 울라드 카드';
+                resultDiv.innerHTML = '최저가 검색 중...';
+
+                try {
+                    console.log("API 함수 호출 시도");
+                    const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
+                    console.log("API 함수 응답 받음:", response);
+                    
+                    if (!response.ok) {
+                        throw new Error(`서버 응답 오류: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log("응답 데이터:", data);
+
+                    if (data.rows && data.rows.length > 0) {
+                        const lowestPrice = data.rows[0].unitPrice;
+                        const formattedPrice = lowestPrice.toLocaleString('en-US');
+                        resultDiv.innerHTML = `${formattedPrice} 골드`;
+                    } else {
+                        resultDiv.innerHTML = `'${itemName}'의 매물을 찾을 수 없습니다.`;
+                    }
+
+                } catch (error) {
+                    console.error('가격 조회 중 에러 발생:', error);
+                    resultDiv.innerHTML = `가격을 불러오는 데 실패했습니다.`;
                 }
-
-                const data = await response.json();
-
-                if (data.rows && data.rows.length > 0) {
-                    const lowestPrice = data.rows[0].unitPrice;
-                    const formattedPrice = lowestPrice.toLocaleString('en-US');
-                    resultDiv.innerHTML = `${formattedPrice} 골드`;
-                } else {
-                    resultDiv.innerHTML = `'${itemName}'의 매물을 찾을 수 없습니다.`;
-                }
-
-            } catch (error) {
-                console.error('Error fetching auction data:', error);
-                resultDiv.innerHTML = `가격을 불러오는 데 실패했습니다.`;
-            }
-        });
+            });
+            console.log("버튼에 이벤트 리스너 추가 완료");
+        } else {
+            console.error("'venusBtn' ID를 가진 버튼을 찾을 수 없습니다.");
+        }
     </script>
 
 </body>
