@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단서/잔흔 계산기 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a href="index.html">
+        <h1>화도웹</h1>
+    </a>
+
+    <div class="calculator-container">
+        <div class="calc-section">
+            <div class="options-grid">
+                <label>형상화된 요기의 단서:</label>
+                <div id="clue-price" class="expectation-value">불러오는 중...</div>
+
+                <label>교환 가능 요기의 잔흔:</label>
+                <div id="trace-price" class="expectation-value">불러오는 중...</div>
+            </div>
+        </div>
+
+        <div class="calc-section">
+            <div class="options-grid">
+                <label>단서 판매시:</label>
+                <div id="a-value" class="expectation-value">0 골드</div>
+
+                <label>요괴 섬멸(5000):</label>
+                <div id="b-value" class="expectation-value">0 골드</div>
+
+                <label>요괴 섬멸(c):</label>
+                <div id="d-value" class="expectation-value">0 골드</div>
+            </div>
+        </div>
+
+        <div class="calc-section">
+            <div class="options-grid">
+                <label for="target-trace-count">목표 잔흔:</label>
+                <input type="number" id="target-trace-count" value="0" min="0">
+                <div>개</div>
+
+                <label>직접 구매시:</label>
+                <div id="h-value" class="expectation-value">0 골드</div>
+
+                <label>필요 형상화된 요기의 단서:</label>
+                <div id="f-value" class="expectation-value">0 개</div>
+
+                <label>단서 구매시:</label>
+                <div id="i-value" class="expectation-value">0 골드</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const cluePriceDisplay = document.getElementById('clue-price');
+        const tracePriceDisplay = document.getElementById('trace-price');
+        const aValueDisplay = document.getElementById('a-value');
+        const bValueDisplay = document.getElementById('b-value');
+        const dValueDisplay = document.getElementById('d-value');
+        const targetTraceCountInput = document.getElementById('target-trace-count');
+        const hValueDisplay = document.getElementById('h-value');
+        const fValueDisplay = document.getElementById('f-value');
+        const iValueDisplay = document.getElementById('i-value');
+
+        // --- Global Price Variables ---
+        let cluePrice = 0;
+        let tracePrice = 0;
+
+        // --- Helper to fetch price ---
+        async function fetchItemPrice(itemName) {
+            try {
+                const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
+                if (!response.ok) throw new Error(`API 서버 응답 오류: ${response.status}`);
+                const data = await response.json();
+                if (data.rows && data.rows.length > 0) {
+                    return data.rows[0].unitPrice;
+                }
+                return 0; // Item not found
+            } catch (error) {
+                console.error(`가격 조회 실패 (${itemName}):`, error);
+                return 0; // Error fetching
+            }
+        }
+
+        // --- Main Calculation Function ---
+        function calculateAndDisplay() {
+            // Ensure prices are loaded
+            if (cluePrice === 0 && tracePrice === 0) {
+                // Prices not yet loaded, or not found. Display loading/error.
+                cluePriceDisplay.innerHTML = '불러오는 중...';
+                tracePriceDisplay.innerHTML = '불러오는 중...';
+                aValueDisplay.innerHTML = '0 골드';
+                bValueDisplay.innerHTML = '0 골드';
+                dValueDisplay.innerHTML = '0 골드';
+                hValueDisplay.innerHTML = '0 골드';
+                fValueDisplay.innerHTML = '0 개';
+                iValueDisplay.innerHTML = '0 골드';
+                return;
+            }
+
+            // Display fetched prices
+            cluePriceDisplay.innerHTML = `${cluePrice.toLocaleString('en-US')} 골드`;
+            tracePriceDisplay.innerHTML = `${tracePrice.toLocaleString('en-US')} 골드`;
+
+            // Calculations
+            const a = cluePrice * 0.97;
+            const b = 389288 + tracePrice * 2.89;
+            const c = tracePrice; // For clarity in formulas
+            const d = 258643 + tracePrice * 29.019;
+
+            const e = parseInt(targetTraceCountInput.value) || 0;
+            const f = e / 29.019;
+            const h = e * c;
+            const i = f * cluePrice;
+
+            // Update displays
+            aValueDisplay.innerHTML = `${Math.round(a).toLocaleString('en-US')} 골드`;
+            bValueDisplay.innerHTML = `${Math.round(b).toLocaleString('en-US')} 골드`;
+            dValueDisplay.innerHTML = `${Math.round(d).toLocaleString('en-US')} 골드`;
+            hValueDisplay.innerHTML = `${Math.round(h).toLocaleString('en-US')} 골드`;
+            fValueDisplay.innerHTML = `${Math.ceil(f).toLocaleString('en-US')} 개`; // Round up for '개'
+            iValueDisplay.innerHTML = `${Math.round(i).toLocaleString('en-US')} 골드`;
+        }
+
+        // --- Initial Load & Event Listeners ---
+        async function initialize() {
+            const itemNames = [
+                '형상화된 요기의 단서',
+                '요기의 잔흔(1회 교환 가능)'
+            ];
+
+            const [fetchedCluePrice, fetchedTracePrice] = await Promise.all(
+                itemNames.map(fetchItemPrice)
+            );
+
+            cluePrice = fetchedCluePrice;
+            tracePrice = fetchedTracePrice;
+
+            targetTraceCountInput.addEventListener('input', calculateAndDisplay);
+
+            calculateAndDisplay(); // Initial calculation
+        }
+
+        initialize();
+    </script>
+
+</body>
+</html>
