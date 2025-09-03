@@ -163,14 +163,14 @@ select, input[type="number"] {
 
 /* Adjust inputs-grid for 4 columns */
 .inputs-grid {
-    grid-template-columns: auto 1fr auto 1fr; /* Label, Input, Label, Value */
+    grid-template-columns: auto 1fr 1fr 1fr; /* Label, Expected Value, Input, Comparison */
     gap: 15px 20px;
     align-items: center;
 }
 
 /* Specific styles for the new input fields */
 .inputs-grid input[type="number"] {
-    max-width: 100px; /* Make them a bit smaller */
+    max-width: 80px; /* Make them a bit smaller */
 }
 
 .inputs-grid .expectation-value,
