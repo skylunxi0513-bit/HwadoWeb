@@ -61,7 +61,7 @@ table {
 }
 
 th, td {
-    padding: 8px 15px; /* Reduced vertical padding */
+    padding: 6px 15px; /* Reduced vertical padding */
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
@@ -78,6 +78,11 @@ th {
 td:last-child {
     text-align: right;
     font-size: 15px;
+}
+
+td:last-child button {
+    margin: 0 auto; /* Center the button */
+    display: block; /* Make it a block element to center */
 }
 
 .summary {
