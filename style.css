@@ -1,6 +1,8 @@
 a {
     text-decoration: none;
     color: inherit;
+    display: inline-block; /* Added */
+    margin: 0 auto; /* Added */
 }
 
 body {
@@ -196,12 +198,4 @@ select, input[type="number"] {
     gap: 20px; /* Space between buttons */
     max-width: 720px; /* 3 buttons * 220px + 2*20px gap */
     margin: 20px auto; /* Center the container */
-}
-
-/* Debugging style for h1 link area */
-body > a {
-    background-color: rgba(255,0,0,0.3); /* Red transparent background */
-    display: block; /* Make it a block element to see its full area */
-    position: relative; /* To ensure z-index works if needed */
-    z-index: 100; /* Bring to front for debugging */
 }
