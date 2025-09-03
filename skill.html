@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스킬코드 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a href="index.html">
+        <h1>화도웹</h1>
+    </a>
+
+    <div class="main-buttons-container">
+        <button id="mainAccountBtn">본계정</button>
+        <button id="subAccountBtn">부계정</button>
+        <button id="otherAccountBtn">타계정</button>
+    </div>
+
+    <div id="skillCodeTableContainer" class="results-container">
+        <p>데이터를 불러오는 중...</p>
+    </div>
+
+    <script>
+        const mainAccountBtn = document.getElementById('mainAccountBtn');
+        const subAccountBtn = document.getElementById('subAccountBtn');
+        const otherAccountBtn = document.getElementById('otherAccountBtn');
+        const skillCodeTableContainer = document.getElementById('skillCodeTableContainer');
+
+        // 스프레드시트에서 데이터를 가져와 표로 렌더링하는 함수
+        async function fetchAndRenderSheetData(filterValue) {
+            skillCodeTableContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
+            try {
+                // sheets.js Netlify Function 호출
+                const response = await fetch(`/.netlify/functions/sheets?sheetName=스킬코드&filterColumn=2&filterValue=${encodeURIComponent(filterValue)}`);
+                
+                if (!response.ok) {
+                    throw new Error(`서버 응답 오류: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                const data = result.data;
+
+                if (!data || data.length === 0) {
+                    skillCodeTableContainer.innerHTML = '<p>해당 계정의 데이터를 찾을 수 없습니다.</p>';
+                    return;
+                }
+
+                // 테이블 생성
+                let tableHTML = '<table><thead><tr><th>닉네임</th><th>직업</th><th>복사</th></tr></thead><tbody>';
+                data.forEach(row => {
+                    const nickname = row[0] || ''; // A열
+                    const job = row[3] || '';      // D열
+                    const copyValue = row[4] || ''; // E열
+
+                    tableHTML += `<tr>
+                        <td>${nickname}</td>
+                        <td>${job}</td>
+                        <td><button class="copy-btn" data-copy-value="${copyValue}">복사</button></td>
+                    </tr>`;
+                });
+                tableHTML += '</tbody></table>';
+
+                skillCodeTableContainer.innerHTML = tableHTML;
+
+                // 복사 버튼 이벤트 리스너 추가
+                document.querySelectorAll('.copy-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const valueToCopy = event.target.dataset.copyValue;
+                        try {
+                            await navigator.clipboard.writeText(valueToCopy);
+                            event.target.textContent = '복사됨!';
+                            setTimeout(() => { event.target.textContent = '복사'; }, 1500);
+                        } catch (err) {
+                            console.error('클립보드 복사 실패:', err);
+                            alert('클립보드 복사 실패! (브라우저 권한 확인)');
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error('스프레드시트 데이터 불러오기 실패:', error);
+                skillCodeTableContainer.innerHTML = `<p>데이터를 불러오는 중 오류가 발생했습니다: ${error.message}</p>`;
+            }
+        }
+
+        // 초기 로드 시 '본계정' 데이터 불러오기
+        fetchAndRenderSheetData('본');
+
+        // 버튼 이벤트 리스너
+        mainAccountBtn.addEventListener('click', () => fetchAndRenderSheetData('본'));
+        subAccountBtn.addEventListener('click', () => fetchAndRenderSheetData('부'));
+        otherAccountBtn.addEventListener('click', () => fetchAndRenderSheetData('타'));
+
+    </script>
+
+</body>
+</html>
