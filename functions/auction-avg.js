@@ -25,8 +25,19 @@ exports.handler = async function(event, context) {
         };
     }
 
-    const total = data.rows.reduce((sum, item) => sum + item.unitPrice, 0);
-    const averagePrice = total / data.rows.length;
+    // Safety net: Filter out prices more than 1.5 times the cheapest price
+    const cheapestPrice = data.rows[0].unitPrice; // Already sorted by unitPrice:asc
+    const filteredRows = data.rows.filter(item => item.unitPrice <= cheapestPrice * 1.5);
+
+    if (filteredRows.length === 0) { // If all items were filtered out
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ averagePrice: 0 }),
+        };
+    }
+
+    const total = filteredRows.reduce((sum, item) => sum + item.unitPrice, 0);
+    const averagePrice = total / filteredRows.length;
 
     return {
       statusCode: 200,
