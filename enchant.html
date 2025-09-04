@@ -72,9 +72,7 @@
             allBoxes.forEach(box => { box.innerHTML = '로딩 중...'; });
 
             try {
-                console.log(`Fetching data for type: ${type}`);
                 const sheetRows = await fetchSheetData(type);
-                console.log('1. Fetched Sheet Rows:', sheetRows);
 
                 const pricePromises = sheetRows.map(row => fetchPrice(row[3]).then(price => ({
                     boxIndex: row[0],
@@ -85,14 +83,12 @@
                 })));
                 
                 const itemsWithPrices = await Promise.all(pricePromises);
-                console.log('2. Items with Prices:', itemsWithPrices);
 
                 const groupedByBox = itemsWithPrices.reduce((acc, item) => {
                     if (!acc[item.boxIndex]) acc[item.boxIndex] = [];
                     acc[item.boxIndex].push(item);
                     return acc;
                 }, {});
-                console.log('3. Grouped by Box:', groupedByBox);
 
                 for (const boxIndex in groupedByBox) {
                     const items = groupedByBox[boxIndex];
@@ -116,7 +112,6 @@
                     }
                     groupedByBox[boxIndex] = processedItems;
                 }
-                console.log('4. Final Processed Data:', groupedByBox);
 
                 allBoxes.forEach(box => { box.innerHTML = ''; });
 
@@ -132,10 +127,11 @@
                         items.forEach(item => {
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'card-item';
-                            const priceString = item.price === Infinity ? '매물 없음' : `${item.price.toLocaleString()} G`;
-                            
+                            const priceString = item.price === Infinity ? '매물 없음' : `${item.price.toLocaleString()} 골드`;
+                            const imageTag = item.image ? `<img src="images/${item.image}" alt="${item.name}">` : '';
+
                             itemDiv.innerHTML = `
-                                <img src="images/${item.image}" alt="${item.name}">
+                                ${imageTag}
                                 <span class="card-name">${item.name}</span>
                                 <span class="card-price">${priceString}</span>
                             `;
