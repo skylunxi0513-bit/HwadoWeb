@@ -167,6 +167,8 @@
         function showTooltip(event) {
             console.log('showTooltip triggered');
             const hoveredItem = event.currentTarget;
+            console.log('Hovered item:', hoveredItem);
+            console.log('Hovered item dataset directly:', hoveredItem.dataset);
             const boxIndex = hoveredItem.dataset.boxIndex;
             const priority = hoveredItem.dataset.priority;
             const currentItemName = hoveredItem.dataset.name;
