@@ -234,7 +234,7 @@ select, input[type="number"] {
     gap: 10px;
     border: 1px solid #ddd;
     padding: 15px;
-    width: 570px; /* Increased width */
+    width: 600px; /* Increased width */
     background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.05);
@@ -249,6 +249,25 @@ select, input[type="number"] {
     font-size: 14px;
     display: flex;
     flex-direction: column;
+    justify-content: center; /* Vertically center content */
+    gap: 5px;
+}
+
+.enchant-box-title {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+    color: #555;
+    /* The title should not be centered with flex, so we add a wrapper for the items */
+}
+
+.enchant-box .items-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-grow: 1;
     gap: 5px;
 }
 

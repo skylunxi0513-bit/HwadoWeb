@@ -18,24 +18,24 @@
 
     <div id="enchant-main-container" class="hidden">
         <div id="left-container" class="enchant-sub-container">
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
+            <div class="enchant-box"><div class="enchant-box-title">머리어깨</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">상의</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">하의</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">벨트</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">신발</div><div class="items-wrapper"></div></div>
             <div class="enchant-box transparent"></div>
             <div class="enchant-box transparent"></div>
             <div class="enchant-box transparent"></div>
         </div>
         <div id="right-container" class="enchant-sub-container">
-            <div class="enchant-box"></div>
+            <div class="enchant-box"><div class="enchant-box-title">무기</div><div class="items-wrapper"></div></div>
             <div class="enchant-box transparent"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
-            <div class="enchant-box"></div>
+            <div class="enchant-box"><div class="enchant-box-title">팔찌</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">목걸이</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">보조장비</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">반지</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">귀걸이</div><div class="items-wrapper"></div></div>
+            <div class="enchant-box"><div class="enchant-box-title">마법석</div><div class="items-wrapper"></div></div>
         </div>
     </div>
 
@@ -43,9 +43,10 @@
         const dealerBtn = document.getElementById('dealer-btn');
         const bufferBtn = document.getElementById('buffer-btn');
         const mainContainer = document.getElementById('enchant-main-container');
+        const itemWrappers = Array.from(document.querySelectorAll('.enchant-box:not(.transparent) .items-wrapper'));
         const leftBoxes = Array.from(document.querySelectorAll('#left-container .enchant-box:not(.transparent)'));
         const rightBoxes = Array.from(document.querySelectorAll('#right-container .enchant-box:not(.transparent)'));
-        const allBoxes = [...leftBoxes, ...rightBoxes];
+
 
         async function fetchSheetData(type) {
             const response = await fetch(`/.netlify/functions/sheets?sheetName=카드가격&filterColumn=2&filterValue=${encodeURIComponent(type)}`);
@@ -69,7 +70,7 @@
 
         const fetchDataAndRender = async (type) => {
             mainContainer.classList.remove('hidden');
-            allBoxes.forEach(box => { box.innerHTML = '로딩 중...'; });
+            itemWrappers.forEach(wrapper => { wrapper.innerHTML = '로딩 중...'; });
 
             try {
                 const sheetRows = await fetchSheetData(type);
@@ -113,7 +114,7 @@
                     groupedByBox[boxIndex] = processedItems;
                 }
 
-                allBoxes.forEach(box => { box.innerHTML = ''; });
+                itemWrappers.forEach(wrapper => { wrapper.innerHTML = ''; });
 
                 const boxMapping = {
                     '1': leftBoxes[0], '2': leftBoxes[1], '3': leftBoxes[2], '4': leftBoxes[3], '5': leftBoxes[4],
@@ -121,8 +122,8 @@
                 };
 
                 for (const boxIndex in groupedByBox) {
-                    const targetBox = boxMapping[boxIndex];
-                    if (targetBox) {
+                    const targetWrapper = boxMapping[boxIndex]?.querySelector('.items-wrapper');
+                    if (targetWrapper) {
                         const items = groupedByBox[boxIndex];
                         items.forEach(item => {
                             const itemDiv = document.createElement('div');
@@ -135,14 +136,14 @@
                                 <span class="card-name">${item.name}</span>
                                 <span class="card-price">${priceString}</span>
                             `;
-                            targetBox.appendChild(itemDiv);
+                            targetWrapper.appendChild(itemDiv);
                         });
                     }
                 }
 
             } catch (error) {
                 console.error('Failed to fetch and render card data:', error);
-                allBoxes.forEach(box => { box.innerHTML = '오류 발생'; });
+                itemWrappers.forEach(wrapper => { wrapper.innerHTML = '오류 발생'; });
             }
         };
 
