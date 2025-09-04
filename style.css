@@ -198,7 +198,7 @@ select, input[type="number"] {
     justify-content: center;
     gap: 20px; /* Space between buttons */
     max-width: 720px; /* 3 buttons * 220px + 2*20px gap */
-    margin: 20px auto; /* Center the container */
+    margin: 20px auto 40px auto; /* Center the container and add bottom margin */
 }
 
 .header-link {
