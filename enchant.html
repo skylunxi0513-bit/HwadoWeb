@@ -135,9 +135,9 @@
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'card-item';
                             // Add data attributes for tooltip lookup
-                            itemDiv.dataset.boxIndex = item.boxIndex;
-                            itemDiv.dataset.priority = item.priority;
-                            itemDiv.dataset.name = item.name; // Store name for exact match
+                            itemDiv.setAttribute('data-box-index', item.boxIndex);
+                            itemDiv.setAttribute('data-priority', item.priority);
+                            itemDiv.setAttribute('data-name', item.name); // Store name for exact match
 
                             const priceString = item.price === Infinity ? '매물 없음' : `${item.price.toLocaleString()} 골드`;
                             const imageTag = item.image ? `<img src="images/${item.image}" alt="${item.name}">` : '';
@@ -148,7 +148,12 @@
                                 <span class="card-price">${priceString}</span>
                             `;
                             targetWrapper.appendChild(itemDiv);
+
+                            // Attach event listeners directly to the itemDiv
+                            itemDiv.addEventListener('mouseover', showTooltip);
+                            itemDiv.addEventListener('mouseout', hideTooltip);
                         });
+
                     }
                 }
 
@@ -166,7 +171,7 @@
         // --- Tooltip Logic ---
         function showTooltip(event) {
             console.log('showTooltip triggered');
-            const hoveredItem = event.currentTarget;
+            const hoveredItem = event.currentTarget; // This will now be the card-item
             console.log('Hovered item:', hoveredItem);
             console.log('Hovered item dataset directly:', hoveredItem.dataset);
             const boxIndex = hoveredItem.dataset.boxIndex;
@@ -177,8 +182,8 @@
             console.log('allItemsData:', allItemsData);
 
             const relatedItems = allItemsData.filter(item => 
-                item.boxIndex === boxIndex && 
-                item.priority === priority && 
+                item.boxIndex == boxIndex &&  // Use == for loose comparison with dataset string
+                item.priority == priority && // Use == for loose comparison with dataset string
                 item.name !== currentItemName // Exclude the hovered item itself
             );
 
@@ -207,24 +212,10 @@
             }
         }
 
-        function hideTooltip() {
+        function hideTooltip(event) {
             console.log('hideTooltip triggered');
             cardTooltip.classList.add('hidden');
         }
-
-        // Attach event listeners after items are rendered
-        mainContainer.addEventListener('mouseover', (event) => {
-            const cardItemElement = event.target.closest('.card-item'); // Get the actual card-item
-            if (cardItemElement) {
-                showTooltip(cardItemElement); // Pass the card-item element directly
-            }
-        });
-        mainContainer.addEventListener('mouseout', (event) => {
-            const cardItemElement = event.target.closest('.card-item'); // Get the actual card-item
-            if (cardItemElement) { // Only hide if we were hovering over a card-item
-                hideTooltip(cardItemElement); // Pass the card-item element directly
-            }
-        });
 
     </script>
 </body>
