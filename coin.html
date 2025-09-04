@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세라/골드 계산기 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+
+    <div id="table-container" class="results-container">
+        <p>데이터를 불러오는 중...</p>
+    </div>
+
+    <script>
+        async function fetchSheetData() {
+            const response = await fetch(`/.netlify/functions/sheets?sheetName=세라가격`);
+            if (!response.ok) throw new Error(`Sheets API Error: ${response.status}`);
+            const result = await response.json();
+            if (result.error) throw new Error(result.error);
+            return result.data;
+        }
+
+        async function fetchAveragePrice(itemName) {
+            const response = await fetch(`/.netlify/functions/auction-avg?itemName=${encodeURIComponent(itemName)}&limit=10`);
+            if (!response.ok) return 0;
+            const data = await response.json();
+            return data.averagePrice || 0;
+        }
+
+        async function init() {
+            const tableContainer = document.getElementById('table-container');
+            try {
+                const sheetRows = await fetchSheetData();
+                if (!sheetRows || sheetRows.length === 0) {
+                    tableContainer.innerHTML = '<p>세라 가격 정보를 찾을 수 없습니다.</p>';
+                    return;
+                }
+
+                const dataPromises = sheetRows.map(async (row) => {
+                    const itemName = row[0];
+                    const seraPrice = parseInt(row[1], 10);
+                    if (!itemName || isNaN(seraPrice)) return null;
+
+                    const avgGoldPrice = await fetchAveragePrice(itemName);
+                    const value = avgGoldPrice > 0 && seraPrice > 0 ? avgGoldPrice / seraPrice : 0;
+
+                    return {
+                        name: itemName,
+                        sera: seraPrice,
+                        goldPerSera: Math.round(value)
+                    };
+                });
+
+                let results = await Promise.all(dataPromises);
+                results = results.filter(r => r !== null);
+
+                results.sort((a, b) => b.goldPerSera - a.goldPerSera);
+
+                let tableHTML = '<table><thead><tr><th>아이템 이름</th><th>세라 가격</th><th>100만 골드 당</th></tr></thead><tbody>';
+                results.forEach(item => {
+                    tableHTML += `<tr>
+                        <td>${item.name}</td>
+                        <td>${item.sera.toLocaleString()} 세라</td>
+                        <td>${item.goldPerSera.toLocaleString()}</td>
+                    </tr>`;
+                });
+                tableHTML += '</tbody></table>';
+
+                tableContainer.innerHTML = tableHTML;
+
+            } catch (error) {
+                console.error('Failed to render table:', error);
+                tableContainer.innerHTML = `<p>데이터를 불러오는 중 오류가 발생했습니다.</p>`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
