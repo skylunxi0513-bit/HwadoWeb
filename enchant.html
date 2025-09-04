@@ -47,22 +47,14 @@
         const rightBoxes = Array.from(document.querySelectorAll('#right-container .enchant-box:not(.transparent)'));
         const allBoxes = [...leftBoxes, ...rightBoxes];
 
-        // --- Reusable API Call Functions ---
-
-        // Fetches filtered data from the Google Sheet
         async function fetchSheetData(type) {
             const response = await fetch(`/.netlify/functions/sheets?sheetName=카드가격&filterColumn=3&filterValue=${encodeURIComponent(type)}`);
-            if (!response.ok) {
-                throw new Error(`Sheets API Error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Sheets API Error: ${response.status}`);
             const result = await response.json();
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            return result.data; // Assuming result.data is the array of rows
+            if (result.error) throw new Error(result.error);
+            return result.data;
         }
 
-        // Fetches the lowest price for a single item
         async function fetchPrice(itemName) {
             try {
                 const response = await fetch(`/.netlify/functions/auction?itemName=${encodeURIComponent(itemName)}`);
@@ -75,17 +67,15 @@
             }
         }
 
-        // --- Main Orchestration Function ---
-
         const fetchDataAndRender = async (type) => {
             mainContainer.classList.remove('hidden');
             allBoxes.forEach(box => { box.innerHTML = '로딩 중...'; });
 
             try {
-                // 1. Fetch initial card data from the sheet
+                console.log(`Fetching data for type: ${type}`);
                 const sheetRows = await fetchSheetData(type);
+                console.log('1. Fetched Sheet Rows:', sheetRows);
 
-                // 2. Fetch prices for all cards in parallel
                 const pricePromises = sheetRows.map(row => fetchPrice(row[3]).then(price => ({
                     boxIndex: row[0],
                     priority: parseInt(row[1], 10),
@@ -95,15 +85,15 @@
                 })));
                 
                 const itemsWithPrices = await Promise.all(pricePromises);
+                console.log('2. Items with Prices:', itemsWithPrices);
 
-                // 3. Group items by their designated box
                 const groupedByBox = itemsWithPrices.reduce((acc, item) => {
                     if (!acc[item.boxIndex]) acc[item.boxIndex] = [];
                     acc[item.boxIndex].push(item);
                     return acc;
                 }, {});
+                console.log('3. Grouped by Box:', groupedByBox);
 
-                // 4. Process each group: sort by priority and handle tie-breaks
                 for (const boxIndex in groupedByBox) {
                     const items = groupedByBox[boxIndex];
                     const processedItems = [];
@@ -126,8 +116,8 @@
                     }
                     groupedByBox[boxIndex] = processedItems;
                 }
+                console.log('4. Final Processed Data:', groupedByBox);
 
-                // 5. Render the final data
                 allBoxes.forEach(box => { box.innerHTML = ''; });
 
                 const boxMapping = {
