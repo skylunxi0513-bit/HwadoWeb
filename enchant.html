@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화도웹 - 카드 가격</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+
+    <div class="enchant-buttons-container">
+        <button id="dealer-btn">딜러</button>
+        <button id="buffer-btn">버퍼</button>
+    </div>
+
+    <div id="enchant-main-container" class="hidden">
+        <div id="left-container" class="enchant-sub-container">
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box transparent"></div>
+            <div class="enchant-box transparent"></div>
+            <div class="enchant-box transparent"></div>
+        </div>
+        <div id="right-container" class="enchant-sub-container">
+            <div class="enchant-box"></div>
+            <div class="enchant-box transparent"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+            <div class="enchant-box"></div>
+        </div>
+    </div>
+
+    <script>
+        const dealerBtn = document.getElementById('dealer-btn');
+        const bufferBtn = document.getElementById('buffer-btn');
+        const mainContainer = document.getElementById('enchant-main-container');
+
+        function showContainers() {
+            mainContainer.classList.remove('hidden');
+        }
+
+        dealerBtn.addEventListener('click', showContainers);
+        bufferBtn.addEventListener('click', showContainers);
+    </script>
+</body>
+</html>

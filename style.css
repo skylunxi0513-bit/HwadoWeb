@@ -206,3 +206,47 @@ select, input[type="number"] {
     margin: 0 auto; /* Center the block element */
     width: fit-content; /* Make it only as wide as its content */
 }
+
+/* enchant.html styles */
+.enchant-buttons-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.enchant-buttons-container button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin: 0 10px;
+    cursor: pointer;
+}
+
+#enchant-main-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.enchant-sub-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 200px; /* Or as needed */
+}
+
+.enchant-box {
+    width: 80px;  /* Or as needed */
+    height: 80px; /* Or as needed */
+    border: 1px solid #999;
+    background-color: #f0f0f0;
+}
+
+.enchant-box.transparent {
+    visibility: hidden;
+}
+
+.hidden {
+    display: none;
+}
