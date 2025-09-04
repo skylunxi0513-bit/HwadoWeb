@@ -330,3 +330,26 @@ select, input[type="number"] {
 #card-tooltip.hidden {
     display: none;
 }
+
+.game-subtitle {
+    font-size: 24px; /* Slightly smaller than h1 */
+    color: #555;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.separator {
+    border-top: 1px solid #ccc;
+    opacity: 0.5;
+    margin: 20px auto;
+    width: 80%;
+    max-width: 700px;
+}
+
+.game-title {
+    font-size: 16px; /* Same as button text */
+    font-weight: bold;
+    color: #333;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
