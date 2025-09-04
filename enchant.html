@@ -214,13 +214,15 @@
 
         // Attach event listeners after items are rendered
         mainContainer.addEventListener('mouseover', (event) => {
-            if (event.target.closest('.card-item')) {
-                showTooltip(event);
+            const cardItemElement = event.target.closest('.card-item'); // Get the actual card-item
+            if (cardItemElement) {
+                showTooltip(cardItemElement); // Pass the card-item element directly
             }
         });
         mainContainer.addEventListener('mouseout', (event) => {
-            if (event.target.closest('.card-item')) {
-                hideTooltip();
+            const cardItemElement = event.target.closest('.card-item'); // Get the actual card-item
+            if (cardItemElement) { // Only hide if we were hovering over a card-item
+                hideTooltip(cardItemElement); // Pass the card-item element directly
             }
         });
 
