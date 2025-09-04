@@ -170,50 +170,37 @@
 
         // --- Tooltip Logic ---
         function showTooltip(event) {
-            console.log('showTooltip triggered');
             const hoveredItem = event.currentTarget; // This will now be the card-item
-            console.log('Hovered item:', hoveredItem);
-            console.log('Hovered item dataset directly:', hoveredItem.dataset);
             const boxIndex = hoveredItem.dataset.boxIndex;
             const priority = hoveredItem.dataset.priority;
             const currentItemName = hoveredItem.dataset.name;
 
-            console.log('showTooltip triggered for:', currentItemName);
-            console.log('allItemsData:', allItemsData);
-
             const relatedItems = allItemsData.filter(item => 
-                item.boxIndex == boxIndex &&  // Use == for loose comparison with dataset string
-                item.priority == priority && // Use == for loose comparison with dataset string
+                item.boxIndex === parseInt(boxIndex, 10) &&  // Explicitly convert dataset string to number
+                item.priority === parseInt(priority, 10) && // Explicitly convert dataset string to number
                 item.name !== currentItemName // Exclude the hovered item itself
             );
 
-            console.log('Related items found:', relatedItems);
-
+            let tooltipContent = '<h4>다른 매물</h4>';
             if (relatedItems.length > 0) {
-                let tooltipContent = '<h4>다른 매물</h4>';
                 relatedItems.sort((a, b) => a.price - b.price); // Sort by price for display
                 relatedItems.forEach(item => {
                     const priceString = item.price === Infinity ? '매물 없음' : `${item.price.toLocaleString()} 골드`;
                     tooltipContent += `<p>${item.name}: ${priceString}</p>`;
                 });
-                cardTooltip.innerHTML = tooltipContent;
-                cardTooltip.classList.remove('hidden');
-
-                console.log('Tooltip content:', tooltipContent);
-
-                // Position the tooltip
-                const rect = hoveredItem.getBoundingClientRect();
-                cardTooltip.style.left = `${rect.right + 10}px`;
-                cardTooltip.style.top = `${rect.top}px`;
-                console.log('Tooltip position:', cardTooltip.style.left, cardTooltip.style.top);
             } else {
-                cardTooltip.classList.add('hidden');
-                console.log('No related items found, hiding tooltip.');
+                tooltipContent += '<p>다른 매물 없음</p>';
             }
+            cardTooltip.innerHTML = tooltipContent;
+            cardTooltip.classList.remove('hidden');
+
+            // Position the tooltip
+            const rect = hoveredItem.getBoundingClientRect();
+            cardTooltip.style.left = `${rect.right + 10}px`;
+            cardTooltip.style.top = `${rect.top}px`;
         }
 
         function hideTooltip(event) {
-            console.log('hideTooltip triggered');
             cardTooltip.classList.add('hidden');
         }
 
