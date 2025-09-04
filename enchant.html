@@ -39,6 +39,10 @@
         </div>
     </div>
 
+    <div id="card-tooltip" class="hidden">
+        <!-- Tooltip content will be dynamically loaded here -->
+    </div>
+
     <script>
         const dealerBtn = document.getElementById('dealer-btn');
         const bufferBtn = document.getElementById('buffer-btn');
@@ -46,7 +50,9 @@
         const itemWrappers = Array.from(document.querySelectorAll('.enchant-box:not(.transparent) .items-wrapper'));
         const leftBoxes = Array.from(document.querySelectorAll('#left-container .enchant-box:not(.transparent)'));
         const rightBoxes = Array.from(document.querySelectorAll('#right-container .enchant-box:not(.transparent)'));
+        const cardTooltip = document.getElementById('card-tooltip');
 
+        let allItemsData = []; // To store all items for tooltip
 
         async function fetchSheetData(type) {
             const response = await fetch(`/.netlify/functions/sheets?sheetName=카드가격&filterColumn=2&filterValue=${encodeURIComponent(type)}`);
@@ -83,9 +89,9 @@
                     price: price
                 })));
                 
-                const itemsWithPrices = await Promise.all(pricePromises);
+                allItemsData = await Promise.all(pricePromises); // Store all items
 
-                const groupedByBox = itemsWithPrices.reduce((acc, item) => {
+                const groupedByBox = allItemsData.reduce((acc, item) => {
                     if (!acc[item.boxIndex]) acc[item.boxIndex] = [];
                     acc[item.boxIndex].push(item);
                     return acc;
@@ -128,6 +134,11 @@
                         items.forEach(item => {
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'card-item';
+                            // Add data attributes for tooltip lookup
+                            itemDiv.dataset.boxIndex = item.boxIndex;
+                            itemDiv.dataset.priority = item.priority;
+                            itemDiv.dataset.name = item.name; // Store name for exact match
+
                             const priceString = item.price === Infinity ? '매물 없음' : `${item.price.toLocaleString()} 골드`;
                             const imageTag = item.image ? `<img src="images/${item.image}" alt="${item.name}">` : '';
 
@@ -149,6 +160,55 @@
 
         dealerBtn.addEventListener('click', () => fetchDataAndRender('딜러'));
         bufferBtn.addEventListener('click', () => fetchDataAndRender('버퍼'));
+
+        // --- Tooltip Logic ---
+        function showTooltip(event) {
+            const hoveredItem = event.currentTarget;
+            const boxIndex = hoveredItem.dataset.boxIndex;
+            const priority = hoveredItem.dataset.priority;
+            const currentItemName = hoveredItem.dataset.name;
+
+            const relatedItems = allItemsData.filter(item => 
+                item.boxIndex === boxIndex && 
+                item.priority === priority && 
+                item.name !== currentItemName // Exclude the hovered item itself
+            );
+
+            if (relatedItems.length > 0) {
+                let tooltipContent = '<h4>다른 매물</h4>';
+                relatedItems.sort((a, b) => a.price - b.price); // Sort by price for display
+                relatedItems.forEach(item => {
+                    const priceString = item.price === Infinity ? '매물 없음' : `${item.price.toLocaleString()} 골드`;
+                    tooltipContent += `<p>${item.name}: ${priceString}</p>`;
+                });
+                cardTooltip.innerHTML = tooltipContent;
+                cardTooltip.classList.remove('hidden');
+
+                // Position the tooltip
+                const rect = hoveredItem.getBoundingClientRect();
+                cardTooltip.style.left = `${rect.right + 10}px`;
+                cardTooltip.style.top = `${rect.top}px`;
+            } else {
+                cardTooltip.classList.add('hidden');
+            }
+        }
+
+        function hideTooltip() {
+            cardTooltip.classList.add('hidden');
+        }
+
+        // Attach event listeners after items are rendered
+        mainContainer.addEventListener('mouseover', (event) => {
+            if (event.target.closest('.card-item')) {
+                showTooltip(event);
+            }
+        });
+        mainContainer.addEventListener('mouseout', (event) => {
+            if (event.target.closest('.card-item')) {
+                hideTooltip();
+            }
+        });
+
     </script>
 </body>
 </html>
