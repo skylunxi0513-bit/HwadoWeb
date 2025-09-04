@@ -53,8 +53,8 @@ exports.handler = async function(event, context) {
     let filteredData = dataRows;
     if (filterColumnIndex !== null && filterValue !== null) {
       filteredData = dataRows.filter(row => {
-        // filterColumnIndex가 유효하고, 해당 열의 값이 filterValue와 일치하는 경우
-        return row[filterColumnIndex] !== undefined && row[filterColumnIndex] === filterValue;
+        // filterColumnIndex가 유효하고, 해당 열의 값이 filterValue와 일치하는 경우 (공백 제거 및 대소문자 무시)
+        return row[filterColumnIndex] !== undefined && row[filterColumnIndex].trim().toLowerCase() === filterValue.trim().toLowerCase();
       });
     }
 

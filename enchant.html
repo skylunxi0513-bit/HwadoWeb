@@ -48,7 +48,7 @@
         const allBoxes = [...leftBoxes, ...rightBoxes];
 
         async function fetchSheetData(type) {
-            const response = await fetch(`/.netlify/functions/sheets?sheetName=카드가격&filterColumn=3&filterValue=${encodeURIComponent(type)}`);
+            const response = await fetch(`/.netlify/functions/sheets?sheetName=카드가격&filterColumn=2&filterValue=${encodeURIComponent(type)}`);
             if (!response.ok) throw new Error(`Sheets API Error: ${response.status}`);
             const result = await response.json();
             if (result.error) throw new Error(result.error);
