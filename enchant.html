@@ -161,18 +161,26 @@
         dealerBtn.addEventListener('click', () => fetchDataAndRender('딜러'));
         bufferBtn.addEventListener('click', () => fetchDataAndRender('버퍼'));
 
+        fetchDataAndRender('딜러'); // Auto-load dealer data on page load
+
         // --- Tooltip Logic ---
         function showTooltip(event) {
+            console.log('showTooltip triggered');
             const hoveredItem = event.currentTarget;
             const boxIndex = hoveredItem.dataset.boxIndex;
             const priority = hoveredItem.dataset.priority;
             const currentItemName = hoveredItem.dataset.name;
+
+            console.log('showTooltip triggered for:', currentItemName);
+            console.log('allItemsData:', allItemsData);
 
             const relatedItems = allItemsData.filter(item => 
                 item.boxIndex === boxIndex && 
                 item.priority === priority && 
                 item.name !== currentItemName // Exclude the hovered item itself
             );
+
+            console.log('Related items found:', relatedItems);
 
             if (relatedItems.length > 0) {
                 let tooltipContent = '<h4>다른 매물</h4>';
@@ -184,16 +192,21 @@
                 cardTooltip.innerHTML = tooltipContent;
                 cardTooltip.classList.remove('hidden');
 
+                console.log('Tooltip content:', tooltipContent);
+
                 // Position the tooltip
                 const rect = hoveredItem.getBoundingClientRect();
                 cardTooltip.style.left = `${rect.right + 10}px`;
                 cardTooltip.style.top = `${rect.top}px`;
+                console.log('Tooltip position:', cardTooltip.style.left, cardTooltip.style.top);
             } else {
                 cardTooltip.classList.add('hidden');
+                console.log('No related items found, hiding tooltip.');
             }
         }
 
         function hideTooltip() {
+            console.log('hideTooltip triggered');
             cardTooltip.classList.add('hidden');
         }
 
