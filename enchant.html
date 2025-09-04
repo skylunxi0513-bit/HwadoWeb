@@ -82,10 +82,10 @@
                 const sheetRows = await fetchSheetData(type);
 
                 const pricePromises = sheetRows.map(row => fetchPrice(row[3]).then(price => ({
-                    boxIndex: row[0],
-                    priority: parseInt(row[1], 10),
-                    name: row[3],
-                    image: row[4],
+                    boxIndex: parseInt(row[0], 10) || 0,
+                    priority: parseInt(row[1], 10) || 0,
+                    name: row[3] || '',
+                    image: row[4] || '',
                     price: price
                 })));
                 
