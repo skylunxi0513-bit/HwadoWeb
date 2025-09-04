@@ -234,7 +234,7 @@ select, input[type="number"] {
     gap: 10px;
     border: 1px solid #ddd;
     padding: 15px;
-    width: 380px; /* Increased width */
+    width: 570px; /* Increased width */
     background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.05);
