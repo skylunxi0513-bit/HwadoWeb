@@ -6,21 +6,56 @@
     <title>화도웹</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background-color: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; text-align: center; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-header h2 { margin: 0; flex-grow: 1; text-align: center; }
-        .modal-header a button { padding: 5px 10px; font-size: 14px; width: auto; }
-        .modal-header .spacer { width: 50px; /* To balance the header */ }
-        .modal-content input { width: calc(100% - 20px); padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; }
-        .modal-content .warning { font-size: 12px; color: #777; margin-top: 10px; margin-bottom: 20px; text-align: left; }
-        .modal-content .confirm-btn { width: 100%; padding: 10px; }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .modal-content h2 {
+            margin-top: 0;
+        }
+        .modal-content input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .modal-content .warning {
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
-    <a href="index.html" class="header-link"><h1>화도웹</h1></a>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
     <h2 class="game-subtitle">던전앤파이터</h2>
     <div class="separator"></div>
+
     <div class="main-buttons-container">
         <a href="hell.html"><button><img src="images/hell.webp" alt="헬 계산기 아이콘">헬 계산기</button></a>
         <a href="card.html"><button><img src="images/card.webp" alt="확률템 손익 계산기 아이콘">확률템 손익 계산기</button></a>
@@ -31,8 +66,10 @@
         <a href="coin.html"><button><img src="images/coin.png" alt="세라/골드 계산기 아이콘">세라/골드 계산기</button></a>
         <a href="/upgrade.html" id="upgrade-link"><button><img src="images/upgrade.png" alt="강화/증폭 시뮬레이터 아이콘">강화/증폭 시뮬레이터</button></a>
     </div>
+
     <h2 class="game-subtitle">리썰 컴퍼니</h2>
     <div class="separator"></div>
+
     <div class="main-buttons-container">
         <a href="thunder.html"><button><img src="images/scrap.png" alt="폐품 아이콘">폐품</button></a>
         <a href="map.html"><button><img src="images/map.png" alt="지도 아이콘">지도</button></a>
@@ -41,15 +78,11 @@
     <!-- Modal -->
     <div class="modal-overlay" id="auth-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <a href="upgrade/statistics.html"><button>통계</button></a>
-                <h2>시뮬레이터 접속</h2>
-                <div class="spacer"></div>
-            </div>
+            <h2>시뮬레이터 접속</h2>
             <input type="text" id="nickname-input" placeholder="닉네임">
             <input type="password" id="password-input" placeholder="비밀번호">
             <p class="warning">※비밀번호는 랭킹 등록용이며 관리자에게 문의하십시오. 비밀번호를 입력하지 않은 경우에도 시뮬레이터는 사용할 수 있으나, 랭킹 등록은 지원되지 않습니다.</p>
-            <button id="modal-confirm-btn" class="confirm-btn">확인</button>
+            <button id="modal-confirm-btn">확인</button>
         </div>
     </div>
 
@@ -61,9 +94,9 @@
         const passwordInput = document.getElementById('password-input');
 
         upgradeLink.addEventListener('click', function(event) {
-            event.preventDefault();
-            authModal.style.display = 'flex';
-            nicknameInput.focus();
+            event.preventDefault(); // Stop navigation
+            authModal.style.display = 'flex'; // Show modal
+            nicknameInput.focus(); // Focus on the nickname input
         });
 
         function handleModalSubmit() {
@@ -87,6 +120,7 @@
 
         modalConfirmBtn.addEventListener('click', handleModalSubmit);
 
+        // Add Enter key listener
         function handleEnterKey(event) {
             if (event.key === 'Enter') {
                 handleModalSubmit();
