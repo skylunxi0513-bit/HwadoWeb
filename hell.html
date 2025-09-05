@@ -5,6 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>헬 계산기 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* New styles for the calculator layout */
+        .calc-section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+            text-align: center;
+        }
+        .calc-section-grid .label {
+            font-weight: bold;
+        }
+        .calc-section-grid .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .calc-section-grid .pass-value {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .input-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto;
+            gap: 5px 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .input-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .input-item .grade-label {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+            font-weight: bold;
+            text-align: left;
+        }
+        .input-item .expectation-value {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            text-align: right;
+        }
+        .input-item .input-controls {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            display: flex;
+            align-items: center;
+        }
+        .input-item .comparison-value {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            text-align: right;
+        }
+        .input-item .pm-btn {
+            width: 30px;
+            height: 30px;
+            font-size: 18px;
+            padding: 0;
+            line-height: 30px;
+            text-align: center;
+        }
+        .input-item input[type="number"] {
+            width: 60px;
+            text-align: center;
+            margin: 0 5px;
+        }
+    </style>
 </head>
 <body>
     <a href="index.html" class="header-link">
@@ -33,35 +105,57 @@
             </div>
         </div>
 
-        <div class="calc-section">
-            <div style="text-align: center;"><label>캐릭 당 헬 판수</label></div>
-            <div id="runs-per-char-display">20</div>
+        <div class="calc-section calc-section-grid">
+            <div>
+                <div class="label">캐릭 당 헬 판수</div>
+                <div id="runs-per-char-display" class="value">20</div>
+            </div>
+            <div>
+                <div class="label">캐릭 당 요구 계시</div>
+                <div id="revelation-display" class="value">0 <span id="pass-display" class="pass-value">(패스 0)</span></div>
+            </div>
         </div>
 
         <div class="calc-section">
-            <div class="inputs-grid">
-                <!-- Character Count Input -->
-                <label for="char-count">현재 돈 캐릭터 수</label>
-                <input type="number" id="char-count" value="0" min="0">
-                <div></div> <!-- Empty div for alignment -->
-                <div></div> <!-- Empty div for alignment -->
+            <div class="input-item">
+                <div class="grade-label">현재 돈 캐릭터 수</div>
+                <div class="input-controls">
+                    <button class="pm-btn" data-target="char-count" data-op="-1">-</button>
+                    <input type="number" id="char-count" value="0" min="0">
+                    <button class="pm-btn" data-target="char-count" data-op="1">+</button>
+                </div>
+            </div>
 
-                <!-- Legendary Row -->
-                <div>레전더리</div>
+            <div class="input-item">
+                <div class="grade-label">레전더리</div>
                 <div id="legendary-exp" class="expectation-value">0</div>
-                <input type="number" id="current-legendary" value="0" min="0">
+                <div class="input-controls">
+                    <button class="pm-btn" data-target="current-legendary" data-op="-1">-</button>
+                    <input type="number" id="current-legendary" value="0" min="0">
+                    <button class="pm-btn" data-target="current-legendary" data-op="1">+</button>
+                </div>
                 <div id="legendary-comp" class="comparison-value"></div>
+            </div>
 
-                <!-- Epic Row -->
-                <div>에픽</div>
+            <div class="input-item">
+                <div class="grade-label">에픽</div>
                 <div id="epic-exp" class="expectation-value">0</div>
-                <input type="number" id="current-epic" value="0" min="0">
+                <div class="input-controls">
+                    <button class="pm-btn" data-target="current-epic" data-op="-1">-</button>
+                    <input type="number" id="current-epic" value="0" min="0">
+                    <button class="pm-btn" data-target="current-epic" data-op="1">+</button>
+                </div>
                 <div id="epic-comp" class="comparison-value"></div>
+            </div>
 
-                <!-- Primal Row -->
-                <div>태초</div>
+            <div class="input-item">
+                <div class="grade-label">태초</div>
                 <div id="primal-exp" class="expectation-value">0</div>
-                <input type="number" id="current-primal" value="0" min="0">
+                <div class="input-controls">
+                    <button class="pm-btn" data-target="current-primal" data-op="-1">-</button>
+                    <input type="number" id="current-primal" value="0" min="0">
+                    <button class="pm-btn" data-target="current-primal" data-op="1">+</button>
+                </div>
                 <div id="primal-comp" class="comparison-value"></div>
             </div>
         </div>
@@ -74,6 +168,8 @@
         const weekendCheck = document.getElementById('weekend');
         const gazeSelect = document.getElementById('gaze');
         const runsDisplay = document.getElementById('runs-per-char-display');
+        const revelationDisplay = document.getElementById('revelation-display');
+        const passDisplay = document.getElementById('pass-display');
         const charCountInput = document.getElementById('char-count');
 
         const currentLegendaryInput = document.getElementById('current-legendary');
@@ -87,6 +183,7 @@
         const legendaryCompDisplay = document.getElementById('legendary-comp');
         const epicCompDisplay = document.getElementById('epic-comp');
         const primalCompDisplay = document.getElementById('primal-comp');
+        const plusMinusButtons = document.querySelectorAll('.pm-btn');
 
         // --- Constants ---
         const EXP_LEGENDARY = 0.03649;
@@ -95,14 +192,14 @@
 
         // --- Main Calculation Function ---
         function calculateAndDisplay() {
-            // 1. Calculate Runs Per Character (Reworked Logic)
+            // 1. Calculate Runs Per Character
             let baseRuns = 156;
             if (pcRoomCheck.checked) baseRuns += 78;
             if (weekendCheck.checked) baseRuns += 20;
 
             let runsPerChar = Math.ceil(baseRuns / 8);
 
-            if (potionCheck.checked) runsPerChar += 4; // 영약은 최종 값에 더함
+            if (potionCheck.checked) runsPerChar += 4;
 
             switch (gazeSelect.value) {
                 case 'first': runsPerChar -= 4; break;
@@ -111,7 +208,13 @@
             }
             runsDisplay.innerHTML = runsPerChar;
 
-            // 2. Calculate Expectations
+            // 2. Calculate Required Revelations
+            const n = pcRoomCheck.checked ? 20 : 22;
+            const requiredRevelations = runsPerChar * n;
+            const passValue = runsPerChar * (n - 2);
+            revelationDisplay.innerHTML = `${requiredRevelations} <span class="pass-value">(패스 ${passValue})</span>`;
+
+            // 3. Calculate Expectations
             const charCount = parseInt(charCountInput.value) || 0;
             const totalRuns = charCount * runsPerChar;
 
@@ -123,7 +226,7 @@
             epicExpDisplay.innerHTML = epicExp.toFixed(2);
             primalExpDisplay.innerHTML = primalExp.toFixed(3);
 
-            // 3. Calculate Comparison
+            // 4. Calculate Comparison
             const currentLegendary = parseInt(currentLegendaryInput.value) || 0;
             const currentEpic = parseInt(currentEpicInput.value) || 0;
             const currentPrimal = parseInt(currentPrimalInput.value) || 0;
@@ -134,7 +237,7 @@
                     displayElement.innerHTML = `+${diff.toFixed(2)}`;
                     displayElement.className = 'comparison-value comparison-plus';
                 } else {
-                    displayElement.innerHTML = `${diff.toFixed(2)}`; // Already has minus sign
+                    displayElement.innerHTML = `${diff.toFixed(2)}`;
                     displayElement.className = 'comparison-value comparison-minus';
                 }
             }
@@ -151,7 +254,17 @@
         ];
         allInputs.forEach(input => {
             input.addEventListener('change', calculateAndDisplay);
-            input.addEventListener('input', calculateAndDisplay); // For number input
+            input.addEventListener('input', calculateAndDisplay);
+        });
+
+        plusMinusButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetInput = document.getElementById(button.dataset.target);
+                const operation = parseInt(button.dataset.op);
+                let currentValue = parseInt(targetInput.value) || 0;
+                targetInput.value = Math.max(0, currentValue + operation); // Prevent negative numbers
+                calculateAndDisplay();
+            });
         });
 
         // --- Initial Setup ---
