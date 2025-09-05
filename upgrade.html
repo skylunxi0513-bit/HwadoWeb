@@ -32,19 +32,31 @@
             justify-content: center;
             background-color: #f9f9f9;
         }
+        .image-box img {
+            max-width: 100%;
+            max-height: 100%;
+        }
         .level-display {
             font-size: 48px;
             font-weight: bold;
             color: #007bff;
             margin-bottom: 20px;
         }
-        .probability-display {
+        .level-display.destroyed {
+            color: #888;
+        }
+        .info-grid {
+            display: flex;
+            justify-content: space-between;
             text-align: left;
             margin-bottom: 20px;
-            padding: 0 20px;
+            padding: 0 10px;
         }
-        .probability-display p {
+        .probability-display p, .current-cost-display p {
             margin: 5px 0;
+        }
+        .current-cost-display {
+            text-align: right;
         }
         .action-button {
             width: 100%;
@@ -52,9 +64,11 @@
             font-size: 20px;
             margin-bottom: 20px;
         }
-        .cost-display {
+        .cumulative-cost-display {
             font-size: 16px;
             color: #555;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
         }
     </style>
 </head>
@@ -66,30 +80,181 @@
     <div class="simulator-container">
         <div class="mode-selector">
             <button id="refine-btn">강화</button>
-            <button id="amplify-btn">증폭</button>
+            <button id="amplify-btn" disabled>증폭</button>
         </div>
 
-        <div class="image-box">
-            <!-- 이미지가 여기에 들어갑니다 -->
+        <div class="image-box" id="image-box">
+            <img id="item-image" src="" alt="아이템 이미지">
         </div>
 
-        <div class="level-display">
-            +0
+        <div class="level-display" id="level-display">+0</div>
+
+        <div class="info-grid">
+            <div class="probability-display">
+                <p>성공 확률: <span id="success-chance">-</span>%</p>
+                <p>실패 확률: <span id="failure-chance">-</span>%</p>
+                <p>파괴 확률: <span id="destroy-chance">-</span>%</p>
+            </div>
+            <div class="current-cost-display">
+                <p><span id="current-gold-cost">-</span> 골드</p>
+                <p>모순의 결정체 * <span id="current-crystal-cost">-</span></p>
+            </div>
         </div>
 
-        <div class="probability-display">
-            <p>성공 확률:</p>
-            <p>실패 확률:</p>
-            <p>파괴 확률:</p>
-        </div>
+        <button class="action-button" id="action-button">강화</button>
 
-        <button class="action-button">강화</button>
-
-        <div class="cost-display">
-            <p>000,000 골드</p>
-            <p>모순의 결정체 * 0</p>
+        <div class="cumulative-cost-display">
+            <p>누적 소모 골드: <span id="total-gold-cost">0</span></p>
+            <p>누적 소모 모순: <span id="total-crystal-cost">0</span></p>
         </div>
     </div>
 
+    <script>
+        // --- STATE ---
+        let currentLevel = 0;
+        let totalGold = 0;
+        let totalCrystals = 0; // For future use
+        let isDestroyed = false;
+        let refineData = [];
+
+        // --- DOM Elements ---
+        const levelDisplay = document.getElementById('level-display');
+        const itemImage = document.getElementById('item-image');
+        const imageBox = document.getElementById('image-box');
+        const actionButton = document.getElementById('action-button');
+        
+        const successChanceEl = document.getElementById('success-chance');
+        const failureChanceEl = document.getElementById('failure-chance');
+        const destroyChanceEl = document.getElementById('destroy-chance');
+
+        const currentGoldCostEl = document.getElementById('current-gold-cost');
+        const currentCrystalCostEl = document.getElementById('current-crystal-cost');
+
+        const totalGoldCostEl = document.getElementById('total-gold-cost');
+        const totalCrystalCostEl = document.getElementById('total-crystal-cost');
+
+        // --- LOGIC ---
+        function getImagePath(level) {
+            if (level >= 0 && level <= 4) return '0004.png';
+            if (level >= 5 && level <= 9) return '0509.png';
+            if (level >= 10 && level <= 12) return '1012.png';
+            if (level === 13) return '1313.png';
+            if (level === 14) return '1414.png';
+            if (level === 15) return '1515.png';
+            if (level === 16) return '1616.png';
+            if (level === 17) return '1717.png';
+            return '0004.png'; // Default/fallback
+        }
+
+        function updateUI() {
+            if (isDestroyed) {
+                levelDisplay.textContent = 'DESTROYED';
+                levelDisplay.classList.add('destroyed');
+                imageBox.style.display = 'none';
+                actionButton.textContent = '재시도';
+                successChanceEl.textContent = '-';
+                failureChanceEl.textContent = '-';
+                destroyChanceEl.textContent = '-';
+                currentGoldCostEl.textContent = '-';
+                currentCrystalCostEl.textContent = '-';
+                return;
+            }
+
+            // Reset styles if not destroyed
+            levelDisplay.classList.remove('destroyed');
+            imageBox.style.display = 'flex';
+            actionButton.textContent = '강화';
+
+            levelDisplay.textContent = `+${currentLevel}`;
+            itemImage.src = `images/upgrade/01/${getImagePath(currentLevel)}`;
+
+            const data = refineData.find(row => parseInt(row[0]) === currentLevel);
+            if (data) {
+                const success = parseFloat(data[1] || 0);
+                const cost = parseInt(data[2] || 0);
+                const penalty = parseInt(data[3] || 0);
+
+                const isDestructible = penalty === -100;
+                const failure = 100 - success;
+
+                successChanceEl.textContent = success.toFixed(2);
+                failureChanceEl.textContent = isDestructible ? '0.00' : failure.toFixed(2);
+                destroyChanceEl.textContent = isDestructible ? failure.toFixed(2) : '0.00';
+                currentGoldCostEl.textContent = cost.toLocaleString();
+                currentCrystalCostEl.textContent = 0; // Not used in refinement
+            } else {
+                 // Handle max level or no data
+                successChanceEl.textContent = '0.00';
+                failureChanceEl.textContent = '0.00';
+                destroyChanceEl.textContent = '0.00';
+                currentGoldCostEl.textContent = '-';
+                actionButton.disabled = true;
+            }
+
+            totalGoldCostEl.textContent = totalGold.toLocaleString();
+            totalCrystalCostEl.textContent = totalCrystals.toLocaleString();
+        }
+
+        function handleRefine() {
+            if (isDestroyed) {
+                resetSimulator();
+                return;
+            }
+
+            const data = refineData.find(row => parseInt(row[0]) === currentLevel);
+            if (!data) return; // No more upgrades
+
+            const successChance = parseFloat(data[1] || 0);
+            const cost = parseInt(data[2] || 0);
+            const penalty = parseInt(data[3] || 0);
+
+            totalGold += cost;
+
+            const roll = Math.random() * 100;
+
+            if (roll < successChance) {
+                // Success
+                currentLevel++;
+            } else {
+                // Failure
+                if (penalty === -100) {
+                    isDestroyed = true;
+                } else {
+                    currentLevel = Math.max(0, currentLevel - penalty);
+                }
+            }
+            updateUI();
+        }
+
+        function resetSimulator() {
+            currentLevel = 0;
+            totalGold = 0;
+            totalCrystals = 0;
+            isDestroyed = false;
+            actionButton.disabled = false;
+            updateUI();
+        }
+
+        async function initialize() {
+            try {
+                const response = await fetch(`/.netlify/functions/sheets?sheetName=강화확률`);
+                if (!response.ok) throw new Error(`Sheets API Error`);
+                const result = await response.json();
+                if (result.error) throw new Error(result.error);
+                refineData = result.data; // Assumes data is already sliced on server
+                resetSimulator();
+            } catch (error) {
+                console.error("Failed to load spreadsheet data:", error);
+                levelDisplay.textContent = "오류";
+            }
+        }
+
+        // --- Event Listeners ---
+        actionButton.addEventListener('click', handleRefine);
+
+        // --- Initial Load ---
+        initialize();
+
+    </script>
 </body>
 </html>
