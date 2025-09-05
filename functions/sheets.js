@@ -31,7 +31,7 @@ exports.handler = async function(event, context) {
     const filterValue = event.queryStringParameters.filterValue || null;
 
     // 4. 스프레드시트 데이터 읽기
-    const range = `${sheetName}!A:E`; // A열부터 E열까지 읽기
+    const range = `${sheetName}!A:F`; // A열부터 F열까지 읽기
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range,
