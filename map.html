@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지도 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #map-selector-container {
+            margin: 20px 0;
+        }
+        #mapSelector {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        #image-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #mapImage {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+
+    <div id="map-selector-container">
+        <select id="mapSelector">
+            <option value="Experimentation">익스페리멘테이션</option>
+            <option value="Assurance">어슈어런스</option>
+            <option value="Vow">보우</option>
+            <option value="Offense">오펜스</option>
+            <option value="March">머치</option>
+            <option value="Adamance">애더먼스</option>
+            <option value="Rend">렌드</option>
+            <option value="Dine">다인</option>
+            <option value="Titan">타이탄</option>
+            <option value="Embrion">엠브리언</option>
+            <option value="Artifice">아터피스</option>
+        </select>
+    </div>
+
+    <div id="image-container">
+        <img id="mapImage" src="images/map/Experimentation.png" alt="지도 이미지">
+    </div>
+
+    <script>
+        const mapSelector = document.getElementById('mapSelector');
+        const mapImage = document.getElementById('mapImage');
+        const imageBaseUrl = 'images/map/';
+
+        mapSelector.addEventListener('change', (event) => {
+            const selectedMap = event.target.value;
+            mapImage.src = `${imageBaseUrl}${selectedMap}.png`;
+            mapImage.alt = `${selectedMap} 지도 이미지`;
+        });
+    </script>
+
+</body>
+</html>
