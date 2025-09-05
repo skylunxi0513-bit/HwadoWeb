@@ -353,3 +353,16 @@ select, input[type="number"] {
     margin-top: 30px;
     margin-bottom: 10px;
 }
+
+.simulator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.simulator-header .stats-link button {
+    padding: 5px 10px;
+    font-size: 14px;
+    width: auto;
+}
