@@ -79,13 +79,16 @@
                 
                 // Process and store data in a structured way
                 originalData = result.data.map(row => {
-                    const priceMin = parseInt(row[1], 10) || 0;
-                    const priceMax = parseInt(row[2], 10) || 0;
+                    const priceMinStr = row[1] || '?';
+                    const priceMaxStr = row[2] || '?';
+                    const priceMinNum = parseInt(priceMinStr, 10) || 0;
+                    const priceMaxNum = parseInt(priceMaxStr, 10) || 0;
+
                     return {
                         name: row[0] || '',
-                        priceMin: priceMin,
-                        priceMax: priceMax,
-                        priceAvg: (priceMin + priceMax) / 2,
+                        priceMin: priceMinStr,
+                        priceMax: priceMaxStr,
+                        priceAvg: (priceMinNum + priceMaxNum) / 2,
                         weight: parseInt(row[3], 10) || 0,
                         conductive: row[4] === '1' ? 'O' : 'X',
                         twoHanded: row[5] === '1' ? 'O' : 'X',
@@ -148,7 +151,7 @@
                     case 'twoHanded':
                         valA = a[column] === 'O' ? 0 : 1;
                         valB = b[column] === 'O' ? 0 : 1;
-                        return valA - valB;
+                        return valA - b[column] === 'O' ? 0 : 1;
                     default:
                         return 0;
                 }
