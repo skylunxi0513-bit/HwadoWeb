@@ -102,7 +102,6 @@
             margin-bottom: 5px;
             display: none; /* Hidden by default */
         }
-        #user-tooltip.hidden { display: none; }
         #user-tooltip h4 {
             margin: 0 0 8px 0;
             font-size: 14px;
@@ -110,7 +109,7 @@
             border-bottom: 1px solid #555;
             padding-bottom: 5px;
         }
-        #user-tooltip p { margin: 0; font-size: 12px; }
+        #user-tooltip p { margin: 4px 0; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -163,7 +162,7 @@
         let currentLevel = 0, totalGold = 0, isDestroyed = false;
         let refineData = [], levelData = [];
         let bonusChances = {};
-        let currentUser = '비회원', userLevel = 0, currentXp = 0, nextLevelXp = 0, userPerk = '혜택 없음';
+        let currentUser = '비회원', userLevel = 1, currentXp = 0, nextLevelXp = 0, userPerk = '혜택 없음', nextUserPerk = '혜택 없음';
         let hasUnlockedSecret = false, secretCostPaid = false;
 
         // --- DOM Elements ---
@@ -207,7 +206,7 @@
 
         function updateUserDisplay() {
             dom.username.innerHTML = `${currentUser}(Lv.${userLevel})`;
-            dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${userPerk}</p><p>(${currentXp}/${nextLevelXp} XP)</p>`;
+            dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${userPerk}</p><h4>다음 레벨 혜택</h4><p>${nextUserPerk}</p><hr><p>(${currentXp.toLocaleString()}/${nextLevelXp.toLocaleString()} XP)</p>`;
         }
 
         function updateUI() {
@@ -267,7 +266,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nickname: currentUser, level: currentLevel, gold: totalGold, password: '0305' })
                 });
-                // After submitting, refresh profile to get new XP and Level
                 await fetchUserProfile(); 
             } catch (error) {
                 console.error('Rank submission error:', error);
@@ -275,24 +273,33 @@
         }
 
         function recalculateLevelForGuest() {
-            let newLevelInfo = { currentLevel: 0, perk: '혜택 없음', nextLevelXp: 0 };
-            let tempXp = currentXp;
+            let newLevel = 1, newPerk = '혜택 없음', newNextPerk = '혜택 없음', newNextXp = 0;
+            if (levelData.length > 0) {
+                newPerk = levelData[0][2] || '혜택 없음';
+                newNextXp = parseInt(levelData[0][1]) || 1;
+                if (levelData.length > 1) newNextPerk = levelData[1][2] || '혜택 없음';
+            }
 
             for (let i = 0; i < levelData.length; i++) {
                 const level = parseInt(levelData[i][0]);
                 const requiredXp = parseInt(levelData[i][1]);
-                if (tempXp >= requiredXp) {
-                    newLevelInfo.currentLevel = level;
-                    newLevelInfo.perk = levelData[i][2] || '혜택 없음';
+                if (currentXp >= requiredXp) {
+                    newLevel = level;
+                    newPerk = levelData[i][2] || '혜택 없음';
+                    if (i + 1 < levelData.length) {
+                        newNextXp = parseInt(levelData[i+1][1]);
+                        newNextPerk = levelData[i+1][2] || '혜택 없음';
+                    } else {
+                        newNextXp = requiredXp;
+                        newNextPerk = '최고 레벨';
+                    }
                 } else {
-                    newLevelInfo.nextLevelXp = requiredXp;
+                    newNextXp = requiredXp;
+                    newNextPerk = levelData[i][2] || '혜택 없음';
                     break;
                 }
-                if (i === levelData.length - 1) newLevelInfo.nextLevelXp = requiredXp;
             }
-            userLevel = newLevelInfo.currentLevel;
-            userPerk = newLevelInfo.perk;
-            nextLevelXp = newLevelInfo.nextLevelXp;
+            userLevel = newLevel; userPerk = newPerk; nextUserPerk = newNextPerk; nextLevelXp = newNextXp;
             updateUserDisplay();
         }
 
@@ -344,16 +351,18 @@
 
         async function fetchUserProfile() {
             if (currentUser === '비회원') {
-                const levelInfo = levelData.length > 0 ? levelData[0] : [1, 0];
-                nextLevelXp = parseInt(levelInfo[1], 10);
-                updateUserDisplay();
+                recalculateLevelForGuest();
                 return;
             }
             try {
                 const res = await fetch(`/.netlify/functions/sheets?query=getUserProfile&nickname=${encodeURIComponent(currentUser)}`);
                 const data = await res.json();
-                userLevel = data.level; currentXp = data.currentXp; nextLevelXp = data.nextLevelXp; userPerk = data.perk;
-                if (userLevel > 0) hasUnlockedSecret = true; // Assumption: Any level unlocks it
+                userLevel = data.level || 1; 
+                currentXp = data.currentXp;
+                nextLevelXp = data.nextLevelXp;
+                userPerk = data.perk;
+                nextUserPerk = data.nextPerk;
+                if (userLevel > 1 || currentXp > 0) hasUnlockedSecret = true;
                 updateUserDisplay();
             } catch (e) { console.error('Could not fetch user profile:', e); }
         }
