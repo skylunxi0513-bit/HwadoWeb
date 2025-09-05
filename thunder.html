@@ -141,7 +141,7 @@
                         valB = b.name.toLowerCase();
                         return valA.localeCompare(valB);
                     case 'price':
-                        return a.priceAvg - b.priceAvg;
+                        return b.priceAvg - a.priceAvg;
                     case 'weight':
                         return b.weight - a.weight; // Default to descending for weight
                     case 'conductive':
