@@ -13,8 +13,125 @@
 
     <div class="container">
         <h2>통계 페이지</h2>
-        <p>여기에 통계 내용이 들어갈 예정입니다.</p>
-        <!-- 통계 데이터 및 그래프 등이 여기에 추가될 수 있습니다. -->
+        <div id="ranking-table-container">
+            <p>랭킹 데이터를 불러오는 중...</p>
+        </div>
     </div>
+
+    <script>
+        // Function to calculate experience based on level
+        function calculateExperience(level) {
+            if (level < 12) return 0;
+            return Math.pow(3, level - 12);
+        }
+
+        // Function to get level from cumulative experience
+        function getLevelFromXp(xp, levelData) {
+            let currentLevel = 1;
+            for (let i = 0; i < levelData.length; i++) {
+                const level = parseInt(levelData[i][0]);
+                const requiredXp = parseInt(levelData[i][1]);
+                if (xp >= requiredXp) {
+                    currentLevel = level;
+                } else {
+                    break;
+                }
+            }
+            return currentLevel;
+        }
+
+        async function fetchAndDisplayRanking() {
+            const rankingTableContainer = document.getElementById('ranking-table-container');
+            rankingTableContainer.innerHTML = '<p>랭킹 데이터를 불러오는 중...</p>';
+
+            try {
+                const [rankingRes, levelRes] = await Promise.all([
+                    fetch('/.netlify/functions/sheets?sheetName=강화랭킹'),
+                    fetch('/.netlify/functions/sheets?sheetName=레벨')
+                ]);
+
+                const rankingData = (await rankingRes.json()).data;
+                const levelData = (await levelRes.json()).data;
+
+                const usersMap = new Map(); // Map<nickname, { maxEnhance, totalGold, destructionCount, totalXp }>
+
+                rankingData.forEach(row => {
+                    const nickname = row[0];
+                    const enhanceLevel = parseInt(row[1]);
+                    const goldSpent = parseInt(row[2]);
+
+                    if (!usersMap.has(nickname)) {
+                        usersMap.set(nickname, {
+                            maxEnhance: 0,
+                            totalGold: 0,
+                            destructionCount: 0,
+                            totalXp: 0
+                        });
+                    }
+
+                    const userData = usersMap.get(nickname);
+                    userData.maxEnhance = Math.max(userData.maxEnhance, enhanceLevel);
+                    userData.totalGold += goldSpent;
+                    userData.destructionCount++;
+                    userData.totalXp += calculateExperience(enhanceLevel);
+                });
+
+                const rankedUsers = Array.from(usersMap.entries()).map(([nickname, data]) => {
+                    return {
+                        nickname: nickname,
+                        level: getLevelFromXp(data.totalXp, levelData),
+                        maxEnhance: data.maxEnhance,
+                        totalGold: data.totalGold,
+                        destructionCount: data.destructionCount,
+                        totalXp: data.totalXp
+                    };
+                });
+
+                // Sort by level (desc), then totalXp (desc), then maxEnhance (desc)
+                rankedUsers.sort((a, b) => {
+                    if (b.level !== a.level) return b.level - a.level;
+                    if (b.totalXp !== a.totalXp) return b.totalXp - a.totalXp;
+                    return b.maxEnhance - a.maxEnhance;
+                });
+
+                // Create table
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>닉네임</th>
+                            <th>레벨</th>
+                            <th>최고 강화 단계</th>
+                            <th>누적 소모 골드</th>
+                            <th>누적 파괴 횟수</th>
+                            <th>누적 경험치</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                const tbody = table.querySelector('tbody');
+
+                rankedUsers.forEach(user => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = user.nickname;
+                    row.insertCell().textContent = user.level;
+                    row.insertCell().textContent = `+${user.maxEnhance}`;
+                    row.insertCell().textContent = `${(user.totalGold / 100000000).toFixed(2)}억`;
+                    row.insertCell().textContent = user.destructionCount;
+                    row.insertCell().textContent = user.totalXp.toLocaleString();
+                });
+
+                rankingTableContainer.innerHTML = ''; // Clear loading message
+                rankingTableContainer.appendChild(table);
+
+            } catch (error) {
+                console.error('Error fetching or processing ranking data:', error);
+                rankingTableContainer.innerHTML = '<p>랭킹 데이터를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.</p>';
+            }
+        }
+
+        // Call the function when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayRanking);
+    </script>
 </body>
 </html>
