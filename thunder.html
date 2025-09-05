@@ -151,7 +151,7 @@
                     case 'twoHanded':
                         valA = a[column] === 'O' ? 0 : 1;
                         valB = b[column] === 'O' ? 0 : 1;
-                        return valA - b[column] === 'O' ? 0 : 1;
+                        return valA - valB;
                     default:
                         return 0;
                 }
