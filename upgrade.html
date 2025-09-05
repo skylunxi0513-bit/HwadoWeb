@@ -31,7 +31,21 @@
         .cumulative-cost-display { font-size: 16px; color: #555; border-top: 1px solid #eee; padding-top: 15px; transition: all 0.2s ease-in-out; }
         .cumulative-cost-display.destroyed-style { font-size: 20px; font-weight: bold; }
 
-        #user-tooltip { position: absolute; background-color: #333; color: #fff; padding: 10px; border-radius: 5px; z-index: 1000; text-align: left; min-width: 250px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); bottom: 100%; right: 0; margin-bottom: 5px; display: none; }
+        #user-tooltip {
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            text-align: left;
+            min-width: 250px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            top: 100%; /* Changed from bottom */
+            right: 0;
+            margin-top: 5px; /* Changed from margin-bottom */
+            display: none; 
+        }
         #user-tooltip h4 { margin: 0 0 8px 0; font-size: 14px; color: #f0f0f0; border-bottom: 1px solid #555; padding-bottom: 5px; }
         #user-tooltip p { margin: 4px 0; font-size: 12px; }
     </style>
@@ -41,7 +55,7 @@
 
     <div class="simulator-container" id="simulator-container">
         <div class="user-display-container">
-            <div class="user-display" id="user-display">사용자: <span id="username-display"></span></div>
+            <div class="user-display" id="user-display-container">사용자: <span id="username-display"></span></div>
             <div id="user-tooltip"></div>
         </div>
 
@@ -89,14 +103,14 @@
         let state = { currentLevel: 0, totalGold: 0, isDestroyed: false, refineData: [], levelData: [], bonusChances: {}, safeBonusChances: {}, currentUser: '비회원', userLevel: 1, currentXp: 0, nextLevelXp: 0, userPerk: '혜택 없음', nextUserPerk: '혜택 없음', hasUnlockedSecret: false, secretCostPaid: false };
 
         // --- DOM Elements ---
-        const dom = { container: document.getElementById('simulator-container'), userDisplay: document.getElementById('user-display'), username: document.getElementById('username-display'), tooltip: document.getElementById('user-tooltip'), secretContainer: document.getElementById('secret-container'), secretCheckbox: document.getElementById('secret-checkbox'), level: document.getElementById('level-display'), image: document.getElementById('item-image'), imageBox: document.getElementById('image-box'), normalButton: document.getElementById('action-button-normal'), safeButton: document.getElementById('action-button-safe'), successChance: document.getElementById('success-chance'), failureChance: document.getElementById('failure-chance'), destroyChance: document.getElementById('destroy-chance'), currentGold: document.getElementById('current-gold-cost'), safeSuccessChance: document.getElementById('safe-success-chance'), safeFailureChance: document.getElementById('safe-failure-chance'), safeGold: document.getElementById('safe-gold-cost'), totalGold: document.getElementById('total-gold-cost'), cumulativeCost: document.getElementById('cumulative-cost-display'), safeInfo: document.getElementById('safe-refine-info') };
+        const dom = { container: document.getElementById('simulator-container'), userDisplayContainer: document.getElementById('user-display-container'), username: document.getElementById('username-display'), tooltip: document.getElementById('user-tooltip'), secretContainer: document.getElementById('secret-container'), secretCheckbox: document.getElementById('secret-checkbox'), level: document.getElementById('level-display'), image: document.getElementById('item-image'), imageBox: document.getElementById('image-box'), normalButton: document.getElementById('action-button-normal'), safeButton: document.getElementById('action-button-safe'), successChance: document.getElementById('success-chance'), failureChance: document.getElementById('failure-chance'), destroyChance: document.getElementById('destroy-chance'), currentGold: document.getElementById('current-gold-cost'), safeSuccessChance: document.getElementById('safe-success-chance'), safeFailureChance: document.getElementById('safe-failure-chance'), safeGold: document.getElementById('safe-gold-cost'), totalGold: document.getElementById('total-gold-cost'), cumulativeCost: document.getElementById('cumulative-cost-display'), safeInfo: document.getElementById('safe-refine-info') };
 
         // --- LOGIC ---
         const calculateXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
         const getImagePath = (level) => { if (level <= 4) return '0004.png'; if (level <= 9) return '0509.png'; if (level <= 12) return '1012.png'; if (level === 13) return '1313.png'; if (level === 14) return '1414.png'; if (level === 15) return '1515.png'; if (level === 16) return '1616.png'; return '1717.png'; };
         const flashEffect = (type) => { dom.container.classList.add(`${type}-flash`); setTimeout(() => dom.container.classList.remove(`${type}-flash`), 500); };
 
-        function updateUserDisplay() { dom.username.innerHTML = `${state.currentUser}(Lv.${state.userLevel})`; dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${state.userPerk}</p><h4>다음 레벨 혜택</h4><p>${state.nextUserPerk}</p><hr><p>(${state.currentXp.toLocaleString()}/${state.nextLevelXp.toLocaleString()} XP)</p>`; }
+        function updateUserDisplay() { dom.username.textContent = `${state.currentUser}(Lv.${state.userLevel})`; dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${state.userPerk}</p><h4>다음 레벨 혜택</h4><p>${state.nextUserPerk}</p><hr><p>(${state.currentXp.toLocaleString()}/${state.nextLevelXp.toLocaleString()} XP)</p>`; }
 
         function updateUI() {
             if (state.isDestroyed) {
@@ -110,13 +124,12 @@
             const data = state.refineData.find(row => parseInt(row[0]) === state.currentLevel);
             if (data) {
                 const secretBonus = dom.secretCheckbox.checked ? 1 : 0;
-                // Normal Refine UI
                 const baseSuccess = parseFloat(data[1] || 0), bonusSuccess = state.bonusChances[state.currentLevel] || 0, actualSuccess = baseSuccess + bonusSuccess + secretBonus, cost = parseInt(data[2] || 0), penalty = parseInt(data[3] || 0), isDestructible = penalty === -100, failure = 100 - Math.min(100, actualSuccess);
                 dom.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); dom.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); dom.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00'; dom.currentGold.textContent = cost.toLocaleString();
                 dom.normalButton.disabled = false;
-                // Safe Refine UI
+                
                 const safeCost = data[6] ? parseInt(data[6]) : null;
-                if (safeCost !== null) {
+                if (safeCost !== null && data[6].trim() !== '') {
                     const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = state.safeBonusChances[state.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess + secretBonus, safeFailure = 100 - Math.min(100, safeActualSuccess);
                     dom.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); dom.safeFailureChance.textContent = safeFailure.toFixed(2); dom.safeGold.textContent = safeCost.toLocaleString();
                     dom.safeInfo.style.visibility = 'visible'; dom.safeButton.style.display = 'block';
@@ -194,8 +207,8 @@
         dom.secretCheckbox.addEventListener('change', updateUI);
         dom.normalButton.addEventListener('click', () => handleRefine(false));
         dom.safeButton.addEventListener('click', () => handleRefine(true));
-        dom.userDisplay.addEventListener('mouseover', () => { dom.tooltip.style.display = 'block'; });
-        dom.userDisplay.addEventListener('mouseout', () => { dom.tooltip.style.display = 'none'; });
+        dom.userDisplayContainer.addEventListener('mouseover', () => { dom.tooltip.style.display = 'block'; });
+        dom.userDisplayContainer.addEventListener('mouseout', () => { dom.tooltip.style.display = 'none'; });
 
         initialize();
 

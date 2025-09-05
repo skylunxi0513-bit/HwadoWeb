@@ -108,7 +108,7 @@ exports.handler = async function(event, context) {
         return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required.' }) };
     }
 
-    const range = `${sheetName}!A:F`;
+    const range = `${sheetName}!A:I`;
     const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
 
     let rows = response.data.values || [];
