@@ -33,10 +33,14 @@
             color: #555;
         }
         .mode-selector {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .mode-selector button {
             width: 120px;
+        }
+        #secret-container {
+            margin-bottom: 20px;
+            display: none; /* Hidden by default */
         }
         .image-box {
             width: 100%;
@@ -110,6 +114,11 @@
             <button id="amplify-btn" disabled>증폭</button>
         </div>
 
+        <div id="secret-container">
+            <input type="checkbox" id="secret-checkbox">
+            <label for="secret-checkbox">강화의 비밀</label>
+        </div>
+
         <div class="image-box" id="image-box">
             <img id="item-image" src="" alt="아이템 이미지">
         </div>
@@ -142,10 +151,13 @@
         let refineData = [];
         let bonusChances = {};
         let currentUser = '비회원';
+        let hasUnlockedSecret = false;
 
         // --- DOM Elements ---
         const simulatorContainer = document.getElementById('simulator-container');
         const usernameDisplay = document.getElementById('username-display');
+        const secretContainer = document.getElementById('secret-container');
+        const secretCheckbox = document.getElementById('secret-checkbox');
         const levelDisplay = document.getElementById('level-display');
         const itemImage = document.getElementById('item-image');
         const imageBox = document.getElementById('image-box');
@@ -192,6 +204,10 @@
                 return;
             }
 
+            if (hasUnlockedSecret) {
+                secretContainer.style.display = 'block';
+            }
+
             cumulativeCostDisplay.classList.remove('destroyed-style');
             levelDisplay.classList.remove('destroyed');
             imageBox.style.display = 'flex';
@@ -204,7 +220,8 @@
             if (data) {
                 const baseSuccess = parseFloat(data[1] || 0);
                 const bonusSuccess = bonusChances[currentLevel] || 0;
-                const actualSuccess = baseSuccess + bonusSuccess;
+                const secretBonus = secretCheckbox.checked ? 1 : 0;
+                const actualSuccess = baseSuccess + bonusSuccess + secretBonus;
                 const cost = parseInt(data[2] || 0);
                 const penalty = parseInt(data[3] || 0);
                 const isDestructible = penalty === -100;
@@ -228,26 +245,14 @@
 
         async function submitRanking() {
             if (currentUser === '비회원') return;
-
             try {
-                const response = await fetch('/.netlify/functions/addRank', {
+                await fetch('/.netlify/functions/addRank', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        nickname: currentUser,
-                        level: currentLevel,
-                        gold: totalGold,
-                        password: '0305' // Shared password
-                    })
+                    body: JSON.stringify({ nickname: currentUser, level: currentLevel, gold: totalGold, password: '0305' })
                 });
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || '랭킹 등록에 실패했습니다.');
-                }
-                alert('랭킹이 등록되었습니다!');
             } catch (error) {
                 console.error('Rank submission error:', error);
-                alert(`랭킹 등록 오류: ${error.message}`);
             }
         }
 
@@ -262,7 +267,8 @@
 
             const baseSuccess = parseFloat(data[1] || 0);
             const bonusSuccess = bonusChances[currentLevel] || 0;
-            const actualSuccess = baseSuccess + bonusSuccess;
+            const secretBonus = secretCheckbox.checked ? 1 : 0;
+            const actualSuccess = baseSuccess + bonusSuccess + secretBonus;
             const cost = parseInt(data[2] || 0);
             const penalty = parseInt(data[3] || 0);
             const correctionChance = parseFloat(data[4] || 0);
@@ -278,8 +284,11 @@
             } else {
                 if (penalty === -100) {
                     flashEffect('destroyed');
+                    if (currentLevel >= 12) {
+                        hasUnlockedSecret = true;
+                    }
                     isDestroyed = true;
-                    submitRanking(); // Submit rank on destruction
+                    submitRanking();
                 } else {
                     flashEffect('failure');
                     bonusChances[currentLevel] = (bonusChances[currentLevel] || 0) + correctionChance;
@@ -302,6 +311,18 @@
             currentUser = sessionStorage.getItem('simulatorUser') || '비회원';
             usernameDisplay.textContent = currentUser;
 
+            if (currentUser !== '비회원') {
+                try {
+                    const res = await fetch(`/.netlify/functions/sheets?query=checkRank&nickname=${encodeURIComponent(currentUser)}`);
+                    const data = await res.json();
+                    if (data.unlocked) {
+                        hasUnlockedSecret = true;
+                    }
+                } catch (e) {
+                    console.error('Could not check rank:', e);
+                }
+            }
+
             try {
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=강화확률`);
                 if (!response.ok) throw new Error(`Sheets API Error`);
@@ -315,6 +336,7 @@
             }
         }
 
+        secretCheckbox.addEventListener('change', updateUI);
         actionButton.addEventListener('click', handleRefine);
 
         initialize();
