@@ -6,7 +6,6 @@
     <title>전도체 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Add some specific styles for this page */
         #search-container {
             margin: 20px 0;
         }
@@ -21,6 +20,17 @@
         .table-container {
             margin: 0 auto;
             max-width: 900px;
+        }
+        /* Fix for last-child alignment */
+        .table-container td {
+            text-align: left;
+        }
+        .table-container th {
+            cursor: pointer;
+            user-select: none; /* Prevent text selection on click */
+        }
+        .table-container th:hover {
+            background-color: #ddd;
         }
     </style>
 </head>
@@ -37,11 +47,11 @@
         <table>
             <thead>
                 <tr>
-                    <th>폐품명</th>
-                    <th>가격</th>
-                    <th>무게</th>
-                    <th>전도</th>
-                    <th>양손</th>
+                    <th data-column="name">폐품명</th>
+                    <th data-column="price">가격</th>
+                    <th data-column="weight">무게</th>
+                    <th data-column="conductive">전도</th>
+                    <th data-column="twoHanded">양손</th>
                 </tr>
             </thead>
             <tbody id="scrapTableBody">
@@ -53,23 +63,40 @@
     <script>
         const tableBody = document.getElementById('scrapTableBody');
         const searchInput = document.getElementById('searchInput');
+        const tableHeaders = document.querySelectorAll('.table-container th');
+
+        let originalData = [];
+        let displayedData = [];
+        let sortState = { column: null, direction: 'asc' };
 
         async function fetchScrapData() {
             tableBody.innerHTML = '<tr><td colspan="5">데이터를 불러오는 중...</td></tr>';
             try {
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=전도체`);
-                if (!response.ok) {
-                    throw new Error(`Sheets API Error: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Sheets API Error: ${response.status}`);
                 const result = await response.json();
-                if (result.error) {
-                    throw new Error(result.error);
-                }
-                return result.data;
+                if (result.error) throw new Error(result.error);
+                
+                // Process and store data in a structured way
+                originalData = result.data.map(row => {
+                    const priceMin = parseInt(row[1], 10) || 0;
+                    const priceMax = parseInt(row[2], 10) || 0;
+                    return {
+                        name: row[0] || '',
+                        priceMin: priceMin,
+                        priceMax: priceMax,
+                        priceAvg: (priceMin + priceMax) / 2,
+                        weight: parseInt(row[3], 10) || 0,
+                        conductive: row[4] === '1' ? 'O' : 'X',
+                        twoHanded: row[5] === '1' ? 'O' : 'X',
+                    };
+                });
+                displayedData = [...originalData];
+                renderTable(displayedData);
+
             } catch (error) {
                 console.error('Failed to fetch scrap data:', error);
                 tableBody.innerHTML = `<tr><td colspan="5">오류 발생: ${error.message}</td></tr>`;
-                return [];
             }
         }
 
@@ -79,52 +106,82 @@
                 return;
             }
 
-            let tableHtml = '';
-            // Skip header row from sheet, assuming it's row 0
-            for (let i = 0; i < data.length; i++) {
-                const row = data[i];
-                const scrapName = row[0] || '';
-                const priceMin = row[1] || 'N/A';
-                const priceMax = row[2] || 'N/A';
-                const price = `${priceMin}~${priceMax}`;
-                const weight = row[3] ? `${row[3]}lb` : 'N/A';
-                const isConductive = row[4] === '1' ? 'O' : 'X';
-                const isTwoHanded = row[5] === '1' ? 'O' : 'X';
-
-                tableHtml += `
-                    <tr>
-                        <td>${scrapName}</td>
-                        <td>${price}</td>
-                        <td>${weight}</td>
-                        <td>${isConductive}</td>
-                        <td>${isTwoHanded}</td>
-                    </tr>
-                `;
-            }
+            let tableHtml = data.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.priceMin}~${item.priceMax}</td>
+                    <td>${item.weight}lb</td>
+                    <td>${item.conductive}</td>
+                    <td>${item.twoHanded}</td>
+                </tr>
+            `).join('');
             tableBody.innerHTML = tableHtml;
         }
 
         function filterTable() {
             const searchText = searchInput.value.toLowerCase();
-            const rows = tableBody.getElementsByTagName('tr');
+            displayedData = originalData.filter(item => {
+                return item.name.toLowerCase().includes(searchText);
+            });
+            // Reset sort before rendering filtered data
+            sortState = { column: null, direction: 'asc' }; 
+            renderTable(displayedData);
+        }
 
-            for (const row of rows) {
-                const scrapNameCell = row.getElementsByTagName('td')[0];
-                if (scrapNameCell) {
-                    const scrapName = scrapNameCell.textContent.toLowerCase();
-                    if (scrapName.includes(searchText)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
+        function sortTable(column) {
+            const newDirection = (sortState.column === column && sortState.direction === 'asc') ? 'desc' : 'asc';
+            sortState = { column, direction: newDirection };
+
+            displayedData.sort((a, b) => {
+                let valA, valB;
+
+                switch (column) {
+                    case 'name':
+                        valA = a.name.toLowerCase();
+                        valB = b.name.toLowerCase();
+                        return valA.localeCompare(valB);
+                    case 'price':
+                        return a.priceAvg - b.priceAvg;
+                    case 'weight':
+                        return b.weight - a.weight; // Default to descending for weight
+                    case 'conductive':
+                    case 'twoHanded':
+                        valA = a[column] === 'O' ? 0 : 1;
+                        valB = b[column] === 'O' ? 0 : 1;
+                        return valA - valB;
+                    default:
+                        return 0;
+                }
+            });
+
+            if (newDirection === 'desc') {
+                 // For weight, the default sort is desc, so asc is the reverse
+                if (column === 'weight') {
+                    displayedData.reverse(); 
+                } else if (column !== 'name' && column !== 'price' && column !== 'conductive' && column !== 'twoHanded') {
+                    displayedData.reverse();
+                }
+                 // For name, price, and custom O/X, reverse is simple
+                if (['name', 'price', 'conductive', 'twoHanded'].includes(column)) {
+                    displayedData.reverse();
                 }
             }
+            
+            renderTable(displayedData);
         }
 
         searchInput.addEventListener('input', filterTable);
+        tableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.column;
+                if (column) {
+                    sortTable(column);
+                }
+            });
+        });
 
         // Initial load
-        fetchScrapData().then(renderTable);
+        fetchScrapData();
 
     </script>
 </body>
