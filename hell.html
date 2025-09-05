@@ -210,8 +210,9 @@
 
             // 2. Calculate Required Revelations
             const n = pcRoomCheck.checked ? 20 : 22;
-            const requiredRevelations = runsPerChar * n;
-            const passValue = runsPerChar * (n - 2);
+            const runsForRevelationCalc = runsPerChar >= 30 ? runsPerChar - 1 : runsPerChar;
+            const requiredRevelations = runsForRevelationCalc * n;
+            const passValue = runsForRevelationCalc * (n - 2);
             revelationDisplay.innerHTML = `${requiredRevelations} <span class="pass-value">(패스 ${passValue})</span>`;
 
             // 3. Calculate Expectations
