@@ -122,7 +122,7 @@
             return true;
         }
 
-        function updateUserDisplay() { dom.username.textContent = `${state.currentUser}(Lv.${state.userLevel})`; dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${state.userPerk}</p><h4>다음 레벨 혜택</h4><p>${state.nextUserPerk}</p><hr><p>(${state.currentXp.toLocaleString()}/${state.nextLevelXp.toLocaleString()} XP)</p>`; }
+        function updateUserDisplay() { dom.username.textContent = `${state.currentUser}(Lv.${state.userLevel})`; dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${state.userPerk}</p><br><h4>다음 레벨 혜택</h4><p>${state.nextUserPerk}</p><hr><p>(${state.currentXp.toLocaleString()}/${state.nextLevelXp.toLocaleString()} XP)</p>`; }
 
         function updateUI() {
             if (state.isDestroyed) {
