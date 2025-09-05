@@ -7,48 +7,38 @@ function calculateXp(level) {
 }
 
 function calculateLevel(totalXp, levelData) {
-    let currentLevel = 0;
-    let nextLevelXp = 0;
-    let perk = '혜택 없음';
-    let nextPerk = '최고 레벨';
+    let currentLevel = 1, perk = '혜택 없음', nextLevelXp = 0, nextPerk = '최고 레벨';
+    let tickets = {};
 
     if (levelData.length > 0) {
-        // Default to level 1 if not enough XP for higher levels
-        if (totalXp < (parseInt(levelData[0][1]) || 1)) {
-             currentLevel = 1;
-             perk = levelData[0][2] || '혜택 없음';
-             nextLevelXp = parseInt(levelData[0][1]) || 1;
-             if (levelData.length > 1) {
-                 nextPerk = levelData[1][2] || '혜택 없음';
-             }
-        } else {
-            for (let i = 0; i < levelData.length; i++) {
-                const level = parseInt(levelData[i][0]);
-                const requiredXp = parseInt(levelData[i][1]);
-                
-                if (totalXp >= requiredXp) {
-                    currentLevel = level;
-                    perk = levelData[i][2] || '혜택 없음';
-                    // Check for next level
-                    if (i + 1 < levelData.length) {
-                        nextLevelXp = parseInt(levelData[i+1][1]);
-                        nextPerk = levelData[i+1][2] || '혜택 없음';
-                    } else {
-                        nextLevelXp = requiredXp; // At max level
-                        nextPerk = '최고 레벨';
-                    }
+        perk = levelData[0][2] || '혜택 없음';
+        nextLevelXp = parseInt(levelData[0][1]) || 1;
+        if (levelData.length > 1) nextPerk = levelData[1][2] || '혜택 없음';
+
+        for (let i = 0; i < levelData.length; i++) {
+            const level = parseInt(levelData[i][0]);
+            const requiredXp = parseInt(levelData[i][1]);
+            
+            if (totalXp >= requiredXp) {
+                currentLevel = level;
+                perk = levelData[i][2] || '혜택 없음';
+                tickets = { plus7: data[i][3], plus10: data[i][4], plus11: data[i][5], plus12: data[i][6] };
+
+                if (i + 1 < levelData.length) {
+                    nextLevelXp = parseInt(levelData[i+1][1]);
+                    nextPerk = levelData[i+1][2] || '혜택 없음';
                 } else {
-                    // This case is for when the user is between levels not starting from 0
                     nextLevelXp = requiredXp;
-                    nextPerk = levelData[i][2] || '혜택 없음';
-                    break; 
+                    nextPerk = '최고 레벨';
                 }
+            } else {
+                nextLevelXp = requiredXp;
+                nextPerk = levelData[i][2] || '혜택 없음';
+                break; 
             }
         }
     }
-     if (currentLevel === 0 && levelData.length > 0) currentLevel = 1;
-
-    return { currentLevel, perk, nextLevelXp, nextPerk };
+    return { currentLevel, perk, nextLevelXp, nextPerk, tickets };
 }
 
 
@@ -67,7 +57,6 @@ exports.handler = async function(event, context) {
 
     const queryType = event.queryStringParameters.query;
 
-    // --- Get User Profile Query ---
     if (queryType === 'getUserProfile') {
         const nickname = event.queryStringParameters.nickname;
         if (!nickname) {
@@ -76,7 +65,7 @@ exports.handler = async function(event, context) {
 
         const [rankingRes, levelRes] = await Promise.all([
             sheets.spreadsheets.values.get({ spreadsheetId, range: '강화랭킹!A:B' }),
-            sheets.spreadsheets.values.get({ spreadsheetId, range: '레벨!A:C' })
+            sheets.spreadsheets.values.get({ spreadsheetId, range: '레벨!A:G' })
         ]);
 
         const rankingRows = rankingRes.data.values || [];
@@ -87,7 +76,7 @@ exports.handler = async function(event, context) {
         }, 0);
 
         const levelData = levelRes.data.values ? levelRes.data.values.slice(1) : [];
-        const { currentLevel, perk, nextLevelXp, nextPerk } = calculateLevel(totalXp, levelData);
+        const { currentLevel, perk, nextLevelXp, nextPerk, tickets } = calculateLevel(totalXp, levelData);
 
         return {
             statusCode: 200,
@@ -97,12 +86,12 @@ exports.handler = async function(event, context) {
                 currentXp: totalXp,
                 nextLevelXp: nextLevelXp,
                 perk: perk,
-                nextPerk: nextPerk
+                nextPerk: nextPerk,
+                tickets: tickets
             }),
         };
     }
 
-    // --- Default: Fetch sheet data by name ---
     const sheetName = event.queryStringParameters.sheetName;
     if (!sheetName) {
         return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required.' }) };

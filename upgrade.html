@@ -14,227 +14,62 @@
         .user-display { text-align: right; margin-bottom: 15px; font-size: 14px; color: #555; cursor: help; }
         .mode-selector { margin-bottom: 10px; }
         .mode-selector button { width: 120px; }
-        #secret-container { margin-bottom: 20px; display: none; }
+        .perks-container { margin-bottom: 20px; text-align: left; padding: 0 10px; }
+        .perk-item { display: flex; justify-content: space-between; }
+        .perk-item label { cursor: help; }
+        #secret-container, #costume-container, #autoticket-container { display: none; }
         .image-box { width: 100%; height: 200px; border: 2px dashed #ccc; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; overflow: hidden; }
         .image-box img { max-width: 100%; max-height: 100%; transform: scale(2.5); }
         .level-display { font-size: 48px; font-weight: bold; color: #007bff; margin-bottom: 20px; }
         .level-display.destroyed { color: #888; }
-        
         .info-grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 20px; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
         .info-grid-container h4 { margin: 0 0 5px 0; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .info-grid-container p { margin: 5px 0; font-size: 14px; }
         .info-grid-container .cost { font-weight: bold; color: #c0392b; }
-
         .button-container { display: flex; gap: 10px; }
         .action-button { width: 100%; padding: 15px; font-size: 20px; margin-bottom: 20px; flex-grow: 1; }
-
         .cumulative-cost-display { font-size: 16px; color: #555; border-top: 1px solid #eee; padding-top: 15px; transition: all 0.2s ease-in-out; }
         .cumulative-cost-display.destroyed-style { font-size: 20px; font-weight: bold; }
-
-        #user-tooltip {
-            position: absolute;
-            background-color: #333;
-            color: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
-            text-align: left;
-            min-width: 250px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            top: 100%;
-            right: 0;
-            margin-top: 5px;
-            display: none; 
-        }
+        #user-tooltip { position: absolute; background-color: #333; color: #fff; padding: 10px; border-radius: 5px; z-index: 1000; text-align: left; min-width: 250px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); top: 100%; right: 0; margin-top: 5px; display: none; }
         #user-tooltip h4 { margin: 0 0 8px 0; font-size: 14px; color: #f0f0f0; border-bottom: 1px solid #555; padding-bottom: 5px; }
         #user-tooltip p { margin: 4px 0; font-size: 12px; }
     </style>
 </head>
 <body>
     <a href="index.html" class="header-link"><h1>화도웹</h1></a>
-
     <div class="simulator-container" id="simulator-container">
-        <div class="user-display-container" id="user-display-container">
-            <div class="user-display">사용자: <span id="username-display"></span></div>
-            <div id="user-tooltip"></div>
+        <div class="user-display-container" id="user-display-container"><div class="user-display">사용자: <span id="username-display"></span></div><div id="user-tooltip"></div></div>
+        <div class="mode-selector"><button id="refine-btn">강화</button><button id="amplify-btn" disabled>증폭</button></div>
+        <div class="perks-container">
+            <div class="perk-item" id="secret-container"><label for="secret-checkbox" title="강화의 비밀 아이템을 사용하여 장비 강화의 성공 확률을 1%p만큼 증가시킵니다. 사용시 35,000골드가 소비됩니다.">강화의 비밀</label><input type="checkbox" id="secret-checkbox"></div>
+            <div class="perk-item" id="costume-container"><label for="costume-checkbox" title="화덕 변신 코스튬을 사용하면 장비 강화의 성공 확률이 1%p만큼 증가합니다.">화덕 변신 코스튬</label><input type="checkbox" id="costume-checkbox"></div>
+            <div id="autoticket-container"><input type="checkbox" id="autoticket-checkbox"><label for="autoticket-checkbox" title="사용 가능한 강화권 중 고강화권을 우선적으로 모두 사용합니다. 최초 1회만 적용됩니다.">강화권 자동 사용</label></div>
         </div>
-
-        <div class="mode-selector">
-            <button id="refine-btn">강화</button>
-            <button id="amplify-btn" disabled>증폭</button>
-        </div>
-
-        <div id="secret-container">
-            <input type="checkbox" id="secret-checkbox"><label for="secret-checkbox">강화의 비밀</label>
-        </div>
-
         <div class="image-box" id="image-box"><img id="item-image" src="" alt="아이템 이미지"></div>
         <div class="level-display" id="level-display">+0</div>
-
-        <div class="info-grid-container">
-            <div id="normal-refine-info">
-                <h4>일반 강화</h4>
-                <p>성공 확률: <span id="success-chance">-</span>%</p>
-                <p>실패 확률: <span id="failure-chance">-</span>%</p>
-                <p>파괴 확률: <span id="destroy-chance">-</span>%</p>
-                <p>비용: <span class="cost" id="current-gold-cost">-</span></p>
-            </div>
-            <div id="safe-refine-info">
-                <h4>안전 강화</h4>
-                <p>성공 확률: <span id="safe-success-chance">-</span>%</p>
-                <p>실패(유지) 확률: <span id="safe-failure-chance">-</span>%</p>
-                <p>파괴 확률: 0.00%</p>
-                <p>비용: <span class="cost" id="safe-gold-cost">-</span></p>
-            </div>
-        </div>
-
-        <div class="button-container" id="button-container">
-            <button class="action-button" id="action-button-normal">강화</button>
-            <button class="action-button" id="action-button-safe" style="display: none;">안전 강화</button>
-        </div>
-
-        <div class="cumulative-cost-display" id="cumulative-cost-display">
-            <p>누적 소모 골드: <span id="total-gold-cost">0</span></p>
-        </div>
+        <div class="info-grid-container"><div id="normal-refine-info"><h4>일반 강화</h4><p>성공 확률: <span id="success-chance">-</span>%</p><p>실패 확률: <span id="failure-chance">-</span>%</p><p>파괴 확률: <span id="destroy-chance">-</span>%</p><p>비용: <span class="cost" id="current-gold-cost">-</span></p></div><div id="safe-refine-info"><h4>안전 강화</h4><p>성공 확률: <span id="safe-success-chance">-</span>%</p><p>실패(유지) 확률: <span id="safe-failure-chance">-</span>%</p><p>파괴 확률: 0.00%</p><p>비용: <span class="cost" id="safe-gold-cost">-</span></p></div></div>
+        <div class="button-container" id="button-container"><button class="action-button" id="action-button-normal">강화</button><button class="action-button" id="action-button-safe" style="display: none;">안전 강화</button></div>
+        <div class="cumulative-cost-display" id="cumulative-cost-display"><p>누적 소모 골드: <span id="total-gold-cost">0</span></p></div>
     </div>
-
     <script>
-        // --- STATE ---
-        let state = { currentLevel: 0, totalGold: 0, isDestroyed: false, refineData: [], levelData: [], bonusChances: {}, safeBonusChances: {}, currentUser: '비회원', userLevel: 1, currentXp: 0, nextLevelXp: 0, userPerk: '혜택 없음', nextUserPerk: '혜택 없음', hasUnlockedSecret: false, secretCostPaid: false };
-
-        // --- DOM Elements ---
-        const dom = { container: document.getElementById('simulator-container'), userDisplayContainer: document.getElementById('user-display-container'), username: document.getElementById('username-display'), tooltip: document.getElementById('user-tooltip'), secretContainer: document.getElementById('secret-container'), secretCheckbox: document.getElementById('secret-checkbox'), level: document.getElementById('level-display'), image: document.getElementById('item-image'), imageBox: document.getElementById('image-box'), normalButton: document.getElementById('action-button-normal'), safeButton: document.getElementById('action-button-safe'), successChance: document.getElementById('success-chance'), failureChance: document.getElementById('failure-chance'), destroyChance: document.getElementById('destroy-chance'), currentGold: document.getElementById('current-gold-cost'), safeSuccessChance: document.getElementById('safe-success-chance'), safeFailureChance: document.getElementById('safe-failure-chance'), safeGold: document.getElementById('safe-gold-cost'), totalGold: document.getElementById('total-gold-cost'), cumulativeCost: document.getElementById('cumulative-cost-display'), safeInfo: document.getElementById('safe-refine-info') };
-
-        // --- LOGIC ---
+        let state = { currentLevel: 0, totalGold: 0, isDestroyed: false, refineData: [], levelData: [], bonusChances: {}, safeBonusChances: {}, currentUser: '비회원', userLevel: 1, currentXp: 0, nextLevelXp: 0, userPerk: '혜택 없음', nextUserPerk: '혜택 없음', userTickets: {}, hasUnlockedSecret: false, secretCostPaid: false, autoTicketUsed: false };
+        const dom = { container: document.getElementById('simulator-container'), userDisplayContainer: document.getElementById('user-display-container'), username: document.getElementById('username-display'), tooltip: document.getElementById('user-tooltip'), secretContainer: document.getElementById('secret-container'), secretCheckbox: document.getElementById('secret-checkbox'), costumeContainer: document.getElementById('costume-container'), costumeCheckbox: document.getElementById('costume-checkbox'), autoticketContainer: document.getElementById('autoticket-container'), autoticketCheckbox: document.getElementById('autoticket-checkbox'), level: document.getElementById('level-display'), image: document.getElementById('item-image'), imageBox: document.getElementById('image-box'), normalButton: document.getElementById('action-button-normal'), safeButton: document.getElementById('action-button-safe'), successChance: document.getElementById('success-chance'), failureChance: document.getElementById('failure-chance'), destroyChance: document.getElementById('destroy-chance'), currentGold: document.getElementById('current-gold-cost'), safeSuccessChance: document.getElementById('safe-success-chance'), safeFailureChance: document.getElementById('safe-failure-chance'), safeGold: document.getElementById('safe-gold-cost'), totalGold: document.getElementById('total-gold-cost'), cumulativeCost: document.getElementById('cumulative-cost-display'), safeInfo: document.getElementById('safe-refine-info') };
         const calculateXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
         const getImagePath = (level) => { if (level <= 4) return '0004.png'; if (level <= 9) return '0509.png'; if (level <= 12) return '1012.png'; if (level === 13) return '1313.png'; if (level === 14) return '1414.png'; if (level === 15) return '1515.png'; if (level === 16) return '1616.png'; return '1717.png'; };
         const flashEffect = (type) => { dom.container.classList.add(`${type}-flash`); setTimeout(() => dom.container.classList.remove(`${type}-flash`), 500); };
-
-        function isSafeRefineUnlocked(currentRefineLevel, userLvl) {
-            const data = state.refineData.find(row => parseInt(row[0]) === currentRefineLevel);
-            const safeCost = data && data[6] ? String(data[6]).trim() : '';
-            if (safeCost === '') return false;
-
-            if (userLvl < 3) return false;
-            if (userLvl === 3 && currentRefineLevel > 9) return false;
-            if (userLvl === 4 && currentRefineLevel > 10) return false;
-            
-            return true;
-        }
-
         function updateUserDisplay() { dom.username.textContent = `${state.currentUser}(Lv.${state.userLevel})`; dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${state.userPerk}</p><br><h4>다음 레벨 혜택</h4><p>${state.nextUserPerk}</p><hr><p>(${state.currentXp.toLocaleString()}/${state.nextLevelXp.toLocaleString()} XP)</p>`; }
-
-        function updateUI() {
-            if (state.isDestroyed) {
-                dom.level.textContent = 'DESTROYED'; dom.level.classList.add('destroyed'); dom.imageBox.style.display = 'none'; dom.normalButton.textContent = '재시도'; dom.safeButton.style.display = 'none'; dom.cumulativeCost.classList.add('destroyed-style');
-                return;
-            }
-            if (state.hasUnlockedSecret) dom.secretContainer.style.display = 'block';
-            dom.cumulativeCost.classList.remove('destroyed-style'); dom.level.classList.remove('destroyed'); dom.imageBox.style.display = 'flex'; dom.normalButton.textContent = '강화';
-            dom.level.textContent = `+${state.currentLevel}`;
-            dom.image.src = `images/upgrade/01/${getImagePath(state.currentLevel)}`;
-
-            const data = state.refineData.find(row => parseInt(row[0]) === state.currentLevel);
-            if (data) {
-                const secretBonus = dom.secretCheckbox.checked ? 1 : 0;
-                const baseSuccess = parseFloat(data[1] || 0), bonusSuccess = state.bonusChances[state.currentLevel] || 0, actualSuccess = baseSuccess + bonusSuccess + secretBonus, cost = parseInt(data[2] || 0), penalty = parseInt(data[3] || 0), isDestructible = penalty === -100, failure = 100 - Math.min(100, actualSuccess);
-                dom.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); dom.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); dom.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00'; dom.currentGold.textContent = cost.toLocaleString();
-                dom.normalButton.disabled = false;
-                
-                if (isSafeRefineUnlocked(state.currentLevel, state.userLevel)) {
-                    const safeCost = parseInt(data[6]);
-                    const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = state.safeBonusChances[state.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess + secretBonus, safeFailure = 100 - Math.min(100, safeActualSuccess);
-                    dom.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); dom.safeFailureChance.textContent = safeFailure.toFixed(2); dom.safeGold.textContent = safeCost.toLocaleString();
-                    dom.safeInfo.style.visibility = 'visible'; dom.safeButton.style.display = 'block';
-                } else {
-                    dom.safeInfo.style.visibility = 'hidden'; dom.safeButton.style.display = 'none';
-                }
-            } else {
-                dom.normalButton.disabled = true; dom.safeButton.style.display = 'none';
-            }
-            dom.totalGold.textContent = state.totalGold.toLocaleString();
-        }
-
+        function isSafeRefineUnlocked(currentRefineLevel, userLvl) { const data = state.refineData.find(row => parseInt(row[0]) === currentRefineLevel); const safeCost = data && data[6] ? String(data[6]).trim() : ''; if (safeCost === '') return false; if (userLvl < 3) return false; if (userLvl === 3 && currentRefineLevel > 9) return false; if (userLvl === 4 && currentRefineLevel > 10) return false; return true; }
+        function updateUI() { if (state.isDestroyed) { dom.level.textContent = 'DESTROYED'; dom.level.classList.add('destroyed'); dom.imageBox.style.display = 'none'; dom.normalButton.textContent = '재시도'; dom.safeButton.style.display = 'none'; dom.cumulativeCost.classList.add('destroyed-style'); return; } if (state.hasUnlockedSecret) dom.secretContainer.style.display = 'flex'; if (state.userLevel >= 7) dom.costumeContainer.style.display = 'flex'; if (state.userLevel >= 6) dom.autoticketContainer.style.display = 'block'; dom.cumulativeCost.classList.remove('destroyed-style'); dom.level.classList.remove('destroyed'); dom.imageBox.style.display = 'flex'; dom.normalButton.textContent = '강화'; dom.level.textContent = `+${state.currentLevel}`; dom.image.src = `images/upgrade/01/${getImagePath(state.currentLevel)}`; const data = state.refineData.find(row => parseInt(row[0]) === state.currentLevel); if (data) { const secretBonus = dom.secretCheckbox.checked ? 1 : 0; const costumeBonus = dom.costumeCheckbox.checked ? 1 : 0; const baseSuccess = parseFloat(data[1] || 0), bonusSuccess = state.bonusChances[state.currentLevel] || 0, actualSuccess = baseSuccess + bonusSuccess + secretBonus + costumeBonus, cost = parseInt(data[2] || 0), penalty = parseInt(data[3] || 0), isDestructible = penalty === -100, failure = 100 - Math.min(100, actualSuccess); dom.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); dom.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); dom.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00'; dom.currentGold.textContent = cost.toLocaleString(); dom.normalButton.disabled = false; if (isSafeRefineUnlocked(state.currentLevel, state.userLevel)) { const safeCost = parseInt(data[6]); const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = state.safeBonusChances[state.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess + secretBonus + costumeBonus, safeFailure = 100 - Math.min(100, safeActualSuccess); dom.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); dom.safeFailureChance.textContent = safeFailure.toFixed(2); dom.safeGold.textContent = safeCost.toLocaleString(); dom.safeInfo.style.visibility = 'visible'; dom.safeButton.style.display = 'block'; } else { dom.safeInfo.style.visibility = 'hidden'; dom.safeButton.style.display = 'none'; } } else { dom.normalButton.disabled = true; dom.safeButton.style.display = 'none'; } dom.totalGold.textContent = state.totalGold.toLocaleString(); }
         async function submitRanking() { if (state.currentUser === '비회원') return; try { await fetch('/.netlify/functions/addRank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname: state.currentUser, level: state.currentLevel, gold: state.totalGold, password: '0305' }) }); await fetchUserProfile(); } catch (e) { console.error('Rank submission error:', e); } }
-        function recalculateLevelForGuest() { /* ... */ }
-        
-        function handleRefine(isSafe) {
-            if (state.isDestroyed) { resetSimulator(); return; }
-            if (dom.secretCheckbox.checked && !state.secretCostPaid) { state.totalGold += 35000; state.secretCostPaid = true; }
-
-            const data = state.refineData.find(row => parseInt(row[0]) === state.currentLevel);
-            if (!data) return;
-
-            const secretBonus = dom.secretCheckbox.checked ? 1 : 0;
-            let successChance, cost, penalty, correctionChance;
-
-            if (isSafe) {
-                cost = data[6] ? parseInt(data[6]) : 0;
-                successChance = (parseFloat(data[7] || 0) + (state.safeBonusChances[state.currentLevel] || 0)) + secretBonus;
-                correctionChance = parseFloat(data[8] || 0);
-            } else {
-                cost = parseInt(data[2] || 0);
-                successChance = (parseFloat(data[1] || 0) + (state.bonusChances[state.currentLevel] || 0)) + secretBonus;
-                penalty = parseInt(data[3] || 0);
-                correctionChance = parseFloat(data[4] || 0);
-            }
-            state.totalGold += cost;
-
-            if (Math.random() * 100 < successChance) {
-                flashEffect('success');
-                if (isSafe) state.safeBonusChances[state.currentLevel] = 0; else state.bonusChances[state.currentLevel] = 0;
-                state.currentLevel++;
-            } else {
-                if (isSafe) {
-                    flashEffect('failure');
-                    state.safeBonusChances[state.currentLevel] = (state.safeBonusChances[state.currentLevel] || 0) + correctionChance;
-                } else {
-                    if (penalty === -100) {
-                        flashEffect('destroyed');
-                        if (state.currentLevel >= 12) { state.hasUnlockedSecret = true; if (state.currentUser === '비회원') { state.currentXp += calculateXp(state.currentLevel); recalculateLevelForGuest(); } }
-                        state.isDestroyed = true; submitRanking();
-                    } else {
-                        flashEffect('failure');
-                        state.bonusChances[state.currentLevel] = (state.bonusChances[state.currentLevel] || 0) + correctionChance;
-                        state.currentLevel = Math.max(0, state.currentLevel - Math.abs(penalty));
-                    }
-                }
-            }
-            updateUI();
-        }
-
-        function resetSimulator() { state.currentLevel = 0; state.totalGold = 0; state.isDestroyed = false; state.bonusChances = {}; state.safeBonusChances = {}; state.secretCostPaid = false; dom.normalButton.disabled = false; updateUI(); }
-        
-        async function fetchUserProfile() {
-            if (state.currentUser === '비회원') { recalculateLevelForGuest(); return; }
-            try {
-                const res = await fetch(`/.netlify/functions/sheets?query=getUserProfile&nickname=${encodeURIComponent(state.currentUser)}`);
-                const data = await res.json();
-                state.userLevel = data.level || 1; state.currentXp = data.currentXp; state.nextLevelXp = data.nextLevelXp; state.userPerk = data.perk; state.nextUserPerk = data.nextPerk;
-                if (state.userLevel >= 3) state.hasUnlockedSecret = true;
-                updateUserDisplay();
-            } catch (e) { console.error('Could not fetch user profile:', e); }
-        }
-
-        async function initialize() {
-            state.currentUser = sessionStorage.getItem('simulatorUser') || '비회원';
-            try {
-                const [refineRes, levelRes] = await Promise.all([ fetch(`/.netlify/functions/sheets?sheetName=강화확률`), fetch(`/.netlify/functions/sheets?sheetName=레벨`) ]);
-                const refineResult = await refineRes.json(); const levelResult = await levelRes.json();
-                state.refineData = refineResult.data; state.levelData = levelResult.data;
-                await fetchUserProfile();
-                resetSimulator();
-            } catch (error) { console.error("Failed to load spreadsheet data:", error); dom.level.textContent = "오류"; }
-        }
-        
-        dom.secretCheckbox.addEventListener('change', updateUI);
-        dom.normalButton.addEventListener('click', () => handleRefine(false));
-        dom.safeButton.addEventListener('click', () => handleRefine(true));
-        dom.userDisplayContainer.addEventListener('mouseover', () => { dom.tooltip.style.display = 'block'; });
-        dom.userDisplayContainer.addEventListener('mouseout', () => { dom.tooltip.style.display = 'none'; });
-
+        function recalculateLevelForGuest() { let newLevel = 1, newPerk = '혜택 없음', newNextPerk = '혜택 없음', newNextXp = 0; if (state.levelData.length > 0) { newPerk = state.levelData[0][2] || '혜택 없음'; newNextXp = parseInt(state.levelData[0][1]) || 1; if (state.levelData.length > 1) newNextPerk = state.levelData[1][2] || '혜택 없음'; } for (let i = 0; i < state.levelData.length; i++) { const level = parseInt(state.levelData[i][0]); const requiredXp = parseInt(state.levelData[i][1]); if (state.currentXp >= requiredXp) { newLevel = level; newPerk = state.levelData[i][2] || '혜택 없음'; if (i + 1 < state.levelData.length) { newNextXp = parseInt(state.levelData[i+1][1]); newNextPerk = state.levelData[i+1][2] || '혜택 없음'; } else { newNextXp = requiredXp; newNextPerk = '최고 레벨'; } } else { newNextXp = requiredXp; newNextPerk = state.levelData[i][2] || '혜택 없음'; break; } } state.userLevel = newLevel; state.userPerk = newPerk; state.nextUserPerk = newNextPerk; state.nextLevelXp = newNextXp; updateUserDisplay(); }
+        function handleAutoTicket() { const ticketChances = [state.userTickets.plus12, state.userTickets.plus11, state.userTickets.plus10, state.userTickets.plus7]; const ticketCosts = [77000000, 17500000, 7000000, 650000]; const targetLevels = [12, 11, 10, 7]; for (let i = 0; i < ticketChances.length; i++) { const chance = parseFloat(ticketChances[i] || 0); state.totalGold += ticketCosts[i] * (chance / 100); if (Math.random() * 100 < chance) { state.currentLevel = targetLevels[i]; flashEffect('success'); break; } else if (i === ticketChances.length - 1) { flashEffect('failure'); } } state.autoTicketUsed = true; dom.autoticketCheckbox.disabled = true; updateUI(); }
+        function handleRefine(isSafe) { if (state.isDestroyed) { resetSimulator(); return; } if (dom.autoticketCheckbox.checked && !state.autoTicketUsed) { handleAutoTicket(); return; } if (dom.secretCheckbox.checked && !state.secretCostPaid) { state.totalGold += 35000; state.secretCostPaid = true; } const data = state.refineData.find(row => parseInt(row[0]) === state.currentLevel); if (!data) return; const secretBonus = dom.secretCheckbox.checked ? 1 : 0; const costumeBonus = dom.costumeCheckbox.checked ? 1 : 0; let successChance, cost, penalty, correctionChance; if (isSafe) { cost = data[6] ? parseInt(data[6]) : 0; successChance = (parseFloat(data[7] || 0) + (state.safeBonusChances[state.currentLevel] || 0)) + secretBonus + costumeBonus; correctionChance = parseFloat(data[8] || 0); } else { cost = parseInt(data[2] || 0); successChance = (parseFloat(data[1] || 0) + (state.bonusChances[state.currentLevel] || 0)) + secretBonus + costumeBonus; penalty = parseInt(data[3] || 0); correctionChance = parseFloat(data[4] || 0); } state.totalGold += cost; if (Math.random() * 100 < successChance) { flashEffect('success'); if (isSafe) state.safeBonusChances[state.currentLevel] = 0; else state.bonusChances[state.currentLevel] = 0; state.currentLevel++; } else { if (isSafe) { flashEffect('failure'); state.safeBonusChances[state.currentLevel] = (state.safeBonusChances[state.currentLevel] || 0) + correctionChance; } else { if (penalty === -100) { flashEffect('destroyed'); if (state.currentLevel >= 12) { state.hasUnlockedSecret = true; if (state.currentUser === '비회원') { state.currentXp += calculateXp(state.currentLevel); recalculateLevelForGuest(); } } state.isDestroyed = true; submitRanking(); } else { flashEffect('failure'); state.bonusChances[state.currentLevel] = (state.bonusChances[state.currentLevel] || 0) + correctionChance; state.currentLevel = Math.max(0, state.currentLevel - Math.abs(penalty)); } } } updateUI(); }
+        function resetSimulator() { state.currentLevel = 0; state.totalGold = 0; state.isDestroyed = false; state.bonusChances = {}; state.safeBonusChances = {}; state.secretCostPaid = false; state.autoTicketUsed = false; if(dom.autoticketCheckbox) dom.autoticketCheckbox.disabled = false; dom.normalButton.disabled = false; updateUI(); }
+        async function fetchUserProfile() { if (state.currentUser === '비회원') { recalculateLevelForGuest(); return; } try { const res = await fetch(`/.netlify/functions/sheets?query=getUserProfile&nickname=${encodeURIComponent(state.currentUser)}`); const data = await res.json(); state.userLevel = data.level || 1; state.currentXp = data.currentXp; state.nextLevelXp = data.nextLevelXp; state.userPerk = data.perk; state.nextUserPerk = data.nextPerk; state.userTickets = data.tickets || {}; if (state.userLevel >= 3) state.hasUnlockedSecret = true; updateUserDisplay(); } catch (e) { console.error('Could not fetch user profile:', e); } }
+        async function initialize() { state.currentUser = sessionStorage.getItem('simulatorUser') || '비회원'; try { const [refineRes, levelRes] = await Promise.all([ fetch(`/.netlify/functions/sheets?sheetName=강화확률`), fetch(`/.netlify/functions/sheets?sheetName=레벨`) ]); const refineResult = await refineRes.json(); const levelResult = await levelRes.json(); state.refineData = refineResult.data; state.levelData = levelResult.data; await fetchUserProfile(); resetSimulator(); } catch (error) { console.error("Failed to load spreadsheet data:", error); dom.level.textContent = "오류"; } }
+        dom.secretCheckbox.addEventListener('change', updateUI); dom.costumeCheckbox.addEventListener('change', updateUI); dom.autoticketCheckbox.addEventListener('change', updateUI);
+        dom.normalButton.addEventListener('click', () => handleRefine(false)); dom.safeButton.addEventListener('click', () => handleRefine(true)); dom.userDisplayContainer.addEventListener('mouseover', () => { dom.tooltip.style.display = 'block'; }); dom.userDisplayContainer.addEventListener('mouseout', () => { dom.tooltip.style.display = 'none'; });
         initialize();
-
     </script>
 </body>
 </html>
