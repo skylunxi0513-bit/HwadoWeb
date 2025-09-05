@@ -8,13 +8,20 @@
     <style>
         .simulator-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 500px; /* Increased width for larger image */
             margin: 20px auto;
             padding: 20px;
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
+            transition: background-color 0.1s ease-in-out;
+        }
+        .simulator-container.success-flash {
+            background-color: #d4edda; /* Light green */
+        }
+        .simulator-container.failure-flash {
+            background-color: #f8d7da; /* Light red */
         }
         .user-display {
             text-align: right;
@@ -30,7 +37,7 @@
         }
         .image-box {
             width: 100%;
-            height: 200px;
+            height: 400px; /* Increased height for larger image */
             border: 2px dashed #ccc;
             margin-bottom: 20px;
             display: flex;
@@ -41,6 +48,7 @@
         .image-box img {
             max-width: 100%;
             max-height: 100%;
+            transform: scale(1.5); /* Enlarge image within the box */
         }
         .level-display {
             font-size: 48px;
@@ -83,7 +91,7 @@
         <h1>화도웹</h1>
     </a>
 
-    <div class="simulator-container">
+    <div class="simulator-container" id="simulator-container">
         <div class="user-display">
             사용자: <span id="username-display">비회원</span>
         </div>
@@ -107,7 +115,6 @@
             </div>
             <div class="current-cost-display">
                 <p><span id="current-gold-cost">-</span> 골드</p>
-                <p>모순의 결정체 * <span id="current-crystal-cost">-</span></p>
             </div>
         </div>
 
@@ -115,7 +122,6 @@
 
         <div class="cumulative-cost-display">
             <p>누적 소모 골드: <span id="total-gold-cost">0</span></p>
-            <p>누적 소모 모순: <span id="total-crystal-cost">0</span></p>
         </div>
     </div>
 
@@ -123,12 +129,12 @@
         // --- STATE ---
         let currentLevel = 0;
         let totalGold = 0;
-        let totalCrystals = 0; // For future use
         let isDestroyed = false;
         let refineData = [];
         let currentUser = '비회원';
 
         // --- DOM Elements ---
+        const simulatorContainer = document.getElementById('simulator-container');
         const usernameDisplay = document.getElementById('username-display');
         const levelDisplay = document.getElementById('level-display');
         const itemImage = document.getElementById('item-image');
@@ -140,10 +146,7 @@
         const destroyChanceEl = document.getElementById('destroy-chance');
 
         const currentGoldCostEl = document.getElementById('current-gold-cost');
-        const currentCrystalCostEl = document.getElementById('current-crystal-cost');
-
         const totalGoldCostEl = document.getElementById('total-gold-cost');
-        const totalCrystalCostEl = document.getElementById('total-crystal-cost');
 
         // --- LOGIC ---
         function getImagePath(level) {
@@ -158,6 +161,14 @@
             return '0004.png'; // Default/fallback
         }
 
+        function flashEffect(type) {
+            const className = type === 'success' ? 'success-flash' : 'failure-flash';
+            simulatorContainer.classList.add(className);
+            setTimeout(() => {
+                simulatorContainer.classList.remove(className);
+            }, 500);
+        }
+
         function updateUI() {
             if (isDestroyed) {
                 levelDisplay.textContent = 'DESTROYED';
@@ -168,7 +179,6 @@
                 failureChanceEl.textContent = '-';
                 destroyChanceEl.textContent = '-';
                 currentGoldCostEl.textContent = '-';
-                currentCrystalCostEl.textContent = '-';
                 return;
             }
 
@@ -191,7 +201,6 @@
                 failureChanceEl.textContent = isDestructible ? '0.00' : failure.toFixed(2);
                 destroyChanceEl.textContent = isDestructible ? failure.toFixed(2) : '0.00';
                 currentGoldCostEl.textContent = cost.toLocaleString();
-                currentCrystalCostEl.textContent = 0;
                 actionButton.disabled = false;
             } else {
                 successChanceEl.textContent = '0.00';
@@ -202,7 +211,6 @@
             }
 
             totalGoldCostEl.textContent = totalGold.toLocaleString();
-            totalCrystalCostEl.textContent = totalCrystals.toLocaleString();
         }
 
         function handleRefine() {
@@ -223,8 +231,10 @@
             const roll = Math.random() * 100;
 
             if (roll < successChance) {
+                flashEffect('success');
                 currentLevel++;
             } else {
+                flashEffect('failure');
                 if (penalty === -100) {
                     isDestroyed = true;
                 } else {
@@ -237,18 +247,15 @@
         function resetSimulator() {
             currentLevel = 0;
             totalGold = 0;
-            totalCrystals = 0;
             isDestroyed = false;
             actionButton.disabled = false;
             updateUI();
         }
 
         async function initialize() {
-            // Get user from sessionStorage
             currentUser = sessionStorage.getItem('simulatorUser') || '비회원';
             usernameDisplay.textContent = currentUser;
 
-            // Fetch sheet data
             try {
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=강화확률`);
                 if (!response.ok) throw new Error(`Sheets API Error`);
@@ -262,10 +269,8 @@
             }
         }
 
-        // --- Event Listeners ---
         actionButton.addEventListener('click', handleRefine);
 
-        // --- Initial Load ---
         initialize();
 
     </script>

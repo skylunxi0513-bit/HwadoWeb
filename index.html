@@ -103,25 +103,25 @@
             const password = passwordInput.value.trim();
             const sharedPassword = '0305';
 
-            let user = '비회원'; // Default user
+            // Check for incorrect password first
+            if (password && password !== sharedPassword) {
+                alert('비밀번호가 일치하지 않습니다. 비회원으로 이용하시려면 공란으로 두십시오.');
+                return; // Stop further execution
+            }
 
+            let user = '비회원'; // Default user
             if (password === sharedPassword && nickname) {
                 user = nickname;
             }
 
-            // Store the user info in sessionStorage to pass to the next page
             sessionStorage.setItem('simulatorUser', user);
-
-            // Navigate to the upgrade page
             window.location.href = upgradeLink.href;
         });
 
         // Close modal if user clicks on the overlay
         authModal.addEventListener('click', function(event) {
             if (event.target === authModal) {
-                // If user closes modal without confirming, treat as guest
-                sessionStorage.setItem('simulatorUser', '비회원');
-                window.location.href = upgradeLink.href;
+                authModal.style.display = 'none'; // Just hide the modal, do not navigate
             }
         });
     </script>
