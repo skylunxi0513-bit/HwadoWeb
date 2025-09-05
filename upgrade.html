@@ -16,6 +16,12 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
         }
+        .user-display {
+            text-align: right;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #555;
+        }
         .mode-selector {
             margin-bottom: 20px;
         }
@@ -78,6 +84,10 @@
     </a>
 
     <div class="simulator-container">
+        <div class="user-display">
+            사용자: <span id="username-display">비회원</span>
+        </div>
+
         <div class="mode-selector">
             <button id="refine-btn">강화</button>
             <button id="amplify-btn" disabled>증폭</button>
@@ -116,8 +126,10 @@
         let totalCrystals = 0; // For future use
         let isDestroyed = false;
         let refineData = [];
+        let currentUser = '비회원';
 
         // --- DOM Elements ---
+        const usernameDisplay = document.getElementById('username-display');
         const levelDisplay = document.getElementById('level-display');
         const itemImage = document.getElementById('item-image');
         const imageBox = document.getElementById('image-box');
@@ -160,7 +172,6 @@
                 return;
             }
 
-            // Reset styles if not destroyed
             levelDisplay.classList.remove('destroyed');
             imageBox.style.display = 'flex';
             actionButton.textContent = '강화';
@@ -173,7 +184,6 @@
                 const success = parseFloat(data[1] || 0);
                 const cost = parseInt(data[2] || 0);
                 const penalty = parseInt(data[3] || 0);
-
                 const isDestructible = penalty === -100;
                 const failure = 100 - success;
 
@@ -181,9 +191,9 @@
                 failureChanceEl.textContent = isDestructible ? '0.00' : failure.toFixed(2);
                 destroyChanceEl.textContent = isDestructible ? failure.toFixed(2) : '0.00';
                 currentGoldCostEl.textContent = cost.toLocaleString();
-                currentCrystalCostEl.textContent = 0; // Not used in refinement
+                currentCrystalCostEl.textContent = 0;
+                actionButton.disabled = false;
             } else {
-                 // Handle max level or no data
                 successChanceEl.textContent = '0.00';
                 failureChanceEl.textContent = '0.00';
                 destroyChanceEl.textContent = '0.00';
@@ -202,7 +212,7 @@
             }
 
             const data = refineData.find(row => parseInt(row[0]) === currentLevel);
-            if (!data) return; // No more upgrades
+            if (!data) return;
 
             const successChance = parseFloat(data[1] || 0);
             const cost = parseInt(data[2] || 0);
@@ -213,10 +223,8 @@
             const roll = Math.random() * 100;
 
             if (roll < successChance) {
-                // Success
                 currentLevel++;
             } else {
-                // Failure
                 if (penalty === -100) {
                     isDestroyed = true;
                 } else {
@@ -236,12 +244,17 @@
         }
 
         async function initialize() {
+            // Get user from sessionStorage
+            currentUser = sessionStorage.getItem('simulatorUser') || '비회원';
+            usernameDisplay.textContent = currentUser;
+
+            // Fetch sheet data
             try {
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=강화확률`);
                 if (!response.ok) throw new Error(`Sheets API Error`);
                 const result = await response.json();
                 if (result.error) throw new Error(result.error);
-                refineData = result.data; // Assumes data is already sliced on server
+                refineData = result.data;
                 resetSimulator();
             } catch (error) {
                 console.error("Failed to load spreadsheet data:", error);
