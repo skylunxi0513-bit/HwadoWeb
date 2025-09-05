@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>카드첩 계산기 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .button-container {
+            margin-top: 40px; /* 헤더와 버튼 사이 간격 추가 */
+        }
+    </style>
 </head>
 <body>
     <a href="index.html">
@@ -24,6 +29,10 @@
             <img src="images/card.webp" alt="이내 카드첩 아이콘">
             이내 카드첩
         </button>
+        <button id="heugaBtn">
+            <img src="images/ancient.webp" alt="흑아 태초 항아리 아이콘">
+            흑아 태초 항아리
+        </button>
     </div>
 
     <div id="result-container"></div>
@@ -33,9 +42,10 @@
         const venusBtn = document.getElementById('venusBtn');
         const nabelBtn = document.getElementById('nabelBtn');
         const inaeBtn = document.getElementById('inaeBtn');
+        const heugaBtn = document.getElementById('heugaBtn');
         const resultContainer = document.getElementById('result-container');
 
-        // --- Card Lists ---
+        // --- Item Lists ---
         const venusCardItems = [
             '황금의 광채 베누스 카드', '미의 여신 베누스 카드', '무결한 죽음 비시마 카드', '다정한 죽음 세니르 카드',
             '폭음 크래시머 카드', '일각수 크라켄 카드', '적아 울라드 카드', '땅지기 카메린 카드'
@@ -48,6 +58,12 @@
             '선별자 룬디어 카드', '더 파이퍼 카드', '파고드는 스펀저 카드', '역병을 담은 눈, 옴마 카드',
             '안개신의 무의식 카드', '황금의 광채 베누스 카드', '미의 여신 베누스 카드', '무결한 죽음 비시마 카드',
             '다정한 죽음 세니르 카드', '폭음 크래시머 카드', '일각수 크라켄 카드', '적아 울라드 카드', '땅지기 카메린 카드'
+        ];
+        const heugaPotItems = [
+            '흑아 태초 변환서 - 그림자에 숨은 죽음', '흑아 태초 변환서 - 소울 페어리', '흑아 태초 변환서 - 영원히 이어지는 황금향',
+            '흑아 태초 변환서 - 용투장의 난', '흑아 태초 변환서 - 칠흑의 정화', '흑아 태초 변환서 - 세렌디피티',
+            '흑아 태초 변환서 - 한계를 넘어선 에너지', '흑아 태초 변환서 - 압도적인 자연', '흑아 태초 변환서 - 고대 전장의 발키리',
+            '흑아 태초 변환서 - 에테리얼 오브 아츠', '흑아 태초 변환서 - 무리 사냥의 길잡이', '흑아 태초 변환서 - 마력의 영역'
         ];
 
         // --- Reusable Core Logic ---
@@ -65,10 +81,10 @@
             }
         }
 
-        async function calculateAndDisplay(cardList) {
-            resultContainer.innerHTML = `<p>카드 ${cardList.length}종의 최저가를 검색 중입니다...</p>`;
+        async function calculateAndDisplay(itemList) {
+            resultContainer.innerHTML = `<p>아이템 ${itemList.length}종의 최저가를 검색 중입니다...</p>`;
             try {
-                const pricePromises = cardList.map(fetchPrice);
+                const pricePromises = itemList.map(fetchPrice);
                 const results = await Promise.all(pricePromises);
                 const foundItems = results.filter(item => item.price > 0);
 
@@ -90,7 +106,7 @@
                 tableHTML += '</tbody></table></div>';
 
                 let summaryHTML = `<div class="summary">
-                    <div><strong>카드 평균 가격:</strong> ${Math.round(averagePrice).toLocaleString('en-US')} 골드</div>
+                    <div><strong>아이템 평균 가격:</strong> ${Math.round(averagePrice).toLocaleString('en-US')} 골드</div>
                     <div><strong>손익 분기점:</strong> ${Math.round(breakEvenPoint).toLocaleString('en-US')} 골드</div>
                 </div>`;
 
@@ -105,6 +121,7 @@
         venusBtn.addEventListener('click', () => calculateAndDisplay(venusCardItems));
         nabelBtn.addEventListener('click', () => calculateAndDisplay(nabelCardItems));
         inaeBtn.addEventListener('click', () => calculateAndDisplay(inaeCardItems));
+        heugaBtn.addEventListener('click', () => calculateAndDisplay(heugaPotItems));
 
     </script>
 
