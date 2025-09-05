@@ -97,7 +97,12 @@
 
                 const totalPrice = foundItems.reduce((sum, item) => sum + item.price, 0);
                 const averagePrice = totalPrice / foundItems.length;
-                const breakEvenPoint = (averagePrice * 0.97) / 1.2903;
+                let breakEvenPoint;
+                if (itemList === heugaPotItems) {
+                    breakEvenPoint = averagePrice * 0.97;
+                } else {
+                    breakEvenPoint = (averagePrice * 0.97) / 1.2903;
+                }
 
                 let tableHTML = '<div class="results-container"><table><thead><tr><th>아이템 이름</th><th>최저가</th></tr></thead><tbody>';
                 foundItems.forEach(item => {
