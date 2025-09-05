@@ -96,32 +96,42 @@
         upgradeLink.addEventListener('click', function(event) {
             event.preventDefault(); // Stop navigation
             authModal.style.display = 'flex'; // Show modal
+            nicknameInput.focus(); // Focus on the nickname input
         });
 
-        modalConfirmBtn.addEventListener('click', function() {
+        function handleModalSubmit() {
             const nickname = nicknameInput.value.trim();
             const password = passwordInput.value.trim();
             const sharedPassword = '0305';
 
-            // Check for incorrect password first
             if (password && password !== sharedPassword) {
                 alert('비밀번호가 일치하지 않습니다. 비회원으로 이용하시려면 공란으로 두십시오.');
-                return; // Stop further execution
+                return;
             }
 
-            let user = '비회원'; // Default user
+            let user = '비회원';
             if (password === sharedPassword && nickname) {
                 user = nickname;
             }
 
             sessionStorage.setItem('simulatorUser', user);
             window.location.href = upgradeLink.href;
-        });
+        }
 
-        // Close modal if user clicks on the overlay
+        modalConfirmBtn.addEventListener('click', handleModalSubmit);
+
+        // Add Enter key listener
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                handleModalSubmit();
+            }
+        }
+        nicknameInput.addEventListener('keyup', handleEnterKey);
+        passwordInput.addEventListener('keyup', handleEnterKey);
+
         authModal.addEventListener('click', function(event) {
             if (event.target === authModal) {
-                authModal.style.display = 'none'; // Just hide the modal, do not navigate
+                authModal.style.display = 'none';
             }
         });
     </script>
