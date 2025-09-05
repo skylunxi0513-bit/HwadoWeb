@@ -152,6 +152,7 @@
         let bonusChances = {};
         let currentUser = '비회원';
         let hasUnlockedSecret = false;
+        let secretCostPaid = false; // New state for one-time cost
 
         // --- DOM Elements ---
         const simulatorContainer = document.getElementById('simulator-container');
@@ -225,9 +226,9 @@
                 const cost = parseInt(data[2] || 0);
                 const penalty = parseInt(data[3] || 0);
                 const isDestructible = penalty === -100;
-                const failure = 100 - actualSuccess;
+                const failure = 100 - Math.min(100, actualSuccess);
 
-                successChanceEl.textContent = actualSuccess.toFixed(2);
+                successChanceEl.textContent = Math.min(100, actualSuccess).toFixed(2);
                 failureChanceEl.textContent = isDestructible ? '0.00' : failure.toFixed(2);
                 destroyChanceEl.textContent = isDestructible ? failure.toFixed(2) : '0.00';
                 currentGoldCostEl.textContent = cost.toLocaleString();
@@ -260,6 +261,12 @@
             if (isDestroyed) {
                 resetSimulator();
                 return;
+            }
+
+            // Apply one-time cost for using the secret
+            if (secretCheckbox.checked && !secretCostPaid) {
+                totalGold += 35000;
+                secretCostPaid = true;
             }
 
             const data = refineData.find(row => parseInt(row[0]) === currentLevel);
@@ -303,6 +310,7 @@
             totalGold = 0;
             isDestroyed = false;
             bonusChances = {};
+            secretCostPaid = false; // Reset one-time cost flag
             actionButton.disabled = false;
             updateUI();
         }
