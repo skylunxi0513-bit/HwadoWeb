@@ -12,13 +12,17 @@
     </a>
 
     <div class="container">
-        <h2>통계 페이지</h2>
         <div id="ranking-table-container">
             <p>랭킹 데이터를 불러오는 중...</p>
         </div>
     </div>
 
     <script>
+        let allRankedUsers = []; // Store all fetched and processed user data
+        let allLevelData = []; // Store level data
+        let currentSortColumn = null;
+        let sortDirection = 'asc'; // 'asc' or 'desc'
+
         // Function to calculate experience based on level
         function calculateExperience(level) {
             if (level < 12) return 0;
@@ -40,7 +44,78 @@
             return currentLevel;
         }
 
-        async function fetchAndDisplayRanking() {
+        function renderTable(usersToRender) {
+            const rankingTableContainer = document.getElementById('ranking-table-container');
+            rankingTableContainer.innerHTML = ''; // Clear previous content
+
+            if (usersToRender.length === 0) {
+                rankingTableContainer.innerHTML = '<p>데이터가 없습니다.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th data-sort-key="nickname" data-sort-type="string">닉네임</th>
+                        <th data-sort-key="level" data-sort-type="number">레벨</th>
+                        <th data-sort-key="maxEnhance" data-sort-type="number">최고 강화 단계</th>
+                        <th data-sort-key="totalGold" data-sort-type="number">누적 소모 골드</th>
+                        <th data-sort-key="destructionCount" data-sort-type="number">누적 파괴 횟수</th>
+                        <th data-sort-key="totalXp" data-sort-type="number">누적 경험치</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            usersToRender.forEach(user => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = user.nickname;
+                row.insertCell().textContent = user.level;
+                row.insertCell().textContent = `+${user.maxEnhance}`;
+                row.insertCell().textContent = `${(user.totalGold / 100000000).toFixed(2)}억`;
+                row.insertCell().textContent = user.destructionCount;
+                const xpCell = row.insertCell();
+                xpCell.textContent = user.totalXp.toLocaleString();
+                xpCell.style.textAlign = 'left'; // Explicitly left-align
+            });
+
+            rankingTableContainer.appendChild(table);
+
+            // Add event listeners to headers for sorting
+            table.querySelectorAll('th').forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortKey = header.dataset.sortKey;
+                    const sortType = header.dataset.sortType;
+                    sortTable(sortKey, sortType);
+                });
+            });
+        }
+
+        function sortTable(columnKey, type) {
+            if (currentSortColumn === columnKey) {
+                sortDirection = (sortDirection === 'asc') ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = columnKey;
+                sortDirection = (type === 'string') ? 'asc' : 'desc'; // Default for string is asc, number is desc
+            }
+
+            allRankedUsers.sort((a, b) => {
+                let comparison = 0;
+                if (type === 'string') {
+                    comparison = a[columnKey].localeCompare(b[columnKey]);
+                } else { // type === 'number'
+                    comparison = a[columnKey] - b[columnKey];
+                }
+
+                return (sortDirection === 'asc') ? comparison : -comparison;
+            });
+
+            renderTable(allRankedUsers);
+        }
+
+        async function fetchAndProcessRankingData() {
             const rankingTableContainer = document.getElementById('ranking-table-container');
             rankingTableContainer.innerHTML = '<p>랭킹 데이터를 불러오는 중...</p>';
 
@@ -51,7 +126,7 @@
                 ]);
 
                 const rankingData = (await rankingRes.json()).data;
-                const levelData = (await levelRes.json()).data;
+                allLevelData = (await levelRes.json()).data; // Store level data globally
 
                 const usersMap = new Map(); // Map<nickname, { maxEnhance, totalGold, destructionCount, totalXp }>
 
@@ -76,10 +151,10 @@
                     userData.totalXp += calculateExperience(enhanceLevel);
                 });
 
-                const rankedUsers = Array.from(usersMap.entries()).map(([nickname, data]) => {
+                allRankedUsers = Array.from(usersMap.entries()).map(([nickname, data]) => {
                     return {
                         nickname: nickname,
-                        level: getLevelFromXp(data.totalXp, levelData),
+                        level: getLevelFromXp(data.totalXp, allLevelData),
                         maxEnhance: data.maxEnhance,
                         totalGold: data.totalGold,
                         destructionCount: data.destructionCount,
@@ -87,42 +162,12 @@
                     };
                 });
 
-                // Sort by level (desc), then totalXp (desc), then maxEnhance (desc)
-                rankedUsers.sort((a, b) => {
-                    if (b.level !== a.level) return b.level - a.level;
-                    if (b.totalXp !== a.totalXp) return b.totalXp - a.totalXp;
-                    return b.maxEnhance - a.maxEnhance;
-                });
+                // Initial sort (e.g., by level desc)
+                currentSortColumn = 'level';
+                sortDirection = 'desc';
+                allRankedUsers.sort((a, b) => b.level - a.level);
 
-                // Create table
-                const table = document.createElement('table');
-                table.innerHTML = `
-                    <thead>
-                        <tr>
-                            <th>닉네임</th>
-                            <th>레벨</th>
-                            <th>최고 강화 단계</th>
-                            <th>누적 소모 골드</th>
-                            <th>누적 파괴 횟수</th>
-                            <th>누적 경험치</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                `;
-                const tbody = table.querySelector('tbody');
-
-                rankedUsers.forEach(user => {
-                    const row = tbody.insertRow();
-                    row.insertCell().textContent = user.nickname;
-                    row.insertCell().textContent = user.level;
-                    row.insertCell().textContent = `+${user.maxEnhance}`;
-                    row.insertCell().textContent = `${(user.totalGold / 100000000).toFixed(2)}억`;
-                    row.insertCell().textContent = user.destructionCount;
-                    row.insertCell().textContent = user.totalXp.toLocaleString();
-                });
-
-                rankingTableContainer.innerHTML = ''; // Clear loading message
-                rankingTableContainer.appendChild(table);
+                renderTable(allRankedUsers);
 
             } catch (error) {
                 console.error('Error fetching or processing ranking data:', error);
@@ -131,7 +176,7 @@
         }
 
         // Call the function when the page loads
-        document.addEventListener('DOMContentLoaded', fetchAndDisplayRanking);
+        document.addEventListener('DOMContentLoaded', fetchAndProcessRankingData);
     </script>
 </body>
 </html>
