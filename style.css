@@ -366,3 +366,32 @@ select, input[type="number"] {
     font-size: 14px;
     width: auto;
 }
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: left; /* Align text to left within container */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px; /* Adjust as needed */
+}
+
+.modal-header h2 {
+    margin: 0; /* Remove default h2 margin */
+    flex-grow: 1; /* Allow h2 to take remaining space */
+    text-align: center; /* Center the h2 */
+}
+
+.modal-header .stats-link button {
+    padding: 5px 10px;
+    font-size: 14px;
+    width: auto;
+}
