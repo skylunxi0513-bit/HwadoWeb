@@ -17,30 +17,26 @@
             text-align: center;
             transition: background-color 0.1s ease-in-out;
         }
-        .simulator-container.success-flash {
-            background-color: #a8e6a8; 
-        }
-        .simulator-container.failure-flash {
-            background-color: #e6a8a8; 
-        }
-        .simulator-container.destroyed-flash {
-            background-color: #cccccc; 
+        .simulator-container.success-flash { background-color: #a8e6a8; }
+        .simulator-container.failure-flash { background-color: #e6a8a8; }
+        .simulator-container.destroyed-flash { background-color: #cccccc; }
+        
+        .user-display-container {
+            position: relative;
         }
         .user-display {
             text-align: right;
             margin-bottom: 15px;
             font-size: 14px;
             color: #555;
+            cursor: help;
         }
-        .mode-selector {
-            margin-bottom: 10px;
-        }
-        .mode-selector button {
-            width: 120px;
-        }
+        .mode-selector { margin-bottom: 10px; }
+        .mode-selector button { width: 120px; }
+        
         #secret-container {
             margin-bottom: 20px;
-            display: none; /* Hidden by default */
+            display: none; 
         }
         .image-box {
             width: 100%;
@@ -64,9 +60,8 @@
             color: #007bff;
             margin-bottom: 20px;
         }
-        .level-display.destroyed {
-            color: #888;
-        }
+        .level-display.destroyed { color: #888; }
+        
         .info-grid {
             display: flex;
             justify-content: space-between;
@@ -74,12 +69,9 @@
             margin-bottom: 20px;
             padding: 0 10px;
         }
-        .probability-display p, .current-cost-display p {
-            margin: 5px 0;
-        }
-        .current-cost-display {
-            text-align: right;
-        }
+        .probability-display p, .current-cost-display p { margin: 5px 0; }
+        .current-cost-display { text-align: right; }
+        
         .action-button {
             width: 100%;
             padding: 15px;
@@ -93,10 +85,32 @@
             padding-top: 15px;
             transition: all 0.2s ease-in-out;
         }
-        .cumulative-cost-display.destroyed-style {
-            font-size: 20px;
-            font-weight: bold;
+        .cumulative-cost-display.destroyed-style { font-size: 20px; font-weight: bold; }
+
+        #user-tooltip {
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            text-align: left;
+            min-width: 250px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            bottom: 100%;
+            right: 0;
+            margin-bottom: 5px;
+            display: none; /* Hidden by default */
         }
+        #user-tooltip.hidden { display: none; }
+        #user-tooltip h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #f0f0f0;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        #user-tooltip p { margin: 0; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -105,8 +119,9 @@
     </a>
 
     <div class="simulator-container" id="simulator-container">
-        <div class="user-display">
-            사용자: <span id="username-display">비회원</span>
+        <div class="user-display-container">
+            <div class="user-display" id="user-display">사용자: <span id="username-display"></span></div>
+            <div id="user-tooltip"></div>
         </div>
 
         <div class="mode-selector">
@@ -145,103 +160,103 @@
 
     <script>
         // --- STATE ---
-        let currentLevel = 0;
-        let totalGold = 0;
-        let isDestroyed = false;
-        let refineData = [];
+        let currentLevel = 0, totalGold = 0, isDestroyed = false;
+        let refineData = [], levelData = [];
         let bonusChances = {};
-        let currentUser = '비회원';
-        let hasUnlockedSecret = false;
-        let secretCostPaid = false; // New state for one-time cost
+        let currentUser = '비회원', userLevel = 0, currentXp = 0, nextLevelXp = 0, userPerk = '혜택 없음';
+        let hasUnlockedSecret = false, secretCostPaid = false;
 
         // --- DOM Elements ---
-        const simulatorContainer = document.getElementById('simulator-container');
-        const usernameDisplay = document.getElementById('username-display');
-        const secretContainer = document.getElementById('secret-container');
-        const secretCheckbox = document.getElementById('secret-checkbox');
-        const levelDisplay = document.getElementById('level-display');
-        const itemImage = document.getElementById('item-image');
-        const imageBox = document.getElementById('image-box');
-        const actionButton = document.getElementById('action-button');
-        const successChanceEl = document.getElementById('success-chance');
-        const failureChanceEl = document.getElementById('failure-chance');
-        const destroyChanceEl = document.getElementById('destroy-chance');
-        const currentGoldCostEl = document.getElementById('current-gold-cost');
-        const totalGoldCostEl = document.getElementById('total-gold-cost');
-        const cumulativeCostDisplay = document.getElementById('cumulative-cost-display');
+        const dom = {
+            container: document.getElementById('simulator-container'),
+            userDisplay: document.getElementById('user-display'),
+            username: document.getElementById('username-display'),
+            tooltip: document.getElementById('user-tooltip'),
+            secretContainer: document.getElementById('secret-container'),
+            secretCheckbox: document.getElementById('secret-checkbox'),
+            level: document.getElementById('level-display'),
+            image: document.getElementById('item-image'),
+            imageBox: document.getElementById('image-box'),
+            actionButton: document.getElementById('action-button'),
+            successChance: document.getElementById('success-chance'),
+            failureChance: document.getElementById('failure-chance'),
+            destroyChance: document.getElementById('destroy-chance'),
+            currentGold: document.getElementById('current-gold-cost'),
+            totalGold: document.getElementById('total-gold-cost'),
+            cumulativeCost: document.getElementById('cumulative-cost-display')
+        };
 
         // --- LOGIC ---
+        const calculateXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
+
         function getImagePath(level) {
-            if (level >= 0 && level <= 4) return '0004.png';
-            if (level >= 5 && level <= 9) return '0509.png';
-            if (level >= 10 && level <= 12) return '1012.png';
+            if (level <= 4) return '0004.png';
+            if (level <= 9) return '0509.png';
+            if (level <= 12) return '1012.png';
             if (level === 13) return '1313.png';
             if (level === 14) return '1414.png';
             if (level === 15) return '1515.png';
             if (level === 16) return '1616.png';
-            if (level >= 17) return '1717.png';
-            return '0004.png';
+            return '1717.png';
         }
 
         function flashEffect(type) {
-            const className = `${type}-flash`;
-            simulatorContainer.classList.add(className);
-            setTimeout(() => {
-                simulatorContainer.classList.remove(className);
-            }, 500);
+            dom.container.classList.add(`${type}-flash`);
+            setTimeout(() => dom.container.classList.remove(`${type}-flash`), 500);
+        }
+
+        function updateUserDisplay() {
+            dom.username.innerHTML = `${currentUser}(Lv.${userLevel})`;
+            dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${userPerk}</p><p>(${currentXp}/${nextLevelXp} XP)</p>`;
         }
 
         function updateUI() {
             if (isDestroyed) {
-                levelDisplay.textContent = 'DESTROYED';
-                levelDisplay.classList.add('destroyed');
-                imageBox.style.display = 'none';
-                actionButton.textContent = '재시도';
-                successChanceEl.textContent = '-';
-                failureChanceEl.textContent = '-';
-                destroyChanceEl.textContent = '-';
-                currentGoldCostEl.textContent = '-';
-                cumulativeCostDisplay.classList.add('destroyed-style');
+                dom.level.textContent = 'DESTROYED';
+                dom.level.classList.add('destroyed');
+                dom.imageBox.style.display = 'none';
+                dom.actionButton.textContent = '재시도';
+                dom.successChance.textContent = '-';
+                dom.failureChance.textContent = '-';
+                dom.destroyChance.textContent = '-';
+                dom.currentGold.textContent = '-';
+                dom.cumulativeCost.classList.add('destroyed-style');
                 return;
             }
 
-            if (hasUnlockedSecret) {
-                secretContainer.style.display = 'block';
-            }
-
-            cumulativeCostDisplay.classList.remove('destroyed-style');
-            levelDisplay.classList.remove('destroyed');
-            imageBox.style.display = 'flex';
-            actionButton.textContent = '강화';
-
-            levelDisplay.textContent = `+${currentLevel}`;
-            itemImage.src = `images/upgrade/01/${getImagePath(currentLevel)}`;
+            if (hasUnlockedSecret) dom.secretContainer.style.display = 'block';
+            
+            dom.cumulativeCost.classList.remove('destroyed-style');
+            dom.level.classList.remove('destroyed');
+            dom.imageBox.style.display = 'flex';
+            dom.actionButton.textContent = '강화';
+            dom.level.textContent = `+${currentLevel}`;
+            dom.image.src = `images/upgrade/01/${getImagePath(currentLevel)}`;
 
             const data = refineData.find(row => parseInt(row[0]) === currentLevel);
             if (data) {
                 const baseSuccess = parseFloat(data[1] || 0);
                 const bonusSuccess = bonusChances[currentLevel] || 0;
-                const secretBonus = secretCheckbox.checked ? 1 : 0;
+                const secretBonus = dom.secretCheckbox.checked ? 1 : 0;
                 const actualSuccess = baseSuccess + bonusSuccess + secretBonus;
                 const cost = parseInt(data[2] || 0);
                 const penalty = parseInt(data[3] || 0);
                 const isDestructible = penalty === -100;
                 const failure = 100 - Math.min(100, actualSuccess);
 
-                successChanceEl.textContent = Math.min(100, actualSuccess).toFixed(2);
-                failureChanceEl.textContent = isDestructible ? '0.00' : failure.toFixed(2);
-                destroyChanceEl.textContent = isDestructible ? failure.toFixed(2) : '0.00';
-                currentGoldCostEl.textContent = cost.toLocaleString();
-                actionButton.disabled = false;
+                dom.successChance.textContent = Math.min(100, actualSuccess).toFixed(2);
+                dom.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2);
+                dom.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00';
+                dom.currentGold.textContent = cost.toLocaleString();
+                dom.actionButton.disabled = false;
             } else {
-                successChanceEl.textContent = '0.00';
-                failureChanceEl.textContent = '0.00';
-                destroyChanceEl.textContent = '0.00';
-                currentGoldCostEl.textContent = '-';
-                actionButton.disabled = true;
+                dom.successChance.textContent = '0.00';
+                dom.failureChance.textContent = '0.00';
+                dom.destroyChance.textContent = '0.00';
+                dom.currentGold.textContent = '-';
+                dom.actionButton.disabled = true;
             }
-
-            totalGoldCostEl.textContent = totalGold.toLocaleString();
+            dom.totalGold.textContent = totalGold.toLocaleString();
         }
 
         async function submitRanking() {
@@ -252,19 +267,38 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nickname: currentUser, level: currentLevel, gold: totalGold, password: '0305' })
                 });
+                // After submitting, refresh profile to get new XP and Level
+                await fetchUserProfile(); 
             } catch (error) {
                 console.error('Rank submission error:', error);
             }
         }
 
-        function handleRefine() {
-            if (isDestroyed) {
-                resetSimulator();
-                return;
-            }
+        function recalculateLevelForGuest() {
+            let newLevelInfo = { currentLevel: 0, perk: '혜택 없음', nextLevelXp: 0 };
+            let tempXp = currentXp;
 
-            // Apply one-time cost for using the secret
-            if (secretCheckbox.checked && !secretCostPaid) {
+            for (let i = 0; i < levelData.length; i++) {
+                const level = parseInt(levelData[i][0]);
+                const requiredXp = parseInt(levelData[i][1]);
+                if (tempXp >= requiredXp) {
+                    newLevelInfo.currentLevel = level;
+                    newLevelInfo.perk = levelData[i][2] || '혜택 없음';
+                } else {
+                    newLevelInfo.nextLevelXp = requiredXp;
+                    break;
+                }
+                if (i === levelData.length - 1) newLevelInfo.nextLevelXp = requiredXp;
+            }
+            userLevel = newLevelInfo.currentLevel;
+            userPerk = newLevelInfo.perk;
+            nextLevelXp = newLevelInfo.nextLevelXp;
+            updateUserDisplay();
+        }
+
+        function handleRefine() {
+            if (isDestroyed) { resetSimulator(); return; }
+            if (dom.secretCheckbox.checked && !secretCostPaid) {
                 totalGold += 35000;
                 secretCostPaid = true;
             }
@@ -272,19 +306,12 @@
             const data = refineData.find(row => parseInt(row[0]) === currentLevel);
             if (!data) return;
 
-            const baseSuccess = parseFloat(data[1] || 0);
-            const bonusSuccess = bonusChances[currentLevel] || 0;
-            const secretBonus = secretCheckbox.checked ? 1 : 0;
+            const baseSuccess = parseFloat(data[1] || 0), bonusSuccess = bonusChances[currentLevel] || 0, secretBonus = dom.secretCheckbox.checked ? 1 : 0;
             const actualSuccess = baseSuccess + bonusSuccess + secretBonus;
-            const cost = parseInt(data[2] || 0);
-            const penalty = parseInt(data[3] || 0);
-            const correctionChance = parseFloat(data[4] || 0);
-
+            const cost = parseInt(data[2] || 0), penalty = parseInt(data[3] || 0), correctionChance = parseFloat(data[4] || 0);
             totalGold += cost;
 
-            const roll = Math.random() * 100;
-
-            if (roll < actualSuccess) {
+            if (Math.random() * 100 < actualSuccess) {
                 flashEffect('success');
                 bonusChances[currentLevel] = 0;
                 currentLevel++;
@@ -293,6 +320,10 @@
                     flashEffect('destroyed');
                     if (currentLevel >= 12) {
                         hasUnlockedSecret = true;
+                        if (currentUser === '비회원') {
+                            currentXp += calculateXp(currentLevel);
+                            recalculateLevelForGuest();
+                        }
                     }
                     isDestroyed = true;
                     submitRanking();
@@ -306,46 +337,51 @@
         }
 
         function resetSimulator() {
-            currentLevel = 0;
-            totalGold = 0;
-            isDestroyed = false;
-            bonusChances = {};
-            secretCostPaid = false; // Reset one-time cost flag
-            actionButton.disabled = false;
+            currentLevel = 0; totalGold = 0; isDestroyed = false; bonusChances = {}; secretCostPaid = false;
+            dom.actionButton.disabled = false;
             updateUI();
+        }
+
+        async function fetchUserProfile() {
+            if (currentUser === '비회원') {
+                const levelInfo = levelData.length > 0 ? levelData[0] : [1, 0];
+                nextLevelXp = parseInt(levelInfo[1], 10);
+                updateUserDisplay();
+                return;
+            }
+            try {
+                const res = await fetch(`/.netlify/functions/sheets?query=getUserProfile&nickname=${encodeURIComponent(currentUser)}`);
+                const data = await res.json();
+                userLevel = data.level; currentXp = data.currentXp; nextLevelXp = data.nextLevelXp; userPerk = data.perk;
+                if (userLevel > 0) hasUnlockedSecret = true; // Assumption: Any level unlocks it
+                updateUserDisplay();
+            } catch (e) { console.error('Could not fetch user profile:', e); }
         }
 
         async function initialize() {
             currentUser = sessionStorage.getItem('simulatorUser') || '비회원';
-            usernameDisplay.textContent = currentUser;
-
-            if (currentUser !== '비회원') {
-                try {
-                    const res = await fetch(`/.netlify/functions/sheets?query=checkRank&nickname=${encodeURIComponent(currentUser)}`);
-                    const data = await res.json();
-                    if (data.unlocked) {
-                        hasUnlockedSecret = true;
-                    }
-                } catch (e) {
-                    console.error('Could not check rank:', e);
-                }
-            }
-
             try {
-                const response = await fetch(`/.netlify/functions/sheets?sheetName=강화확률`);
-                if (!response.ok) throw new Error(`Sheets API Error`);
-                const result = await response.json();
-                if (result.error) throw new Error(result.error);
-                refineData = result.data;
+                const [refineRes, levelRes] = await Promise.all([
+                    fetch(`/.netlify/functions/sheets?sheetName=강화확률`),
+                    fetch(`/.netlify/functions/sheets?sheetName=레벨`)
+                ]);
+                const refineResult = await refineRes.json();
+                const levelResult = await levelRes.json();
+                refineData = refineResult.data;
+                levelData = levelResult.data;
+                
+                await fetchUserProfile();
                 resetSimulator();
             } catch (error) {
                 console.error("Failed to load spreadsheet data:", error);
-                levelDisplay.textContent = "오류";
+                dom.level.textContent = "오류";
             }
         }
 
-        secretCheckbox.addEventListener('change', updateUI);
-        actionButton.addEventListener('click', handleRefine);
+        dom.secretCheckbox.addEventListener('change', updateUI);
+        dom.actionButton.addEventListener('click', handleRefine);
+        dom.userDisplay.addEventListener('mouseover', () => { dom.tooltip.style.display = 'block'; });
+        dom.userDisplay.addEventListener('mouseout', () => { dom.tooltip.style.display = 'none'; });
 
         initialize();
 
