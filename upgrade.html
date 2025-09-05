@@ -220,7 +220,7 @@
                 if (penalty === -100) {
                     isDestroyed = true;
                 } else {
-                    currentLevel = Math.max(0, currentLevel - penalty);
+                    currentLevel = Math.max(0, currentLevel - Math.abs(penalty));
                 }
             }
             updateUI();
