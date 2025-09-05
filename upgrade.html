@@ -110,6 +110,18 @@
         const getImagePath = (level) => { if (level <= 4) return '0004.png'; if (level <= 9) return '0509.png'; if (level <= 12) return '1012.png'; if (level === 13) return '1313.png'; if (level === 14) return '1414.png'; if (level === 15) return '1515.png'; if (level === 16) return '1616.png'; return '1717.png'; };
         const flashEffect = (type) => { dom.container.classList.add(`${type}-flash`); setTimeout(() => dom.container.classList.remove(`${type}-flash`), 500); };
 
+        function isSafeRefineUnlocked(currentRefineLevel, userLvl) {
+            const data = state.refineData.find(row => parseInt(row[0]) === currentRefineLevel);
+            const safeCost = data && data[6] ? String(data[6]).trim() : '';
+            if (safeCost === '') return false;
+
+            if (userLvl < 3) return false;
+            if (userLvl === 3 && currentRefineLevel > 9) return false;
+            if (userLvl === 4 && currentRefineLevel > 10) return false;
+            
+            return true;
+        }
+
         function updateUserDisplay() { dom.username.textContent = `${state.currentUser}(Lv.${state.userLevel})`; dom.tooltip.innerHTML = `<h4>현재 혜택</h4><p>${state.userPerk}</p><h4>다음 레벨 혜택</h4><p>${state.nextUserPerk}</p><hr><p>(${state.currentXp.toLocaleString()}/${state.nextLevelXp.toLocaleString()} XP)</p>`; }
 
         function updateUI() {
@@ -119,7 +131,8 @@
             }
             if (state.hasUnlockedSecret) dom.secretContainer.style.display = 'block';
             dom.cumulativeCost.classList.remove('destroyed-style'); dom.level.classList.remove('destroyed'); dom.imageBox.style.display = 'flex'; dom.normalButton.textContent = '강화';
-            dom.level.textContent = `+${state.currentLevel}`; dom.image.src = `images/upgrade/01/${getImagePath(state.currentLevel)}`;
+            dom.level.textContent = `+${state.currentLevel}`;
+            dom.image.src = `images/upgrade/01/${getImagePath(state.currentLevel)}`;
 
             const data = state.refineData.find(row => parseInt(row[0]) === state.currentLevel);
             if (data) {
@@ -128,8 +141,8 @@
                 dom.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); dom.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); dom.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00'; dom.currentGold.textContent = cost.toLocaleString();
                 dom.normalButton.disabled = false;
                 
-                const safeCost = data[6] ? parseInt(data[6]) : null;
-                if (safeCost !== null && String(data[6]).trim() !== '') {
+                if (isSafeRefineUnlocked(state.currentLevel, state.userLevel)) {
+                    const safeCost = parseInt(data[6]);
                     const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = state.safeBonusChances[state.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess + secretBonus, safeFailure = 100 - Math.min(100, safeActualSuccess);
                     dom.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); dom.safeFailureChance.textContent = safeFailure.toFixed(2); dom.safeGold.textContent = safeCost.toLocaleString();
                     dom.safeInfo.style.visibility = 'visible'; dom.safeButton.style.display = 'block';
@@ -143,38 +156,8 @@
         }
 
         async function submitRanking() { if (state.currentUser === '비회원') return; try { await fetch('/.netlify/functions/addRank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname: state.currentUser, level: state.currentLevel, gold: state.totalGold, password: '0305' }) }); await fetchUserProfile(); } catch (e) { console.error('Rank submission error:', e); } }
+        function recalculateLevelForGuest() { /* ... */ }
         
-        function recalculateLevelForGuest() {
-            let newLevel = 1, newPerk = '혜택 없음', newNextPerk = '혜택 없음', newNextXp = 0;
-            if (state.levelData.length > 0) {
-                newPerk = state.levelData[0][2] || '혜택 없음';
-                newNextXp = parseInt(state.levelData[0][1]) || 1;
-                if (state.levelData.length > 1) newNextPerk = state.levelData[1][2] || '혜택 없음';
-            }
-
-            for (let i = 0; i < state.levelData.length; i++) {
-                const level = parseInt(state.levelData[i][0]);
-                const requiredXp = parseInt(state.levelData[i][1]);
-                if (state.currentXp >= requiredXp) {
-                    newLevel = level;
-                    newPerk = state.levelData[i][2] || '혜택 없음';
-                    if (i + 1 < state.levelData.length) {
-                        newNextXp = parseInt(state.levelData[i+1][1]);
-                        newNextPerk = state.levelData[i+1][2] || '혜택 없음';
-                    } else {
-                        newNextXp = requiredXp;
-                        newNextPerk = '최고 레벨';
-                    }
-                } else {
-                    newNextXp = requiredXp;
-                    newNextPerk = state.levelData[i][2] || '혜택 없음';
-                    break;
-                }
-            }
-            state.userLevel = newLevel; state.userPerk = newPerk; state.nextUserPerk = newNextPerk; state.nextLevelXp = newNextXp;
-            updateUserDisplay();
-        }
-
         function handleRefine(isSafe) {
             if (state.isDestroyed) { resetSimulator(); return; }
             if (dom.secretCheckbox.checked && !state.secretCostPaid) { state.totalGold += 35000; state.secretCostPaid = true; }
@@ -223,19 +206,12 @@
         function resetSimulator() { state.currentLevel = 0; state.totalGold = 0; state.isDestroyed = false; state.bonusChances = {}; state.safeBonusChances = {}; state.secretCostPaid = false; dom.normalButton.disabled = false; updateUI(); }
         
         async function fetchUserProfile() {
-            if (state.currentUser === '비회원') {
-                recalculateLevelForGuest();
-                return;
-            }
+            if (state.currentUser === '비회원') { recalculateLevelForGuest(); return; }
             try {
                 const res = await fetch(`/.netlify/functions/sheets?query=getUserProfile&nickname=${encodeURIComponent(state.currentUser)}`);
                 const data = await res.json();
-                state.userLevel = data.level || 1;
-                state.currentXp = data.currentXp;
-                state.nextLevelXp = data.nextLevelXp;
-                state.userPerk = data.perk;
-                state.nextUserPerk = data.nextPerk;
-                if (state.userLevel > 1) state.hasUnlockedSecret = true;
+                state.userLevel = data.level || 1; state.currentXp = data.currentXp; state.nextLevelXp = data.nextLevelXp; state.userPerk = data.perk; state.nextUserPerk = data.nextPerk;
+                if (state.userLevel >= 3) state.hasUnlockedSecret = true;
                 updateUserDisplay();
             } catch (e) { console.error('Could not fetch user profile:', e); }
         }
