@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전도체 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Add some specific styles for this page */
+        #search-container {
+            margin: 20px 0;
+        }
+        #searchInput {
+            width: 50%;
+            max-width: 400px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        .table-container {
+            margin: 0 auto;
+            max-width: 900px;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+
+    <div id="search-container">
+        <input type="text" id="searchInput" placeholder="폐품명으로 검색...">
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>폐품명</th>
+                    <th>가격</th>
+                    <th>무게</th>
+                    <th>전도</th>
+                    <th>양손</th>
+                </tr>
+            </thead>
+            <tbody id="scrapTableBody">
+                <!-- Data will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const tableBody = document.getElementById('scrapTableBody');
+        const searchInput = document.getElementById('searchInput');
+
+        async function fetchScrapData() {
+            tableBody.innerHTML = '<tr><td colspan="5">데이터를 불러오는 중...</td></tr>';
+            try {
+                const response = await fetch(`/.netlify/functions/sheets?sheetName=전도체`);
+                if (!response.ok) {
+                    throw new Error(`Sheets API Error: ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                return result.data;
+            } catch (error) {
+                console.error('Failed to fetch scrap data:', error);
+                tableBody.innerHTML = `<tr><td colspan="5">오류 발생: ${error.message}</td></tr>`;
+                return [];
+            }
+        }
+
+        function renderTable(data) {
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5">표시할 데이터가 없습니다.</td></tr>';
+                return;
+            }
+
+            let tableHtml = '';
+            // Skip header row from sheet, assuming it's row 0
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                const scrapName = row[0] || '';
+                const priceMin = row[1] || 'N/A';
+                const priceMax = row[2] || 'N/A';
+                const price = `${priceMin}~${priceMax}`;
+                const weight = row[3] ? `${row[3]}lb` : 'N/A';
+                const isConductive = row[4] === '1' ? 'O' : 'X';
+                const isTwoHanded = row[5] === '1' ? 'O' : 'X';
+
+                tableHtml += `
+                    <tr>
+                        <td>${scrapName}</td>
+                        <td>${price}</td>
+                        <td>${weight}</td>
+                        <td>${isConductive}</td>
+                        <td>${isTwoHanded}</td>
+                    </tr>
+                `;
+            }
+            tableBody.innerHTML = tableHtml;
+        }
+
+        function filterTable() {
+            const searchText = searchInput.value.toLowerCase();
+            const rows = tableBody.getElementsByTagName('tr');
+
+            for (const row of rows) {
+                const scrapNameCell = row.getElementsByTagName('td')[0];
+                if (scrapNameCell) {
+                    const scrapName = scrapNameCell.textContent.toLowerCase();
+                    if (scrapName.includes(searchText)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        searchInput.addEventListener('input', filterTable);
+
+        // Initial load
+        fetchScrapData().then(renderTable);
+
+    </script>
+</body>
+</html>
