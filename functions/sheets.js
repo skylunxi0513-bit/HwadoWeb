@@ -22,7 +22,7 @@ function calculateLevel(totalXp, levelData) {
             if (totalXp >= requiredXp) {
                 currentLevel = level;
                 perk = levelData[i][2] || '혜택 없음';
-                tickets = { plus7: data[i][3], plus10: data[i][4], plus11: data[i][5], plus12: data[i][6] };
+                tickets = { plus7: levelData[i][3], plus10: levelData[i][4], plus11: levelData[i][5], plus12: levelData[i][6] };
 
                 if (i + 1 < levelData.length) {
                     nextLevelXp = parseInt(levelData[i+1][1]);
