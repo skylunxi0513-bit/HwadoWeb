@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강화/증폭 시뮬레이터 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .simulator-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .mode-selector {
+            margin-bottom: 20px;
+        }
+        .mode-selector button {
+            width: 120px;
+        }
+        .image-box {
+            width: 100%;
+            height: 200px;
+            border: 2px dashed #ccc;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9f9f9;
+        }
+        .level-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        .probability-display {
+            text-align: left;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+        .probability-display p {
+            margin: 5px 0;
+        }
+        .action-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .cost-display {
+            font-size: 16px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+
+    <div class="simulator-container">
+        <div class="mode-selector">
+            <button id="refine-btn">강화</button>
+            <button id="amplify-btn">증폭</button>
+        </div>
+
+        <div class="image-box">
+            <!-- 이미지가 여기에 들어갑니다 -->
+        </div>
+
+        <div class="level-display">
+            +0
+        </div>
+
+        <div class="probability-display">
+            <p>성공 확률:</p>
+            <p>실패 확률:</p>
+            <p>파괴 확률:</p>
+        </div>
+
+        <button class="action-button">강화</button>
+
+        <div class="cost-display">
+            <p>000,000 골드</p>
+            <p>모순의 결정체 * 0</p>
+        </div>
+    </div>
+
+</body>
+</html>
