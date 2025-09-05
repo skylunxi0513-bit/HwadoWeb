@@ -41,9 +41,9 @@
             text-align: left;
             min-width: 250px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            top: 100%; /* Changed from bottom */
+            top: 100%;
             right: 0;
-            margin-top: 5px; /* Changed from margin-bottom */
+            margin-top: 5px;
             display: none; 
         }
         #user-tooltip h4 { margin: 0 0 8px 0; font-size: 14px; color: #f0f0f0; border-bottom: 1px solid #555; padding-bottom: 5px; }
@@ -54,8 +54,8 @@
     <a href="index.html" class="header-link"><h1>화도웹</h1></a>
 
     <div class="simulator-container" id="simulator-container">
-        <div class="user-display-container">
-            <div class="user-display" id="user-display-container">사용자: <span id="username-display"></span></div>
+        <div class="user-display-container" id="user-display-container">
+            <div class="user-display">사용자: <span id="username-display"></span></div>
             <div id="user-tooltip"></div>
         </div>
 
@@ -129,7 +129,7 @@
                 dom.normalButton.disabled = false;
                 
                 const safeCost = data[6] ? parseInt(data[6]) : null;
-                if (safeCost !== null && data[6].trim() !== '') {
+                if (safeCost !== null && String(data[6]).trim() !== '') {
                     const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = state.safeBonusChances[state.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess + secretBonus, safeFailure = 100 - Math.min(100, safeActualSuccess);
                     dom.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); dom.safeFailureChance.textContent = safeFailure.toFixed(2); dom.safeGold.textContent = safeCost.toLocaleString();
                     dom.safeInfo.style.visibility = 'visible'; dom.safeButton.style.display = 'block';
@@ -143,8 +143,38 @@
         }
 
         async function submitRanking() { if (state.currentUser === '비회원') return; try { await fetch('/.netlify/functions/addRank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname: state.currentUser, level: state.currentLevel, gold: state.totalGold, password: '0305' }) }); await fetchUserProfile(); } catch (e) { console.error('Rank submission error:', e); } }
-        function recalculateLevelForGuest() { /* ... logic from previous turn ... */ }
         
+        function recalculateLevelForGuest() {
+            let newLevel = 1, newPerk = '혜택 없음', newNextPerk = '혜택 없음', newNextXp = 0;
+            if (state.levelData.length > 0) {
+                newPerk = state.levelData[0][2] || '혜택 없음';
+                newNextXp = parseInt(state.levelData[0][1]) || 1;
+                if (state.levelData.length > 1) newNextPerk = state.levelData[1][2] || '혜택 없음';
+            }
+
+            for (let i = 0; i < state.levelData.length; i++) {
+                const level = parseInt(state.levelData[i][0]);
+                const requiredXp = parseInt(state.levelData[i][1]);
+                if (state.currentXp >= requiredXp) {
+                    newLevel = level;
+                    newPerk = state.levelData[i][2] || '혜택 없음';
+                    if (i + 1 < state.levelData.length) {
+                        newNextXp = parseInt(state.levelData[i+1][1]);
+                        newNextPerk = state.levelData[i+1][2] || '혜택 없음';
+                    } else {
+                        newNextXp = requiredXp;
+                        newNextPerk = '최고 레벨';
+                    }
+                } else {
+                    newNextXp = requiredXp;
+                    newNextPerk = state.levelData[i][2] || '혜택 없음';
+                    break;
+                }
+            }
+            state.userLevel = newLevel; state.userPerk = newPerk; state.nextUserPerk = newNextPerk; state.nextLevelXp = newNextXp;
+            updateUserDisplay();
+        }
+
         function handleRefine(isSafe) {
             if (state.isDestroyed) { resetSimulator(); return; }
             if (dom.secretCheckbox.checked && !state.secretCostPaid) { state.totalGold += 35000; state.secretCostPaid = true; }
@@ -191,7 +221,24 @@
         }
 
         function resetSimulator() { state.currentLevel = 0; state.totalGold = 0; state.isDestroyed = false; state.bonusChances = {}; state.safeBonusChances = {}; state.secretCostPaid = false; dom.normalButton.disabled = false; updateUI(); }
-        async function fetchUserProfile() { /* ... logic from previous turn ... */ }
+        
+        async function fetchUserProfile() {
+            if (state.currentUser === '비회원') {
+                recalculateLevelForGuest();
+                return;
+            }
+            try {
+                const res = await fetch(`/.netlify/functions/sheets?query=getUserProfile&nickname=${encodeURIComponent(state.currentUser)}`);
+                const data = await res.json();
+                state.userLevel = data.level || 1;
+                state.currentXp = data.currentXp;
+                state.nextLevelXp = data.nextLevelXp;
+                state.userPerk = data.perk;
+                state.nextUserPerk = data.nextPerk;
+                if (state.userLevel > 1) state.hasUnlockedSecret = true;
+                updateUserDisplay();
+            } catch (e) { console.error('Could not fetch user profile:', e); }
+        }
 
         async function initialize() {
             state.currentUser = sessionStorage.getItem('simulatorUser') || '비회원';
