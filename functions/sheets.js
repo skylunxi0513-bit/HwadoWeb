@@ -101,7 +101,18 @@ exports.handler = async function(event, context) {
     const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
 
     let rows = response.data.values || [];
-    const dataToReturn = rows.length > 1 ? rows.slice(1) : [];
+    let dataToReturn = rows.length > 1 ? rows.slice(1) : [];
+
+    // 필터링 로직 추가
+    const filterColumn = event.queryStringParameters.filterColumn;
+    const filterValue = event.queryStringParameters.filterValue;
+
+    if (filterColumn && filterValue) {
+        const columnIndex = parseInt(filterColumn, 10);
+        if (!isNaN(columnIndex)) {
+            dataToReturn = dataToReturn.filter(row => row[columnIndex] === filterValue);
+        }
+    }
 
     return {
       statusCode: 200,
