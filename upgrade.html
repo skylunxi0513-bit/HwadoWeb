@@ -19,7 +19,7 @@
         .perk-item-group { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
         .perk-item { display: none; align-items: center; gap: 5px; }
         .perk-item label { cursor: help; }
-        #autoticket-container, #amplify-autoticket-container { display: none; text-align: center; }
+        #autoticket-container, #amplify-autoticket-container, #amplify-frenzy-container { display: none; text-align: center; }
         .image-box { width: 100%; height: 200px; border: 2px dashed #ccc; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; overflow: hidden; }
         .image-box img { max-width: 100%; max-height: 100%; transform: scale(2.5); }
         .level-display { font-size: 48px; font-weight: bold; color: #007bff; margin-bottom: 20px; line-height: 1.2; }
@@ -79,6 +79,7 @@
         <div id="amplify-mode-container" class="hidden">
             <div class="perks-container">
                  <div class="perk-item" id="amplify-autoticket-container"><input type="checkbox" id="amplify-autoticket-checkbox"><label for="amplify-autoticket-checkbox">증폭권 자동 사용</label></div>
+                 <div class="perk-item" id="amplify-frenzy-container"><input type="checkbox" id="amplify-frenzy-checkbox"><label for="amplify-frenzy-checkbox">증폭 대란 자동 발동</label></div>
             </div>
             <div class="image-box" id="amplify-image-box"><img id="amplify-item-image" src="" alt="아이템 이미지"></div>
             <div class="level-display amplify" id="amplify-level-display">+0</div>
@@ -103,14 +104,14 @@
             currentMode: 'refine',
             currentUser: '비회원',
             refine: { userLevel: 1, currentXp: 0, nextLevelXp: 0, userPerk: '혜택 없음', nextUserPerk: '혜택 없음', userTickets: {}, hasUnlockedSecret: false, levelData: [], currentLevel: 0, totalGold: 0, isDestroyed: false, data: [], bonusChances: {}, safeBonusChances: {}, secretCostPaid: false },
-            amplify: { userLevel: 1, currentXp: 0, nextLevelXp: 0, userPerk: '혜택 없음', nextUserPerk: '혜택 없음', userTickets: {}, levelData: [], currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, data: [], bonusChances: {}, safeBonusChances: {} }
+            amplify: { userLevel: 1, currentXp: 0, nextLevelXp: 0, userPerk: '혜택 없음', nextUserPerk: '혜택 없음', userTickets: {}, levelData: [], currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, data: [], bonusChances: {}, safeBonusChances: {}, isFrenzyActive: false }
         };
         let isActionInProgress = false;
 
         const dom = {
             container: document.getElementById('simulator-container'), userDisplayContainer: document.getElementById('user-display-container'), username: document.getElementById('username-display'), tooltip: document.getElementById('tooltip'), refineBtn: document.getElementById('refine-btn'), amplifyBtn: document.getElementById('amplify-btn'), refineModeContainer: document.getElementById('refine-mode-container'), amplifyModeContainer: document.getElementById('amplify-mode-container'),
             refine: { secretContainer: document.getElementById('secret-container'), secretCheckbox: document.getElementById('secret-checkbox'), costumeContainer: document.getElementById('costume-container'), costumeCheckbox: document.getElementById('costume-checkbox'), autoticketContainer: document.getElementById('autoticket-container'), autoticketCheckbox: document.getElementById('autoticket-checkbox'), level: document.getElementById('refine-level-display'), image: document.getElementById('refine-item-image'), imageBox: document.getElementById('refine-image-box'), normalButton: document.getElementById('refine-action-button-normal'), safeButton: document.getElementById('refine-action-button-safe'), successChance: document.getElementById('refine-success-chance'), failureChance: document.getElementById('refine-failure-chance'), destroyChance: document.getElementById('refine-destroy-chance'), currentGold: document.getElementById('refine-current-gold-cost'), safeSuccessChance: document.getElementById('refine-safe-success-chance'), safeFailureChance: document.getElementById('refine-safe-failure-chance'), safeGold: document.getElementById('refine-safe-gold-cost'), totalGold: document.getElementById('refine-total-gold-cost'), cumulativeCost: document.getElementById('refine-cumulative-cost-display'), safeInfo: document.getElementById('safe-refine-info') },
-            amplify: { autoticketContainer: document.getElementById('amplify-autoticket-container'), autoticketCheckbox: document.getElementById('amplify-autoticket-checkbox'), level: document.getElementById('amplify-level-display'), image: document.getElementById('amplify-item-image'), imageBox: document.getElementById('amplify-image-box'), normalButton: document.getElementById('amplify-action-button-normal'), safeButton: document.getElementById('amplify-action-button-safe'), successChance: document.getElementById('amplify-success-chance'), failureChance: document.getElementById('amplify-failure-chance'), destroyChance: document.getElementById('amplify-destroy-chance'), currentCost: document.getElementById('amplify-current-cost'), safeSuccessChance: document.getElementById('amplify-safe-success-chance'), safeFailureChance: document.getElementById('amplify-safe-failure-chance'), safeCost: document.getElementById('amplify-safe-cost'), totalGold: document.getElementById('amplify-total-gold-cost'), totalCrystals: document.getElementById('amplify-total-crystal-cost'), cumulativeCost: document.getElementById('amplify-cumulative-cost-display'), safeInfo: document.getElementById('safe-amplify-info') }
+            amplify: { autoticketContainer: document.getElementById('amplify-autoticket-container'), autoticketCheckbox: document.getElementById('amplify-autoticket-checkbox'), frenzyContainer: document.getElementById('amplify-frenzy-container'), frenzyCheckbox: document.getElementById('amplify-frenzy-checkbox'), level: document.getElementById('amplify-level-display'), image: document.getElementById('amplify-item-image'), imageBox: document.getElementById('amplify-image-box'), normalButton: document.getElementById('amplify-action-button-normal'), safeButton: document.getElementById('amplify-action-button-safe'), successChance: document.getElementById('amplify-success-chance'), failureChance: document.getElementById('amplify-failure-chance'), destroyChance: document.getElementById('amplify-destroy-chance'), currentCost: document.getElementById('amplify-current-cost'), safeSuccessChance: document.getElementById('amplify-safe-success-chance'), safeFailureChance: document.getElementById('amplify-safe-failure-chance'), safeCost: document.getElementById('amplify-safe-cost'), totalGold: document.getElementById('amplify-total-gold-cost'), totalCrystals: document.getElementById('amplify-total-crystal-cost'), cumulativeCost: document.getElementById('amplify-cumulative-cost-display'), safeInfo: document.getElementById('safe-amplify-info') }
         };
 
         const calculateXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
@@ -197,6 +198,7 @@
                 return;
             }
             D.autoticketContainer.style.display = S.userLevel >= 6 ? 'block' : 'none';
+            D.frenzyContainer.style.display = S.userLevel >= 7 ? 'block' : 'none';
             D.cumulativeCost.classList.remove('destroyed-style'); D.level.classList.remove('destroyed'); D.imageBox.style.display = 'flex'; D.normalButton.textContent = '증폭'; D.level.textContent = `+${S.currentLevel}`;
             D.image.src = `images/upgrade/02/${getAmplifyImagePath(S.currentLevel)}`;
             const data = S.data.find(row => parseInt(row[0]) === S.currentLevel);
@@ -207,9 +209,18 @@
                 D.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); D.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); D.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00';
                 D.currentCost.textContent = `${goldCost.toLocaleString()} + 모순${crystalCost}`;
                 D.normalButton.disabled = false;
-                if (isSafeAmplifyUnlocked(S.currentLevel, S.userLevel)) {
-                    const safeGoldCost = parseInt(data[6] || 0);
-                    const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = S.safeBonusChances[S.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess;
+                if (isSafeAmplifyUnlocked(S.currentLevel, S.userLevel) && S.currentLevel < 10) {
+                    let safeGoldCost = parseInt(data[6] || 0);
+                    let safeBaseSuccess = parseFloat(data[7] || 0);
+                    let safeBonusSuccess = S.safeBonusChances[S.currentLevel] || 0;
+                    let safeActualSuccess = safeBaseSuccess + safeBonusSuccess;
+                    if (S.isFrenzyActive) {
+                        D.safeButton.textContent = '안전 증폭(증폭 대란!)';
+                        if (S.currentLevel <= 6) { safeActualSuccess = 100; } 
+                        else if (S.currentLevel >= 7 && S.currentLevel <= 9) { safeActualSuccess += 10; }
+                    } else {
+                        D.safeButton.textContent = '안전 증폭';
+                    }
                     D.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); D.safeFailureChance.textContent = (100 - Math.min(100, safeActualSuccess)).toFixed(2);
                     D.safeCost.textContent = `${safeGoldCost.toLocaleString()}`;
                     D.safeInfo.style.visibility = 'visible'; D.safeButton.style.display = 'block'; D.safeButton.disabled = false;
@@ -270,7 +281,7 @@
             const data = S.data.find(row => parseInt(row[0]) === S.currentLevel);
             if (!data) { isActionInProgress = false; return; }
             let successChance, goldCost, crystalCost, penalty, correctionChance;
-            if (isSafe) { goldCost = parseInt(data[6] || 0); crystalCost = 0; successChance = parseFloat(data[7] || 0) + (S.safeBonusChances[S.currentLevel] || 0); correctionChance = parseFloat(data[8] || 0); penalty = 0; } 
+            if (isSafe) { goldCost = parseInt(data[6] || 0); crystalCost = 0; successChance = parseFloat(data[7] || 0) + (S.safeBonusChances[S.currentLevel] || 0); if (S.isFrenzyActive) { if (S.currentLevel <= 6) { successChance = 100; } else if (S.currentLevel >= 7 && S.currentLevel <= 9) { successChance += 10; } } correctionChance = parseFloat(data[8] || 0); penalty = 0; } 
             else { goldCost = parseInt(data[2] || 0); crystalCost = parseInt(data[4] || 0); successChance = parseFloat(data[1] || 0) + (S.bonusChances[S.currentLevel] || 0); penalty = parseInt(data[3] || 0); }
             S.totalGold += goldCost; S.totalCrystals += crystalCost;
             if (Math.random() * 100 < successChance) {
@@ -279,7 +290,17 @@
                 S.currentLevel++;
             } else {
                 wasSuccess = false;
-                if (penalty === -100) { flashEffect('destroyed'); if (state.currentUser === '비회원') { S.currentXp += calculateAmpXp(S.currentLevel); recalculateAmplifyLevelForGuest(); } S.isDestroyed = true; submitAmplifyRanking(); } 
+                if (penalty === -100) {
+                    flashEffect('destroyed'); 
+                    if (dom.amplify.frenzyCheckbox.checked) {
+                        const userLevelData = S.levelData.find(row => parseInt(row[0]) === S.userLevel);
+                        const frenzyChance = userLevelData ? parseFloat(userLevelData[7] || 0) : 0;
+                        if (Math.random() * 100 < frenzyChance) { S.isFrenzyActive = true; }
+                    }
+                    if (state.currentUser === '비회원') { S.currentXp += calculateAmpXp(S.currentLevel); recalculateAmplifyLevelForGuest(); } 
+                    S.isDestroyed = true; 
+                    submitAmplifyRanking(); 
+                } 
                 else { flashEffect('failure'); if (isSafe) { S.safeBonusChances[S.currentLevel] = (S.safeBonusChances[S.currentLevel] || 0) + correctionChance; } else { S.currentLevel = Math.max(0, S.currentLevel + penalty); } }
             }
             updateAmplifyUI();
@@ -293,7 +314,7 @@
                 state.refine = { ...state.refine, currentLevel: 0, totalGold: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {}, secretCostPaid: false };
                 if (dom.refine.autoticketCheckbox.checked) { handleRefineAutoTicket(); }
             } else {
-                state.amplify = { ...state.amplify, currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {} };
+                state.amplify = { ...state.amplify, currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {}, isFrenzyActive: false };
                 if (dom.amplify.autoticketCheckbox.checked) { handleAmplifyAutoTicket(); }
             }
             updateUI();
@@ -321,6 +342,7 @@
         dom.amplify.normalButton.addEventListener('click', () => handleAmplify(false));
         dom.amplify.safeButton.addEventListener('click', () => handleAmplify(true));
         dom.amplify.autoticketCheckbox.addEventListener('change', updateAmplifyUI);
+        dom.amplify.frenzyCheckbox.addEventListener('change', updateAmplifyUI);
         
         const isSafeRefineUnlocked = (currentRefineLevel, userLvl) => { const data = state.refine.data.find(row => parseInt(row[0]) === currentRefineLevel); const safeCost = data && data[6] ? String(data[6]).trim() : ''; if (safeCost === '') return false; if (userLvl < 3) return false; if (userLvl === 3 && currentRefineLevel > 9) return false; if (userLvl === 4 && currentRefineLevel > 10) return false; return true; };
         const isSafeAmplifyUnlocked = (currentAmpLevel, userAmpLvl) => { if (userAmpLvl < 2) return false; if (userAmpLvl === 2 && currentAmpLevel > 6) return false; if (userAmpLvl === 3 && currentAmpLevel > 7) return false; if (userAmpLvl === 4 && currentAmpLevel > 8) return false; return true; };
@@ -329,7 +351,7 @@
         const recalculateAmplifyLevelForGuest = () => { const S = state.amplify; let newLevel = 1, newPerk = '혜택 없음', newNextPerk = '혜택 없음', newNextXp = 0; if (S.levelData.length > 0) { newPerk = S.levelData[0][2] || '혜택 없음'; newNextXp = parseInt(S.levelData[0][1]) || 1; if (S.levelData.length > 1) newNextPerk = S.levelData[1][2] || '혜택 없음'; } for (let i = 0; i < S.levelData.length; i++) { const level = parseInt(S.levelData[i][0]); const requiredXp = parseInt(S.levelData[i][1]); if (S.currentXp >= requiredXp) { newLevel = level; newPerk = S.levelData[i][2] || '혜택 없음'; if (i + 1 < S.levelData.length) { newNextXp = parseInt(S.levelData[i+1][1]); newNextPerk = S.levelData[i+1][2] || '혜택 없음'; } else { newNextXp = requiredXp; newNextPerk = '최고 레벨'; } } else { newNextXp = requiredXp; newNextPerk = S.levelData[i][2] || '혜택 없음'; break; } } S.userLevel = newLevel; S.userPerk = newPerk; S.nextUserPerk = newNextPerk; S.nextLevelXp = newNextXp; updateUserDisplay(); };
         
         const handleRefineAutoTicket = () => { const S = state.refine; const ticketChances = [S.userTickets.plus12, S.userTickets.plus11, S.userTickets.plus10, S.userTickets.plus7]; const ticketCosts = [77000000, 17500000, 7000000, 650000]; const targetLevels = [12, 11, 10, 7]; let ticketSucceeded = false; for (let i = 0; i < ticketChances.length; i++) { const chance = parseFloat(ticketChances[i] || 0); if (chance > 0) { S.totalGold += ticketCosts[i] * (chance / 100); if (Math.random() * 100 < chance) { S.currentLevel = targetLevels[i]; flashEffect('ticket-success'); ticketSucceeded = true; break; } } } if (!ticketSucceeded) { S.currentLevel = 0; } };
-        const handleAmplifyAutoTicket = () => { const S = state.amplify; const ticketChances = [S.userTickets.plus12, S.userTickets.plus11, S.userTickets.plus10, S.userTickets.plus7]; const ticketCosts = [77000000, 17500000, 7000000, 650000]; const targetLevels = [12, 11, 10, 7]; let ticketSucceeded = false; for (let i = 0; i < ticketChances.length; i++) { const chance = parseFloat(ticketChances[i] || 0); if (chance > 0) { S.totalGold += ticketCosts[i] * (chance / 100); if (Math.random() * 100 < chance) { S.currentLevel = targetLevels[i]; flashEffect('ticket-success'); ticketSucceeded = true; break; } } } if (!ticketSucceeded) { S.currentLevel = 0; } };
+        const handleAmplifyAutoTicket = () => { const S = state.amplify; const ticketChances = [S.userTickets.plus12, S.userTickets.plus11, S.userTickets.plus10, S.userTickets.plus7]; const ticketCosts = [530000000, 166000000, 47000000, 5800000]; const targetLevels = [12, 11, 10, 7]; let ticketSucceeded = false; for (let i = 0; i < ticketChances.length; i++) { const chance = parseFloat(ticketChances[i] || 0); if (chance > 0) { S.totalGold += ticketCosts[i] * (chance / 100); if (Math.random() * 100 < chance) { S.currentLevel = targetLevels[i]; flashEffect('ticket-success'); ticketSucceeded = true; break; } } } if (!ticketSucceeded) { S.currentLevel = 0; } };
 
         const secretLabel = document.querySelector('label[for="secret-checkbox"]');
         secretLabel.addEventListener('mouseover', (e) => showTooltip('강화의 비밀 아이템을 사용하여 장비 강화의 성공 확률을 1%p만큼 증가시킵니다. 사용시 35,000골드가 소비됩니다.', secretLabel));
@@ -340,6 +362,9 @@
         const autoticketLabel = document.querySelector('label[for="autoticket-checkbox"]');
         autoticketLabel.addEventListener('mouseover', (e) => showTooltip('사용 가능한 강화권 중 고강화권을 우선적으로 모두 사용합니다. 최초 1회만 적용됩니다.', autoticketLabel));
         autoticketLabel.addEventListener('mouseout', hideTooltip);
+        const ampAutoticketLabel = document.querySelector('label[for="amplify-autoticket-checkbox"]');
+        ampAutoticketLabel.addEventListener('mouseover', (e) => showTooltip('사용 가능한 증폭권 중 고증폭권을 우선적으로 모두 사용합니다. 최초 1회만 적용됩니다.', ampAutoticketLabel));
+        ampAutoticketLabel.addEventListener('mouseout', hideTooltip);
 
         initialize();
     </script>
