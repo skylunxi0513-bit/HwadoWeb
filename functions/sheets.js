@@ -6,6 +6,15 @@ function calculateXp(level) {
     return Math.pow(3, level - 12);
 }
 
+// 새로운 증폭 경험치 계산 함수
+function calculateAmpXp(level) {
+    if (level < 10) return 0;
+    if (level === 10) return 1;
+    if (level === 11) return 2;
+    if (level === 12) return 5;
+    return 5 * Math.pow(3, level - 12);
+}
+
 function calculateLevel(totalXp, levelData) {
     let currentLevel = 1, perk = '혜택 없음', nextLevelXp = 0, nextPerk = '최고 레벨';
     let tickets = {};
@@ -96,7 +105,8 @@ exports.handler = async function(event, context) {
 
         const rankingRows = rankingRes.data.values || [];
         const userRanks = rankingRows.filter(row => row[0] === nickname);
-        const totalXp = userRanks.reduce((sum, row) => sum + calculateXp(parseInt(row[1], 10)), 0);
+        // 증폭 경험치 계산 로직으로 변경
+        const totalXp = userRanks.reduce((sum, row) => sum + calculateAmpXp(parseInt(row[1], 10)), 0);
         const levelData = levelRes.data.values ? levelRes.data.values.slice(1) : [];
         const profile = calculateLevel(totalXp, levelData);
 
