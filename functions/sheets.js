@@ -22,7 +22,6 @@ function calculateLevel(totalXp, levelData) {
             if (totalXp >= requiredXp) {
                 currentLevel = level;
                 perk = levelData[i][2] || '혜택 없음';
-                // D, E, F, G열을 증폭권으로 매핑 (plus7, plus10, plus11, plus12)
                 tickets = { plus7: levelData[i][3], plus10: levelData[i][4], plus11: levelData[i][5], plus12: levelData[i][6] };
 
                 if (i + 1 < levelData.length) {
@@ -73,7 +72,18 @@ exports.handler = async function(event, context) {
         const levelData = levelRes.data.values ? levelRes.data.values.slice(1) : [];
         const profile = calculateLevel(totalXp, levelData);
 
-        return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(profile) };
+        return {
+            statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+                level: profile.currentLevel,
+                currentXp: totalXp,
+                nextLevelXp: profile.nextLevelXp,
+                perk: profile.perk,
+                nextPerk: profile.nextPerk,
+                tickets: profile.tickets
+            })
+        };
 
     } else if (queryType === 'getAmpUserProfile') {
         const nickname = event.queryStringParameters.nickname;
@@ -90,7 +100,18 @@ exports.handler = async function(event, context) {
         const levelData = levelRes.data.values ? levelRes.data.values.slice(1) : [];
         const profile = calculateLevel(totalXp, levelData);
 
-        return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(profile) };
+        return {
+            statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+                level: profile.currentLevel,
+                currentXp: totalXp,
+                nextLevelXp: profile.nextLevelXp,
+                perk: profile.perk,
+                nextPerk: profile.nextPerk,
+                tickets: profile.tickets
+            })
+        };
     }
 
     // Fallback for generic sheet reading
