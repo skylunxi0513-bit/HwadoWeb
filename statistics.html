@@ -248,7 +248,7 @@
 
                         if (ampm === '오후' && hour < 12) { hour += 12; }
                         else if (ampm === '오전' && hour === 12) { hour = 0; }
-                        timestamp = new Date(year, month, day, hour, minute, second);
+                        timestamp = new Date(Date.UTC(year, month, day, hour, minute, second));
                         console.log('Constructed Date object:', timestamp, 'isNaN:', isNaN(timestamp.getTime()));
                     }
                 }
@@ -346,14 +346,18 @@
             const ampmPart = parts[3]; // "오전" or "오후"
             const timeString = parts[4]; // "6:23:56"
 
-            const timeComponents = timeString.split(':');
-            const hour = parseInt(timeComponents[0]);
-            const minute = timeComponents[1];
-            const second = timeComponents[2];
+            const hour24 = date.getHours();
+            const minute = date.getMinutes();
+            const second = date.getSeconds();
 
-            const displayHour = hour % 12 === 0 ? 12 : hour % 12; // Convert 0 to 12 for AM/PM
+            const ampm = hour24 < 12 ? '오전' : '오후';
+            const displayHour = hour24 % 12 === 0 ? 12 : hour24 % 12;
 
-            const newTimePart = `${ampmPart} ${displayHour}:${minute}:${second}`;
+            // Pad minutes and seconds with leading zeros if necessary
+            const paddedMinute = String(minute).padStart(2, '0');
+            const paddedSecond = String(second).padStart(2, '0');
+
+            const newTimePart = `${ampm} ${displayHour}:${paddedMinute}:${paddedSecond}`;
             
             return `${datePart} ${newTimePart}`;
         }
