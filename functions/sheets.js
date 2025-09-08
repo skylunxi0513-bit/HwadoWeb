@@ -22,6 +22,7 @@ function calculateLevel(totalXp, levelData) {
             if (totalXp >= requiredXp) {
                 currentLevel = level;
                 perk = levelData[i][2] || '혜택 없음';
+                // D, E, F, G열을 증폭권으로 매핑 (plus7, plus10, plus11, plus12)
                 tickets = { plus7: levelData[i][3], plus10: levelData[i][4], plus11: levelData[i][5], plus12: levelData[i][6] };
 
                 if (i + 1 < levelData.length) {
@@ -59,9 +60,7 @@ exports.handler = async function(event, context) {
 
     if (queryType === 'getUserProfile') {
         const nickname = event.queryStringParameters.nickname;
-        if (!nickname) {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Nickname is required.' }) };
-        }
+        if (!nickname) return { statusCode: 400, body: JSON.stringify({ error: 'Nickname is required.' }) };
 
         const [rankingRes, levelRes] = await Promise.all([
             sheets.spreadsheets.values.get({ spreadsheetId, range: '강화랭킹!A:B' }),
@@ -70,31 +69,34 @@ exports.handler = async function(event, context) {
 
         const rankingRows = rankingRes.data.values || [];
         const userRanks = rankingRows.filter(row => row[0] === nickname);
-        const totalXp = userRanks.reduce((sum, row) => {
-            const level = parseInt(row[1], 10);
-            return sum + calculateXp(level);
-        }, 0);
-
+        const totalXp = userRanks.reduce((sum, row) => sum + calculateXp(parseInt(row[1], 10)), 0);
         const levelData = levelRes.data.values ? levelRes.data.values.slice(1) : [];
-        const { currentLevel, perk, nextLevelXp, nextPerk, tickets } = calculateLevel(totalXp, levelData);
+        const profile = calculateLevel(totalXp, levelData);
 
-        return {
-            statusCode: 200,
-            headers: { 'Access-Control-Allow-Origin': '*' },
-            body: JSON.stringify({
-                level: currentLevel,
-                currentXp: totalXp,
-                nextLevelXp: nextLevelXp,
-                perk: perk,
-                nextPerk: nextPerk,
-                tickets: tickets
-            }),
-        };
+        return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(profile) };
+
+    } else if (queryType === 'getAmpUserProfile') {
+        const nickname = event.queryStringParameters.nickname;
+        if (!nickname) return { statusCode: 400, body: JSON.stringify({ error: 'Nickname is required.' }) };
+
+        const [rankingRes, levelRes] = await Promise.all([
+            sheets.spreadsheets.values.get({ spreadsheetId, range: '증폭랭킹!A:B' }),
+            sheets.spreadsheets.values.get({ spreadsheetId, range: '레벨2!A:G' })
+        ]);
+
+        const rankingRows = rankingRes.data.values || [];
+        const userRanks = rankingRows.filter(row => row[0] === nickname);
+        const totalXp = userRanks.reduce((sum, row) => sum + calculateXp(parseInt(row[1], 10)), 0);
+        const levelData = levelRes.data.values ? levelRes.data.values.slice(1) : [];
+        const profile = calculateLevel(totalXp, levelData);
+
+        return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(profile) };
     }
 
+    // Fallback for generic sheet reading
     const sheetName = event.queryStringParameters.sheetName;
     if (!sheetName) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required.' }) };
+        return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required for generic query.' }) };
     }
 
     const range = `${sheetName}!A:I`;
@@ -103,7 +105,6 @@ exports.handler = async function(event, context) {
     let rows = response.data.values || [];
     let dataToReturn = rows.length > 1 ? rows.slice(1) : [];
 
-    // 필터링 로직 추가
     const filterColumn = event.queryStringParameters.filterColumn;
     const filterValue = event.queryStringParameters.filterValue;
 
