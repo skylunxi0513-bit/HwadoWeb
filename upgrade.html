@@ -286,10 +286,9 @@
                 if (S.isFrenzyActive) { 
                     if (S.currentLevel <= 6) { successChance = 100; } 
                     else if (S.currentLevel >= 7 && S.currentLevel <= 9) { successChance += 10; } 
-                } 
+                }
                 correctionChance = parseFloat(data[8] || 0); 
                 penalty = 0; 
-                S.isFrenzyActive = false; // 증폭 대란 1회 사용 시 비활성화
             } 
             else { goldCost = parseInt(data[2] || 0); crystalCost = parseInt(data[4] || 0); successChance = parseFloat(data[1] || 0) + (S.bonusChances[S.currentLevel] || 0); penalty = parseInt(data[3] || 0); }
             S.totalGold += goldCost; S.totalCrystals += crystalCost;
@@ -297,6 +296,9 @@
                 wasSuccess = true; flashEffect('success');
                 if (isSafe) S.safeBonusChances[S.currentLevel] = 0; else S.bonusChances[S.currentLevel] = 0;
                 S.currentLevel++;
+                if (S.currentLevel === 10 && S.isFrenzyActive) {
+                    S.isFrenzyActive = false;
+                }
             } else {
                 wasSuccess = false;
                 if (penalty === -100) {
@@ -319,12 +321,12 @@
 
         function resetSimulator(mode) {
             const targetMode = mode || state.currentMode;
+            const frenzyState = state.amplify.isFrenzyActive; // Preserve frenzy state
             if (targetMode === 'refine') {
                 state.refine = { ...state.refine, currentLevel: 0, totalGold: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {}, secretCostPaid: false };
                 if (dom.refine.autoticketCheckbox.checked) { handleRefineAutoTicket(); }
             } else {
-                // 증폭 대란 상태는 초기화하지 않음
-                state.amplify = { ...state.amplify, currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {} };
+                state.amplify = { ...state.amplify, currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {}, isFrenzyActive: frenzyState };
                 if (dom.amplify.autoticketCheckbox.checked) { handleAmplifyAutoTicket(); }
             }
             updateUI();
