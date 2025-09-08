@@ -214,12 +214,10 @@
                     let safeBaseSuccess = parseFloat(data[7] || 0);
                     let safeBonusSuccess = S.safeBonusChances[S.currentLevel] || 0;
                     let safeActualSuccess = safeBaseSuccess + safeBonusSuccess;
+                    D.safeButton.textContent = S.isFrenzyActive ? '안전 증폭(증폭 대란!)' : '안전 증폭';
                     if (S.isFrenzyActive) {
-                        D.safeButton.textContent = '안전 증폭(증폭 대란!)';
                         if (S.currentLevel <= 6) { safeActualSuccess = 100; } 
                         else if (S.currentLevel >= 7 && S.currentLevel <= 9) { safeActualSuccess += 10; }
-                    } else {
-                        D.safeButton.textContent = '안전 증폭';
                     }
                     D.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); D.safeFailureChance.textContent = (100 - Math.min(100, safeActualSuccess)).toFixed(2);
                     D.safeCost.textContent = `${safeGoldCost.toLocaleString()}`;
@@ -281,7 +279,18 @@
             const data = S.data.find(row => parseInt(row[0]) === S.currentLevel);
             if (!data) { isActionInProgress = false; return; }
             let successChance, goldCost, crystalCost, penalty, correctionChance;
-            if (isSafe) { goldCost = parseInt(data[6] || 0); crystalCost = 0; successChance = parseFloat(data[7] || 0) + (S.safeBonusChances[S.currentLevel] || 0); if (S.isFrenzyActive) { if (S.currentLevel <= 6) { successChance = 100; } else if (S.currentLevel >= 7 && S.currentLevel <= 9) { successChance += 10; } } correctionChance = parseFloat(data[8] || 0); penalty = 0; } 
+            if (isSafe) { 
+                goldCost = parseInt(data[6] || 0); 
+                crystalCost = 0; 
+                successChance = parseFloat(data[7] || 0) + (S.safeBonusChances[S.currentLevel] || 0); 
+                if (S.isFrenzyActive) { 
+                    if (S.currentLevel <= 6) { successChance = 100; } 
+                    else if (S.currentLevel >= 7 && S.currentLevel <= 9) { successChance += 10; } 
+                } 
+                correctionChance = parseFloat(data[8] || 0); 
+                penalty = 0; 
+                S.isFrenzyActive = false; // 증폭 대란 1회 사용 시 비활성화
+            } 
             else { goldCost = parseInt(data[2] || 0); crystalCost = parseInt(data[4] || 0); successChance = parseFloat(data[1] || 0) + (S.bonusChances[S.currentLevel] || 0); penalty = parseInt(data[3] || 0); }
             S.totalGold += goldCost; S.totalCrystals += crystalCost;
             if (Math.random() * 100 < successChance) {
@@ -314,7 +323,8 @@
                 state.refine = { ...state.refine, currentLevel: 0, totalGold: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {}, secretCostPaid: false };
                 if (dom.refine.autoticketCheckbox.checked) { handleRefineAutoTicket(); }
             } else {
-                state.amplify = { ...state.amplify, currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {}, isFrenzyActive: false };
+                // 증폭 대란 상태는 초기화하지 않음
+                state.amplify = { ...state.amplify, currentLevel: 0, totalGold: 0, totalCrystals: 0, isDestroyed: false, bonusChances: {}, safeBonusChances: {} };
                 if (dom.amplify.autoticketCheckbox.checked) { handleAmplifyAutoTicket(); }
             }
             updateUI();
@@ -365,6 +375,9 @@
         const ampAutoticketLabel = document.querySelector('label[for="amplify-autoticket-checkbox"]');
         ampAutoticketLabel.addEventListener('mouseover', (e) => showTooltip('사용 가능한 증폭권 중 고증폭권을 우선적으로 모두 사용합니다. 최초 1회만 적용됩니다.', ampAutoticketLabel));
         ampAutoticketLabel.addEventListener('mouseout', hideTooltip);
+        const ampFrenzyLabel = document.querySelector('label[for="amplify-frenzy-checkbox"]');
+        ampFrenzyLabel.addEventListener('mouseover', (e) => showTooltip('증폭 대란 자동 발동을 활성화하면 다음 증폭에서 확률적으로 자동 적용되며, 적용될 경우 +7까지 안전 강화 확률이 100%로 고정되고 이후 성공 확률을 10%p만큼 증가시킵니다.', ampFrenzyLabel));
+        ampFrenzyLabel.addEventListener('mouseout', hideTooltip);
 
         initialize();
     </script>
