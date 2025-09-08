@@ -147,7 +147,7 @@
                 const finalLevelText = `(최종 강화 : +${S.currentLevel})`;
                 D.level.innerHTML = `<span class="final-level-text">${finalLevelText}</span><br>DESTROYED`;
                 D.level.classList.add('destroyed'); D.imageBox.style.display = 'none'; D.normalButton.textContent = '재시도'; D.safeButton.style.display = 'none'; D.cumulativeCost.classList.add('destroyed-style');
-                D.normalButton.disabled = false; // 재시도 버튼 활성화
+                D.normalButton.disabled = false;
                 return;
             }
             D.secretContainer.style.display = state.hasUnlockedSecret ? 'flex' : 'none';
@@ -161,12 +161,12 @@
                 const baseSuccess = parseFloat(data[1] || 0), bonusSuccess = S.bonusChances[S.currentLevel] || 0, actualSuccess = baseSuccess + bonusSuccess + secretBonus + costumeBonus, cost = parseInt(data[2] || 0), penalty = parseInt(data[3] || 0), isDestructible = penalty === -100, failure = 100 - Math.min(100, actualSuccess);
                 D.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); D.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); D.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00';
                 D.currentGold.textContent = cost.toLocaleString();
-                D.normalButton.disabled = false; // 버튼 활성화
+                D.normalButton.disabled = false;
                 if (isSafeRefineUnlocked(S.currentLevel, state.userLevel)) {
                     const safeCost = parseInt(data[6]);
                     const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = S.safeBonusChances[S.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess + secretBonus + costumeBonus, safeFailure = 100 - Math.min(100, safeActualSuccess);
                     D.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); D.safeFailureChance.textContent = safeFailure.toFixed(2); D.safeGold.textContent = safeCost.toLocaleString();
-                    D.safeInfo.style.visibility = 'visible'; D.safeButton.style.display = 'block'; D.safeButton.disabled = false; // 버튼 활성화
+                    D.safeInfo.style.visibility = 'visible'; D.safeButton.style.display = 'block'; D.safeButton.disabled = false;
                 } else {
                     D.safeInfo.style.visibility = 'hidden'; D.safeButton.style.display = 'none';
                 }
@@ -182,7 +182,7 @@
                 const finalLevelText = `(최종 증폭 : +${S.currentLevel})`;
                 D.level.innerHTML = `<span class="final-level-text">${finalLevelText}</span><br>DESTROYED`;
                 D.level.classList.add('destroyed'); D.imageBox.style.display = 'none'; D.normalButton.textContent = '재시도'; D.safeButton.style.display = 'none'; D.cumulativeCost.classList.add('destroyed-style');
-                D.normalButton.disabled = false; // 재시도 버튼 활성화
+                D.normalButton.disabled = false;
                 return;
             }
             D.cumulativeCost.classList.remove('destroyed-style'); D.level.classList.remove('destroyed'); D.imageBox.style.display = 'flex'; D.normalButton.textContent = '증폭'; D.level.textContent = `+${S.currentLevel}`;
@@ -194,14 +194,14 @@
                 const penalty = parseInt(data[3] || 0), isDestructible = penalty === -100, failure = 100 - Math.min(100, actualSuccess);
                 D.successChance.textContent = Math.min(100, actualSuccess).toFixed(2); D.failureChance.textContent = isDestructible ? '0.00' : failure.toFixed(2); D.destroyChance.textContent = isDestructible ? failure.toFixed(2) : '0.00';
                 D.currentCost.textContent = `${goldCost.toLocaleString()} + 모순${crystalCost}`;
-                D.normalButton.disabled = false; // 버튼 활성화
+                D.normalButton.disabled = false;
                 const safeGoldCostStr = data[6] ? String(data[6]).trim() : '';
                 if (safeGoldCostStr !== '') {
                     const safeGoldCost = parseInt(safeGoldCostStr);
                     const safeBaseSuccess = parseFloat(data[7] || 0), safeBonusSuccess = S.safeBonusChances[S.currentLevel] || 0, safeActualSuccess = safeBaseSuccess + safeBonusSuccess;
                     D.safeSuccessChance.textContent = Math.min(100, safeActualSuccess).toFixed(2); D.safeFailureChance.textContent = (100 - Math.min(100, safeActualSuccess)).toFixed(2);
-                    D.safeCost.textContent = `${safeGoldCost.toLocaleString()} + 모순${crystalCost}`;
-                    D.safeInfo.style.visibility = 'visible'; D.safeButton.style.display = 'block'; D.safeButton.disabled = false; // 버튼 활성화
+                    D.safeCost.textContent = `${safeGoldCost.toLocaleString()}`;
+                    D.safeInfo.style.visibility = 'visible'; D.safeButton.style.display = 'block'; D.safeButton.disabled = false;
                 } else {
                     D.safeInfo.style.visibility = 'hidden'; D.safeButton.style.display = 'none';
                 }
@@ -269,7 +269,8 @@
             if (!data) { isActionInProgress = false; return; }
             let successChance, goldCost, crystalCost, penalty, correctionChance;
             if (isSafe) {
-                goldCost = parseInt(data[6] || 0); crystalCost = parseInt(data[4] || 0);
+                goldCost = parseInt(data[6] || 0);
+                crystalCost = 0; // 안전 증폭 시 모순 소모 0
                 successChance = parseFloat(data[7] || 0) + (S.safeBonusChances[S.currentLevel] || 0);
                 correctionChance = parseFloat(data[8] || 0); penalty = 0;
             } else {
@@ -331,6 +332,17 @@
         const isSafeRefineUnlocked = (currentRefineLevel, userLvl) => { const data = state.refine.data.find(row => parseInt(row[0]) === currentRefineLevel); const safeCost = data && data[6] ? String(data[6]).trim() : ''; if (safeCost === '') return false; if (userLvl < 3) return false; if (userLvl === 3 && currentRefineLevel > 9) return false; if (userLvl === 4 && currentRefineLevel > 10) return false; return true; };
         const recalculateLevelForGuest = () => { let newLevel = 1, newPerk = '혜택 없음', newNextPerk = '혜택 없음', newNextXp = 0; if (state.levelData.length > 0) { newPerk = state.levelData[0][2] || '혜택 없음'; const firstLevelXp = parseInt(state.levelData[0][1]) || 1; newNextXp = firstLevelXp; if (state.levelData.length > 1) newNextPerk = state.levelData[1][2] || '혜택 없음'; } for (let i = 0; i < state.levelData.length; i++) { const level = parseInt(state.levelData[i][0]); const requiredXp = parseInt(state.levelData[i][1]); if (state.currentXp >= requiredXp) { newLevel = level; newPerk = state.levelData[i][2] || '혜택 없음'; if (i + 1 < state.levelData.length) { newNextXp = parseInt(state.levelData[i+1][1]); newNextPerk = state.levelData[i+1][2] || '혜택 없음'; } else { newNextXp = requiredXp; newNextPerk = '최고 레벨'; } } else { newNextXp = requiredXp; newNextPerk = state.levelData[i][2] || '혜택 없음'; break; } } state.userLevel = newLevel; state.userPerk = newPerk; state.nextUserPerk = newNextPerk; state.nextLevelXp = newNextXp; updateUserDisplay(); };
         const handleAutoTicket = () => { const ticketChances = [state.userTickets.plus12, state.userTickets.plus11, state.userTickets.plus10, state.userTickets.plus7]; const ticketCosts = [77000000, 17500000, 7000000, 650000]; const targetLevels = [12, 11, 10, 7]; let ticketSucceeded = false; for (let i = 0; i < ticketChances.length; i++) { const chance = parseFloat(ticketChances[i] || 0); if (chance > 0) { state.refine.totalGold += ticketCosts[i] * (chance / 100); if (Math.random() * 100 < chance) { state.refine.currentLevel = targetLevels[i]; flashEffect('ticket-success'); ticketSucceeded = true; break; } } } if (!ticketSucceeded) { state.refine.currentLevel = 0; } };
+
+        // 툴팁 리스너 복원
+        const secretLabel = document.querySelector('label[for="secret-checkbox"]');
+        secretLabel.addEventListener('mouseover', (e) => showTooltip('강화의 비밀 아이템을 사용하여 장비 강화의 성공 확률을 1%p만큼 증가시킵니다. 사용시 35,000골드가 소비됩니다.', secretLabel));
+        secretLabel.addEventListener('mouseout', hideTooltip);
+        const costumeLabel = document.querySelector('label[for="costume-checkbox"]');
+        costumeLabel.addEventListener('mouseover', (e) => showTooltip('화덕 변신 코스튬을 사용하면 장비 강화의 성공 확률이 1%p만큼 증가합니다.', costumeLabel));
+        costumeLabel.addEventListener('mouseout', hideTooltip);
+        const autoticketLabel = document.querySelector('label[for="autoticket-checkbox"]');
+        autoticketLabel.addEventListener('mouseover', (e) => showTooltip('사용 가능한 강화권 중 고강화권을 우선적으로 모두 사용합니다. 최초 1회만 적용됩니다.', autoticketLabel));
+        autoticketLabel.addEventListener('mouseout', hideTooltip);
 
         initialize();
     </script>
