@@ -5,85 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>통계 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .mode-selector { margin-bottom: 20px; text-align: center; }
+        .mode-selector button { width: 150px; }
+    </style>
 </head>
 <body>
-    <a href="index.html" class="header-link">
-        <h1>화도웹</h1>
-    </a>
+    <a href="index.html" class="header-link"><h1>화도웹</h1></a>
 
     <div class="container">
+        <div class="mode-selector">
+            <button id="refine-stats-btn">강화 통계</button>
+            <button id="amplify-stats-btn">증폭 통계</button>
+        </div>
         <div id="ranking-table-container">
             <p>랭킹 데이터를 불러오는 중...</p>
         </div>
     </div>
 
     <script>
-        let allRankedUsers = []; // Store all fetched and processed user data
-        let allLevelData = []; // Store level data
-        let currentSortColumn = null;
-        let sortDirection = 'asc'; // 'asc' or 'desc'
+        let state = {
+            refine: { users: [], levelData: [] },
+            amplify: { users: [], levelData: [] },
+            currentMode: 'refine',
+            currentSort: { key: 'level', direction: 'desc' }
+        };
 
-        // Function to calculate experience based on level
-        function calculateExperience(level) {
-            if (level < 12) return 0;
-            return Math.pow(3, level - 12);
-        }
+        const calculateRefineXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
+        const calculateAmplifyXp = (level) => { if (level < 10) return 0; if (level === 10) return 1; if (level === 11) return 2; if (level === 12) return 5; return 5 * Math.pow(3, level - 12); };
 
-        // Function to get level from cumulative experience
         function getLevelFromXp(xp, levelData) {
             let currentLevel = 1;
-            for (let i = 0; i < levelData.length; i++) {
-                const level = parseInt(levelData[i][0]);
-                const requiredXp = parseInt(levelData[i][1]);
-                if (xp >= requiredXp) {
-                    currentLevel = level;
-                } else {
-                    break;
-                }
+            for (const row of levelData) {
+                const level = parseInt(row[0]);
+                const requiredXp = parseInt(row[1]);
+                if (xp >= requiredXp) { currentLevel = level; } else { break; }
             }
             return currentLevel;
         }
 
-        function renderTable(usersToRender) {
-            const rankingTableContainer = document.getElementById('ranking-table-container');
-            rankingTableContainer.innerHTML = ''; // Clear previous content
+        function renderTable() {
+            const container = document.getElementById('ranking-table-container');
+            const mode = state.currentMode;
+            const usersToRender = state[mode].users;
+            container.innerHTML = '';
 
             if (usersToRender.length === 0) {
-                rankingTableContainer.innerHTML = '<p>데이터가 없습니다.</p>';
+                container.innerHTML = '<p>데이터가 없습니다.</p>';
                 return;
             }
 
             const table = document.createElement('table');
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th data-sort-key="nickname" data-sort-type="string">닉네임</th>
-                        <th data-sort-key="level" data-sort-type="number">레벨</th>
-                        <th data-sort-key="maxEnhance" data-sort-type="number">최고 강화 단계</th>
-                        <th data-sort-key="totalGold" data-sort-type="number">누적 소모 골드</th>
-                        <th data-sort-key="destructionCount" data-sort-type="number">누적 파괴 횟수</th>
-                        <th data-sort-key="totalXp" data-sort-type="number">누적 경험치</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
+            const isRefine = mode === 'refine';
+            const headers = [
+                { key: 'nickname', text: '닉네임', type: 'string' },
+                { key: 'level', text: '레벨', type: 'number' },
+                { key: 'maxStat', text: isRefine ? '최고 강화 단계' : '최고 증폭 단계', type: 'number' },
+                { key: 'totalGold', text: '누적 소모 골드', type: 'number' },
+                ...(isRefine ? [] : [{ key: 'totalCrystals', text: '누적 모순 갯수', type: 'number' }]),
+                { key: 'destructionCount', text: '누적 파괴 횟수', type: 'number' },
+                { key: 'totalXp', text: '누적 경험치', type: 'number' }
+            ];
+
+            let headerHtml = '<tr>';
+            headers.forEach(h => { headerHtml += `<th data-sort-key="${h.key}" data-sort-type="${h.type}">${h.text}</th>`; });
+            headerHtml += '</tr>';
+            table.innerHTML = `<thead>${headerHtml}</thead><tbody></tbody>`;
             const tbody = table.querySelector('tbody');
 
             usersToRender.forEach(user => {
                 const row = tbody.insertRow();
                 row.insertCell().textContent = user.nickname;
                 row.insertCell().textContent = user.level;
-                row.insertCell().textContent = `+${user.maxEnhance}`;
+                row.insertCell().textContent = `+${user.maxStat}`;
                 row.insertCell().textContent = `${(user.totalGold / 100000000).toFixed(2)}억`;
+                if (!isRefine) row.insertCell().textContent = user.totalCrystals.toLocaleString();
                 row.insertCell().textContent = user.destructionCount;
-                const xpCell = row.insertCell();
-                xpCell.textContent = user.totalXp.toLocaleString();
-                xpCell.style.textAlign = 'left'; // Explicitly left-align
+                row.insertCell().textContent = user.totalXp.toLocaleString();
             });
 
-            rankingTableContainer.appendChild(table);
+            container.appendChild(table);
 
-            // Add event listeners to headers for sorting
             table.querySelectorAll('th').forEach(header => {
                 header.addEventListener('click', () => {
                     const sortKey = header.dataset.sortKey;
@@ -94,89 +96,87 @@
         }
 
         function sortTable(columnKey, type) {
-            if (currentSortColumn === columnKey) {
-                sortDirection = (sortDirection === 'asc') ? 'desc' : 'asc';
+            if (state.currentSort.key === columnKey) {
+                state.currentSort.direction = (state.currentSort.direction === 'asc') ? 'desc' : 'asc';
             } else {
-                currentSortColumn = columnKey;
-                sortDirection = (type === 'string') ? 'asc' : 'desc'; // Default for string is asc, number is desc
+                state.currentSort.key = columnKey;
+                state.currentSort.direction = (type === 'string') ? 'asc' : 'desc';
             }
 
-            allRankedUsers.sort((a, b) => {
+            state[state.currentMode].users.sort((a, b) => {
                 let comparison = 0;
-                if (type === 'string') {
-                    comparison = a[columnKey].localeCompare(b[columnKey]);
-                } else { // type === 'number'
-                    comparison = a[columnKey] - b[columnKey];
-                }
-
-                return (sortDirection === 'asc') ? comparison : -comparison;
+                if (type === 'string') { comparison = a[columnKey].localeCompare(b[columnKey]); }
+                else { comparison = a[columnKey] - b[columnKey]; }
+                return (state.currentSort.direction === 'asc') ? comparison : -comparison;
             });
 
-            renderTable(allRankedUsers);
+            renderTable();
         }
 
-        async function fetchAndProcessRankingData() {
-            const rankingTableContainer = document.getElementById('ranking-table-container');
-            rankingTableContainer.innerHTML = '<p>랭킹 데이터를 불러오는 중...</p>';
+        function processData(mode, rankingData, levelData) {
+            const usersMap = new Map();
+            const calculateXp = mode === 'refine' ? calculateRefineXp : calculateAmplifyXp;
 
+            rankingData.forEach(row => {
+                const nickname = row[0];
+                const statLevel = parseInt(row[1]);
+                const goldSpent = parseInt(row[2]);
+                const crystalsSpent = mode === 'amplify' ? parseInt(row[3] || 0) : 0;
+
+                if (!usersMap.has(nickname)) {
+                    usersMap.set(nickname, { maxStat: 0, totalGold: 0, totalCrystals: 0, destructionCount: 0, totalXp: 0 });
+                }
+
+                const userData = usersMap.get(nickname);
+                userData.maxStat = Math.max(userData.maxStat, statLevel);
+                userData.totalGold += goldSpent;
+                if (mode === 'amplify') userData.totalCrystals += crystalsSpent;
+                userData.destructionCount++;
+                userData.totalXp += calculateXp(statLevel);
+            });
+
+            return Array.from(usersMap.entries()).map(([nickname, data]) => ({
+                nickname: nickname,
+                level: getLevelFromXp(data.totalXp, levelData),
+                maxStat: data.maxStat,
+                totalGold: data.totalGold,
+                totalCrystals: data.totalCrystals,
+                destructionCount: data.destructionCount,
+                totalXp: data.totalXp
+            }));
+        }
+
+        async function initialize() {
+            const container = document.getElementById('ranking-table-container');
             try {
-                const [rankingRes, levelRes] = await Promise.all([
+                const [refineRankingRes, refineLevelRes, ampRankingRes, ampLevelRes] = await Promise.all([
                     fetch('/.netlify/functions/sheets?sheetName=강화랭킹'),
-                    fetch('/.netlify/functions/sheets?sheetName=레벨')
+                    fetch('/.netlify/functions/sheets?sheetName=레벨'),
+                    fetch('/.netlify/functions/sheets?sheetName=증폭랭킹'),
+                    fetch('/.netlify/functions/sheets?sheetName=레벨2')
                 ]);
 
-                const rankingData = (await rankingRes.json()).data;
-                allLevelData = (await levelRes.json()).data; // Store level data globally
+                const refineRankingData = (await refineRankingRes.json()).data;
+                state.refine.levelData = (await refineLevelRes.json()).data;
+                state.refine.users = processData('refine', refineRankingData, state.refine.levelData);
 
-                const usersMap = new Map(); // Map<nickname, { maxEnhance, totalGold, destructionCount, totalXp }>
+                const ampRankingData = (await ampRankingRes.json()).data;
+                state.amplify.levelData = (await ampLevelRes.json()).data;
+                state.amplify.users = processData('amplify', ampRankingData, state.amplify.levelData);
 
-                rankingData.forEach(row => {
-                    const nickname = row[0];
-                    const enhanceLevel = parseInt(row[1]);
-                    const goldSpent = parseInt(row[2]);
-
-                    if (!usersMap.has(nickname)) {
-                        usersMap.set(nickname, {
-                            maxEnhance: 0,
-                            totalGold: 0,
-                            destructionCount: 0,
-                            totalXp: 0
-                        });
-                    }
-
-                    const userData = usersMap.get(nickname);
-                    userData.maxEnhance = Math.max(userData.maxEnhance, enhanceLevel);
-                    userData.totalGold += goldSpent;
-                    userData.destructionCount++;
-                    userData.totalXp += calculateExperience(enhanceLevel);
-                });
-
-                allRankedUsers = Array.from(usersMap.entries()).map(([nickname, data]) => {
-                    return {
-                        nickname: nickname,
-                        level: getLevelFromXp(data.totalXp, allLevelData),
-                        maxEnhance: data.maxEnhance,
-                        totalGold: data.totalGold,
-                        destructionCount: data.destructionCount,
-                        totalXp: data.totalXp
-                    };
-                });
-
-                // Initial sort (e.g., by level desc)
-                currentSortColumn = 'level';
-                sortDirection = 'desc';
-                allRankedUsers.sort((a, b) => b.level - a.level);
-
-                renderTable(allRankedUsers);
+                document.getElementById('refine-stats-btn').addEventListener('click', () => { state.currentMode = 'refine'; renderTable(); });
+                document.getElementById('amplify-stats-btn').addEventListener('click', () => { state.currentMode = 'amplify'; renderTable(); });
+                
+                // Initial sort and render
+                sortTable(state.currentSort.key, 'number');
 
             } catch (error) {
                 console.error('Error fetching or processing ranking data:', error);
-                rankingTableContainer.innerHTML = '<p>랭킹 데이터를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.</p>';
+                container.innerHTML = '<p>랭킹 데이터를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.</p>';
             }
         }
 
-        // Call the function when the page loads
-        document.addEventListener('DOMContentLoaded', fetchAndProcessRankingData);
+        document.addEventListener('DOMContentLoaded', initialize);
     </script>
 </body>
 </html>
