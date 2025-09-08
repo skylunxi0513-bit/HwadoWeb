@@ -47,9 +47,9 @@
             display: block;
             margin: 20px auto 0 auto;
             padding: 10px 20px;
-            background-color: white; /* Changed to white */
-            color: #333; /* Changed to dark gray for contrast */
-            border: 1px solid #ccc; /* Added border for visibility */
+            background-color: white;
+            color: #333;
+            border: 1px solid #ccc;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
@@ -105,14 +105,38 @@
         const calculateRefineXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
         const calculateAmplifyXp = (level) => { if (level < 10) return 0; if (level === 10) return 1; if (level === 11) return 2; if (level === 12) return 5; return 5 * Math.pow(3, level - 12); };
 
-        function getLevelFromXp(xp, levelData) {
-            let currentLevel = 1;
-            for (const row of levelData) {
-                const level = parseInt(row[0]);
-                const requiredXp = parseInt(row[1]);
-                if (xp >= requiredXp) { currentLevel = level; } else { break; }
+        // Modified to return detailed level info
+        function getDetailedLevelFromXp(xp, levelData) {
+            let currentLevel = 1, nextLevelXp = 0, perk = '혜택 없음', nextPerk = '최고 레벨';
+
+            if (levelData.length > 0) {
+                perk = levelData[0][2] || '혜택 없음';
+                nextLevelXp = parseInt(levelData[0][1]) || 1;
+                if (levelData.length > 1) nextPerk = levelData[1][2] || '혜택 없음';
+
+                for (let i = 0; i < levelData.length; i++) {
+                    const level = parseInt(levelData[i][0]);
+                    const requiredXp = parseInt(levelData[i][1]);
+
+                    if (xp >= requiredXp) {
+                        currentLevel = level;
+                        perk = levelData[i][2] || '혜택 없음';
+
+                        if (i + 1 < levelData.length) {
+                            nextLevelXp = parseInt(levelData[i+1][1]);
+                            nextPerk = levelData[i+1][2] || '혜택 없음';
+                        } else {
+                            nextLevelXp = requiredXp; // If at max level, nextLevelXp is current requiredXp
+                            nextPerk = '최고 레벨';
+                        }
+                    } else {
+                        nextLevelXp = requiredXp;
+                        nextPerk = levelData[i][2] || '혜택 없음';
+                        break;
+                    }
+                }
             }
-            return currentLevel;
+            return { currentLevel, nextLevelXp, perk, nextPerk };
         }
 
         function renderTable() {
@@ -157,7 +181,10 @@
                 xpCell.style.textAlign = 'left';
 
                 row.style.cursor = 'pointer';
-                row.addEventListener('click', () => showUserDetailsModal(user));
+                row.addEventListener('click', () => {
+                    console.log('Row clicked for user:', user.nickname);
+                    showUserDetailsModal(user);
+                });
             });
 
             container.appendChild(table);
@@ -234,7 +261,7 @@
 
                 return {
                     nickname: nickname,
-                    level: getLevelFromXp(data.totalXp, levelData),
+                    level: getDetailedLevelFromXp(data.totalXp, levelData).currentLevel, // Use currentLevel from detailed info
                     maxStat: data.maxStat,
                     totalGold: data.totalGold,
                     totalCrystals: data.totalCrystals,
@@ -249,6 +276,7 @@
 
         // Modal Functions
         function showUserDetailsModal(user) {
+            console.log('showUserDetailsModal called for user:', user.nickname);
             const modalOverlay = document.getElementById('user-details-modal-overlay');
             const modalTitle = document.getElementById('modal-title');
             const modalLevelInfo = document.getElementById('modal-level-info');
@@ -268,8 +296,11 @@
             const statType = isRefine ? '강화' : '증폭';
             const achievementPrefix = isRefine ? '+' : '+';
 
+            // Get detailed level info for modal display
+            const detailedLevelInfo = getDetailedLevelFromXp(user.totalXp, state[mode].levelData);
+
             modalTitle.textContent = `${user.nickname} ${statType} 상세 통계`;
-            modalLevelInfo.innerHTML = `Lv.${user.level} (경험치 : ${user.totalXp.toLocaleString()}/${getLevelFromXp(user.totalXp, state[mode].levelData, true).nextLevelXp.toLocaleString()})`;
+            modalLevelInfo.innerHTML = `Lv.${detailedLevelInfo.currentLevel} (경험치 : ${user.totalXp.toLocaleString()}/${detailedLevelInfo.nextLevelXp.toLocaleString()})`;
             modalMaxStat.textContent = `최고 ${statType} 단계 : +${user.maxStat}`;
             
             let costsText = `누적 소모 골드 : ${user.totalGold.toLocaleString()}`; 
@@ -301,9 +332,11 @@
             modalLastActivity.textContent = `마지막 활동일 : ${user.lastActivity}`;
 
             modalOverlay.classList.remove('hidden');
+            console.log('Modal should be visible.');
         }
 
         function closeUserDetailsModal() {
+            console.log('closeUserDetailsModal called.');
             document.getElementById('user-details-modal-overlay').classList.add('hidden');
         }
 
