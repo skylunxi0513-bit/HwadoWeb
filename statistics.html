@@ -166,16 +166,16 @@
                 state.amplify.levelData = (await ampLevelRes.json()).data;
                 state.amplify.users = processData('amplify', ampRankingData, state.amplify.levelData);
 
+                // Initial sort for refine mode (default) - directly sort to avoid sortTable's toggle behavior
+                state.refine.users.sort((a, b) => b.totalXp - a.totalXp); // Sort by totalXp descending
+
+                // Initial sort for amplify mode (not default view, but good to have it sorted)
+                state.amplify.users.sort((a, b) => b.totalXp - a.totalXp); // Sort by totalXp descending
+
                 document.getElementById('refine-stats-btn').addEventListener('click', () => { state.currentMode = 'refine'; renderTable(); });
                 document.getElementById('amplify-stats-btn').addEventListener('click', () => { state.currentMode = 'amplify'; renderTable(); });
                 
-                // Initial sort for both lists
-                sortTable(state.currentSort.key, 'number');
-                // Since sortTable only sorts the current mode, we need to sort the other one manually for the first time.
-                const otherMode = state.currentMode === 'refine' ? 'amplify' : 'refine';
-                state[otherMode].users.sort((a, b) => b.totalXp - a.totalXp);
-
-                renderTable();
+                renderTable(); // Render the default refine table
 
             } catch (error) {
                 console.error('Error fetching or processing ranking data:', error);
