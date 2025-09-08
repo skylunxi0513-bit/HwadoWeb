@@ -332,16 +332,28 @@
             };
 
             let formatted = new Intl.DateTimeFormat('ko-KR', options).format(date);
+            // Example formatted: "2025. 9. 8. 오전 6:23:56" or "2025. 9. 8. 오후 1:23:56"
 
-            // Manual conversion to 오전/오후
+            // Split by space to get parts like ["2025.", "9.", "8.", "오전", "6:23:56"]
             const parts = formatted.split(' ');
-            const datePart = parts.slice(0, 3).join('. ') + '.'; // YYYY. MM. DD.
-            const timePart = parts[3]; // HH:MM:SS
-            const hour = parseInt(timePart.split(':')[0]);
-            const ampm = hour < 12 ? '오전' : '오후';
+
+            // Correct datePart extraction: remove trailing dots from year, month, day, then join
+            const yearPart = parts[0].replace('.', ''); // "2025"
+            const monthPart = parts[1].replace('.', ''); // "9"
+            const dayPart = parts[2].replace('.', '');   // "8"
+            const datePart = `${yearPart}. ${monthPart}. ${dayPart}.`; // "2025. 9. 8."
+
+            const ampmPart = parts[3]; // "오전" or "오후"
+            const timeString = parts[4]; // "6:23:56"
+
+            const timeComponents = timeString.split(':');
+            const hour = parseInt(timeComponents[0]);
+            const minute = timeComponents[1];
+            const second = timeComponents[2];
+
             const displayHour = hour % 12 === 0 ? 12 : hour % 12; // Convert 0 to 12 for AM/PM
 
-            const newTimePart = `${ampm} ${displayHour}:${timePart.split(':')[1]}:${timePart.split(':')[2]}`;
+            const newTimePart = `${ampmPart} ${displayHour}:${minute}:${second}`;
             
             return `${datePart} ${newTimePart}`;
         }
