@@ -47,9 +47,9 @@
             display: block;
             margin: 20px auto 0 auto;
             padding: 10px 20px;
-            background-color: white; /* Changed to white */
-            color: #333; /* Changed to dark gray for contrast */
-            border: 1px solid #ccc; /* Added border for visibility */
+            background-color: white;
+            color: #333;
+            border: 1px solid #ccc;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
@@ -71,7 +71,7 @@
         </div>
         <div id="ranking-table-container">
             <p>랭킹 데이터를 불러오는 중...</p>
-        </div>
+        }
     </div>
 
     <!-- User Details Modal -->
@@ -231,7 +231,23 @@
                 const goldSpent = parseInt(row[2]);
                 const crystalsSpent = mode === 'amplify' ? parseInt(row[3] || 0) : 0;
                 const timestampStr = row[mode === 'refine' ? 3 : 4];
-                const timestamp = timestampStr ? new Date(timestampStr) : null;
+                let timestamp = null;
+                if (timestampStr) {
+                    const parts = timestampStr.match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(오전|오후)\s*(\d{1,2}):(\d{1,2}):(\d{1,2})/);
+                    if (parts) {
+                        let year = parseInt(parts[1]);
+                        let month = parseInt(parts[2]) - 1; // Month is 0-indexed
+                        let day = parseInt(parts[3]);
+                        let hour = parseInt(parts[5]);
+                        let minute = parseInt(parts[6]);
+                        let second = parseInt(parts[7]);
+                        const ampm = parts[4];
+
+                        if (ampm === '오후' && hour < 12) { hour += 12; }
+                        else if (ampm === '오전' && hour === 12) { hour = 0; }
+                        timestamp = new Date(year, month, day, hour, minute, second);
+                    }
+                }
 
                 if (!usersMap.has(nickname)) {
                     usersMap.set(nickname, {
