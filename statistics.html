@@ -185,7 +185,7 @@
 
                 row.style.cursor = 'pointer';
                 row.addEventListener('click', () => {
-                    console.log('Row clicked for user:', user.nickname);
+                    
                     showUserDetailsModal(user);
                 });
             });
@@ -232,11 +232,11 @@
                 const crystalsSpent = mode === 'amplify' ? parseInt(row[3] || 0) : 0;
                 const timestampStr = row[mode === 'refine' ? 3 : 4];
                 let timestamp = null;
-                console.log('Processing timestampStr:', timestampStr);
+                
                 if (timestampStr) {
                     // Updated regex to match MM/DD/YYYY, 오전/오후 HH:MM:SS
                     const parts = timestampStr.trim().match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{4}),\s+(오전|오후)\s*(\d{1,2}):(\d{1,2}):(\d{1,2})/);
-                    console.log('Regex parts:', parts);
+                    
                     if (parts) {
                         let month = parseInt(parts[1]) - 1; // Month is 0-indexed
                         let day = parseInt(parts[2]);
@@ -249,7 +249,7 @@
                         if (ampm === '오후' && hour < 12) { hour += 12; }
                         else if (ampm === '오전' && hour === 12) { hour = 0; }
                         timestamp = new Date(Date.UTC(year, month, day, hour, minute, second));
-                        console.log('Constructed Date object:', timestamp, 'isNaN:', isNaN(timestamp.getTime()));
+                        
                     }
                 }
 
@@ -320,36 +320,15 @@
         function formatKoreanDateTime(date) {
             if (!date || isNaN(date.getTime())) return '알 수 없음';
 
-            const options = {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                hour12: false, // Use 24-hour format first
-                timeZone: 'Asia/Seoul'
-            };
-
-            let formatted = new Intl.DateTimeFormat('ko-KR', options).format(date);
-            // Example formatted: "2025. 9. 8. 오전 6:23:56" or "2025. 9. 8. 오후 1:23:56"
-
-            // Split by space to get parts like ["2025.", "9.", "8.", "오전", "6:23:56"]
-            const parts = formatted.split(' ');
-
-            // Correct datePart extraction: remove trailing dots from year, month, day, then join
-            const yearPart = parts[0].replace('.', ''); // "2025"
-            const monthPart = parts[1].replace('.', ''); // "9"
-            const dayPart = parts[2].replace('.', '');   // "8"
-            const datePart = `${yearPart}. ${monthPart}. ${dayPart}.`; // "2025. 9. 8."
-
-            const ampmPart = parts[3]; // "오전" or "오후"
-            const timeString = parts[4]; // "6:23:56"
-
+            // Get date components directly from the Date object (in its local timezone, which is KST due to Date.UTC construction)
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1; // Month is 0-indexed
+            const day = date.getDate();
             const hour24 = date.getHours();
             const minute = date.getMinutes();
             const second = date.getSeconds();
 
+            // Determine AM/PM and display hour
             const ampm = hour24 < 12 ? '오전' : '오후';
             const displayHour = hour24 % 12 === 0 ? 12 : hour24 % 12;
 
@@ -357,14 +336,13 @@
             const paddedMinute = String(minute).padStart(2, '0');
             const paddedSecond = String(second).padStart(2, '0');
 
-            const newTimePart = `${ampm} ${displayHour}:${paddedMinute}:${paddedSecond}`;
-            
-            return `${datePart} ${newTimePart}`;
+            // Construct the final string
+            return `${year}. ${month}. ${day}. ${ampm} ${displayHour}:${paddedMinute}:${paddedSecond}`;
         }
 
         // Modal Functions
         function showUserDetailsModal(user) {
-            console.log('showUserDetailsModal called for user:', user.nickname);
+            
             const modalOverlay = document.getElementById('user-details-modal-overlay');
             const modalTitle = document.getElementById('modal-title');
             const modalLevelInfo = document.getElementById('modal-level-info');
@@ -422,11 +400,11 @@
             modalLastActivity.textContent = `마지막 활동일 : ${formatKoreanDateTime(user.lastActivity)}`;
 
             modalOverlay.classList.remove('hidden');
-            console.log('Modal should be visible.');
+            
         }
 
         function closeUserDetailsModal() {
-            console.log('closeUserDetailsModal called.');
+            
             document.getElementById('user-details-modal-overlay').classList.add('hidden');
         }
 
