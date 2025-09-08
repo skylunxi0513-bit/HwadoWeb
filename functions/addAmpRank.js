@@ -28,6 +28,9 @@ exports.handler = async function(event, context) {
         };
     }
 
+    // Get current timestamp
+    const timestamp = new Date().toLocaleString();
+
     // 3. Prepare Google Sheets authentication
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     if (!privateKey) {
@@ -48,15 +51,15 @@ exports.handler = async function(event, context) {
     const spreadsheetId = '1H5Hb_zXA9A34XtkScIovnTNAMFXwHQc_fCPqQfB_ALQ';
     const sheetName = '증폭랭킹'; // Target the '증폭랭킹' sheet
 
-    // 4. Append data to the sheet (Nickname, Level, Gold, Crystals)
+    // 4. Append data to the sheet (Nickname, Level, Gold, Crystals, Timestamp)
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${sheetName}!A:D`, // Write to columns A, B, C, D
+      range: `${sheetName}!A:E`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: {
         values: [
-          [nickname, level, gold, crystals] // The data to append
+          [nickname, level, gold, crystals, timestamp] // The data to append
         ]
       }
     });

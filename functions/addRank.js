@@ -28,6 +28,9 @@ exports.handler = async function(event, context) {
         };
     }
 
+    // Get current timestamp
+    const timestamp = new Date().toLocaleString();
+
     // 3. Prepare Google Sheets authentication
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     if (!privateKey) {
@@ -48,15 +51,15 @@ exports.handler = async function(event, context) {
     const spreadsheetId = '1H5Hb_zXA9A34XtkScIovnTNAMFXwHQc_fCPqQfB_ALQ';
     const sheetName = '강화랭킹';
 
-    // 4. Append data to the sheet
+    // 4. Append data to the sheet, including timestamp in D column
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${sheetName}!A:C`,
+      range: `${sheetName}!A:D`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: {
         values: [
-          [nickname, level, gold] // The data to append
+          [nickname, level, gold, timestamp] // The data to append
         ]
       }
     });
@@ -74,7 +77,7 @@ exports.handler = async function(event, context) {
     console.error('Error processing rank submission:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || 'Failed to submit ranking.' })
+      body: JSON.stringify({ error: error.message || 'Failed to process request.' })
     };
   }
 };
