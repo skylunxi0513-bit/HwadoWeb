@@ -8,6 +8,54 @@
     <style>
         .mode-selector { margin-bottom: 20px; text-align: center; }
         .mode-selector button { width: 150px; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            text-align: left;
+            position: relative;
+        }
+        .modal-content h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .modal-content p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            color: #555;
+        }
+        .modal-content p strong { color: #1a1a1a; }
+        .modal-content button {
+            display: block;
+            margin: 20px auto 0 auto;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .modal-content button:hover { background-color: #0056b3; }
+        .modal-content .blank-line { height: 15px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -23,12 +71,32 @@
         </div>
     </div>
 
+    <!-- User Details Modal -->
+    <div id="user-details-modal-overlay" class="modal-overlay hidden">
+        <div id="user-details-modal-content" class="modal-content">
+            <h2 id="modal-title"></h2>
+            <p id="modal-level-info"></p>
+            <p id="modal-max-stat"></p>
+            <p id="modal-costs"></p>
+            <p id="modal-destructions"></p>
+            <div class="blank-line"></div>
+            <p id="modal-achievements-12-10"></p>
+            <p id="modal-achievements-13-11"></p>
+            <p id="modal-achievements-14-12"></p>
+            <p id="modal-achievements-15-13"></p>
+            <p id="modal-achievements-16-14"></p>
+            <p id="modal-achievements-17-15"></p>
+            <p id="modal-last-activity"></p>
+            <button id="modal-close-btn">닫기</button>
+        </div>
+    </div>
+
     <script>
         let state = {
             refine: { users: [], levelData: [] },
             amplify: { users: [], levelData: [] },
             currentMode: 'refine',
-            currentSort: { key: 'totalXp', direction: 'desc' } // 기본 정렬: 누적 경험치, 내림차순
+            currentSort: { key: 'totalXp', direction: 'desc' }
         };
 
         const calculateRefineXp = (level) => level < 12 ? 0 : Math.pow(3, level - 12);
@@ -81,7 +149,12 @@
                 row.insertCell().textContent = `${(user.totalGold / 100000000).toFixed(2)}억`;
                 if (!isRefine) row.insertCell().textContent = user.totalCrystals.toLocaleString();
                 row.insertCell().textContent = user.destructionCount;
-                row.insertCell().textContent = user.totalXp.toLocaleString();
+                const xpCell = row.insertCell();
+                xpCell.textContent = user.totalXp.toLocaleString();
+                xpCell.style.textAlign = 'left'; // 누적 경험치 왼쪽 정렬
+
+                row.style.cursor = 'pointer'; // Make row clickable
+                row.addEventListener('click', () => showUserDetailsModal(user));
             });
 
             container.appendChild(table);
@@ -124,9 +197,16 @@
                 const statLevel = parseInt(row[1]);
                 const goldSpent = parseInt(row[2]);
                 const crystalsSpent = mode === 'amplify' ? parseInt(row[3] || 0) : 0;
+                const timestampStr = row[mode === 'refine' ? 3 : 4]; // D column for refine, E for amplify
+                const timestamp = timestampStr ? new Date(timestampStr) : null;
 
                 if (!usersMap.has(nickname)) {
-                    usersMap.set(nickname, { maxStat: 0, totalGold: 0, totalCrystals: 0, destructionCount: 0, totalXp: 0 });
+                    usersMap.set(nickname, {
+                        maxStat: 0, totalGold: 0, totalCrystals: 0, destructionCount: 0, totalXp: 0,
+                        achievements: {},
+                        lastActivity: null,
+                        rawEntries: [] // Store raw entries to count achievements later
+                    });
                 }
 
                 const userData = usersMap.get(nickname);
@@ -135,17 +215,95 @@
                 if (mode === 'amplify') userData.totalCrystals += crystalsSpent;
                 userData.destructionCount++;
                 userData.totalXp += calculateXp(statLevel);
+                if (timestamp && (!userData.lastActivity || timestamp > userData.lastActivity)) {
+                    userData.lastActivity = timestamp;
+                }
+                userData.rawEntries.push(row); // Store raw row for achievement counting
             });
 
-            return Array.from(usersMap.entries()).map(([nickname, data]) => ({
-                nickname: nickname,
-                level: getLevelFromXp(data.totalXp, levelData),
-                maxStat: data.maxStat,
-                totalGold: data.totalGold,
-                totalCrystals: data.totalCrystals,
-                destructionCount: data.destructionCount,
-                totalXp: data.totalXp
-            }));
+            return Array.from(usersMap.entries()).map(([nickname, data]) => {
+                // Process achievements
+                const achievements = {};
+                const achievementLevels = mode === 'refine' ? [12, 13, 14, 15, 16, 17] : [10, 11, 12, 13, 14, 15];
+                achievementLevels.forEach(targetLevel => {
+                    const key = mode === 'refine' ? `plus${targetLevel}` : `plus${targetLevel}`; // e.g., plus12, plus10
+                    achievements[key] = data.rawEntries.filter(entry => parseInt(entry[1]) >= targetLevel).length;
+                });
+
+                return {
+                    nickname: nickname,
+                    level: getLevelFromXp(data.totalXp, levelData),
+                    maxStat: data.maxStat,
+                    totalGold: data.totalGold,
+                    totalCrystals: data.totalCrystals,
+                    destructionCount: data.destructionCount,
+                    totalXp: data.totalXp,
+                    achievements: achievements,
+                    lastActivity: data.lastActivity ? data.lastActivity.toLocaleString() : '알 수 없음',
+                    rawEntries: undefined // Clean up raw entries after processing
+                };
+            });
+        }
+
+        // Modal Functions
+        function showUserDetailsModal(user) {
+            const modalOverlay = document.getElementById('user-details-modal-overlay');
+            const modalTitle = document.getElementById('modal-title');
+            const modalLevelInfo = document.getElementById('modal-level-info');
+            const modalMaxStat = document.getElementById('modal-max-stat');
+            const modalCosts = document.getElementById('modal-costs');
+            const modalDestructions = document.getElementById('modal-destructions');
+            const modalAchievements12_10 = document.getElementById('modal-achievements-12-10');
+            const modalAchievements13_11 = document.getElementById('modal-achievements-13-11');
+            const modalAchievements14_12 = document.getElementById('modal-achievements-14-12');
+            const modalAchievements15_13 = document.getElementById('modal-achievements-15-13');
+            const modalAchievements16_14 = document.getElementById('modal-achievements-16-14');
+            const modalAchievements17_15 = document.getElementById('modal-achievements-17-15');
+            const modalLastActivity = document.getElementById('modal-last-activity');
+
+            const mode = state.currentMode;
+            const isRefine = mode === 'refine';
+            const statType = isRefine ? '강화' : '증폭';
+            const achievementPrefix = isRefine ? '+' : '+'; // For display
+
+            modalTitle.textContent = `${user.nickname} ${statType} 상세 통계`;
+            modalLevelInfo.innerHTML = `Lv.${user.level} (경험치 : ${user.totalXp.toLocaleString()}/${getLevelFromXp(user.totalXp, state[mode].levelData, true).nextLevelXp.toLocaleString()})`;
+            modalMaxStat.textContent = `최고 ${statType} 단계 : +${user.maxStat}`;
+            
+            let costsText = `누적 소모 골드 : ${user.totalGold.toLocaleString()}`; // d
+            if (!isRefine) {
+                costsText += `, 누적 소모 모순의 결정체 : ${user.totalCrystals.toLocaleString()}`; // e
+            }
+            modalCosts.textContent = costsText;
+            modalDestructions.textContent = `누적 파괴 횟수 : ${user.destructionCount}`;
+
+            // Achievement levels mapping
+            const displayLevels = [
+                { refine: 12, amplify: 10 },
+                { refine: 13, amplify: 11 },
+                { refine: 14, amplify: 12 },
+                { refine: 15, amplify: 13 },
+                { refine: 16, amplify: 14 },
+                { refine: 17, amplify: 15 }
+            ];
+
+            displayLevels.forEach((levels, index) => {
+                const currentLevel = isRefine ? levels.refine : levels.amplify;
+                const achievementCount = user.achievements[`plus${currentLevel}`] || 0;
+                const elementId = `modal-achievements-${levels.refine}-${levels.amplify}`;
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = `${achievementPrefix}${currentLevel} 도달 횟수 : ${achievementCount}`;
+                }
+            });
+
+            modalLastActivity.textContent = `마지막 활동일 : ${user.lastActivity}`;
+
+            modalOverlay.classList.remove('hidden');
+        }
+
+        function closeUserDetailsModal() {
+            document.getElementById('user-details-modal-overlay').classList.add('hidden');
         }
 
         async function initialize() {
@@ -174,6 +332,10 @@
 
                 document.getElementById('refine-stats-btn').addEventListener('click', () => { state.currentMode = 'refine'; renderTable(); });
                 document.getElementById('amplify-stats-btn').addEventListener('click', () => { state.currentMode = 'amplify'; renderTable(); });
+                document.getElementById('modal-close-btn').addEventListener('click', closeUserDetailsModal);
+                document.getElementById('user-details-modal-overlay').addEventListener('click', (e) => {
+                    if (e.target.id === 'user-details-modal-overlay') { closeUserDetailsModal(); }
+                });
                 
                 renderTable(); // Render the default refine table
 
