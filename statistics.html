@@ -47,15 +47,18 @@
             display: block;
             margin: 20px auto 0 auto;
             padding: 10px 20px;
-            background-color: white;
-            color: #333;
-            border: 1px solid #ccc;
+            background-color: white; /* Changed to white */
+            color: #333; /* Changed to dark gray for contrast */
+            border: 1px solid #ccc; /* Added border for visibility */
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
         }
         .modal-content button:hover { background-color: #e9e9e9; }
         .modal-content .blank-line { height: 15px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+
+        /* Fix for hidden class */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -235,7 +238,7 @@
                         maxStat: 0, totalGold: 0, totalCrystals: 0, destructionCount: 0, totalXp: 0,
                         achievements: {},
                         lastActivity: null,
-                        allAttempts: [] // Store all attempts to find min/max
+                        allAttempts: []
                     });
                 }
 
@@ -259,7 +262,6 @@
                     achievements[key] = data.allAttempts.filter(attempt => attempt.level >= targetLevel).length;
                 });
 
-                // Calculate min/max attempts
                 let maxAttemptGold = 0;
                 let maxAttemptLevel = 0;
                 let minAttemptGold = Infinity;
