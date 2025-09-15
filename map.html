@@ -31,20 +31,27 @@
         }
         #map-data-container {
             margin-top: 20px;
+            display: flex;
+            align-items: flex-start; /* Align columns to the top */
+            gap: 20px; /* Space between columns */
         }
-        #map-data-container table {
+        .data-column {
+            flex: 1;
+        }
+        .data-column table {
             width: 100%;
-            max-width: 400px;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-        #map-data-container th, #map-data-container td {
+        .data-column th, .data-column td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
-        #map-data-container h3 {
-            margin-top: 10px;
+        .data-column thead th {
+            background-color: #f2f2f2;
+            text-align: center;
+            font-size: 1.1em;
         }
     </style>
 </head>
@@ -73,7 +80,9 @@
         <img id="mapImage" src="images/map/Experimentation.png" alt="지도 이미지">
     </div>
 
-    <div id="map-data-container"></div>
+    <div id="map-data-container">
+        <!-- Data will be injected here by script -->
+    </div>
 
     <script>
         const mapSelector = document.getElementById('mapSelector');
@@ -81,15 +90,15 @@
         const dataContainer = document.getElementById('map-data-container');
         const imageBaseUrl = 'images/map/';
 
-        // Function to create a table for a category
+        // Function to create a table with a title row
         function createTable(title, data) {
             if (data.length === 0) return '';
             
-            let tableHtml = `<h3>${title}</h3><table>`;
+            let tableHtml = `<table><thead><tr><th colspan="2">${title}</th></tr></thead><tbody>`;
             data.forEach(item => {
                 tableHtml += `<tr><td>${item.name}</td><td>${item.value}</td></tr>`;
             });
-            tableHtml += '</table>';
+            tableHtml += '</tbody></table>';
             return tableHtml;
         }
 
@@ -106,10 +115,11 @@
                 const data = result.data;
 
                 const headers = data[0];
-                const mapIndex = headers.findIndex(h => h === mapName);
+                const mapIndex = headers.findIndex(h => h.trim() === mapName.trim());
 
                 if (mapIndex === -1) {
-                    dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다. 시트 헤더를 확인하세요.</p>`;
+                    // The user fixed this by adding a row, but we leave the debug logic just in case.
+                    dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다.</p><p><b>[디버그 정보]</b> 받은 헤더 목록: ${JSON.stringify(headers)}</p>`;
                     return;
                 }
 
@@ -145,7 +155,11 @@
                 const outdoorMobsTable = createTable('외부 몹', outdoorMobs);
                 const indoorMobsTable = createTable('내부 몹', indoorMobs);
 
-                dataContainer.innerHTML = facilityTable + outdoorMobsTable + indoorMobsTable;
+                // Build the two-column layout
+                const leftColumnHtml = `<div class="data-column">${facilityTable}${outdoorMobsTable}</div>`;
+                const rightColumnHtml = `<div class="data-column">${indoorMobsTable}</div>`;
+
+                dataContainer.innerHTML = leftColumnHtml + rightColumnHtml;
 
             } catch (error) {
                 console.error('Error fetching map data:', error);
@@ -162,7 +176,6 @@
             mapImage.src = `${imageBaseUrl}${selectedMapValue}.png`;
             mapImage.alt = `${selectedMapText} 지도 이미지`;
 
-            // Fetch data using the Korean map name from the option's text
             fetchAndDisplayMapData(selectedMapText);
         });
 
