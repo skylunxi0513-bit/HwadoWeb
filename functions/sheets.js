@@ -130,7 +130,11 @@ exports.handler = async function(event, context) {
         return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required for generic query.' }) };
     }
 
-    const range = `${sheetName}!A:I`;
+    let range = `${sheetName}!A:I`; // Default range
+    if (sheetName === '지도') {
+        range = '지도!A:M'; // Wider range for map data
+    }
+
     const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
 
     let rows = response.data.values || [];

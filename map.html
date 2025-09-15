@@ -81,6 +81,20 @@
         const dataContainer = document.getElementById('map-data-container');
         const imageBaseUrl = 'images/map/';
 
+        const mapColumnMapping = {
+            'Experimentation': 2, // C열
+            'Assurance': 3,       // D열
+            'Vow': 4,             // E열
+            'Offense': 5,         // F열
+            'March': 6,           // G열
+            'Adamance': 7,        // H열
+            'Rend': 8,            // I열
+            'Dine': 9,            // J열
+            'Titan': 10,          // K열
+            'Embrion': 11,        // L열
+            'Artifice': 12        // M열
+        };
+
         // Function to create a table for a category
         function createTable(title, data) {
             if (Object.keys(data).length === 0) return '';
@@ -94,24 +108,22 @@
         }
 
         // Function to fetch and display map data
-        async function fetchAndDisplayMapData(mapName) { // mapName will now be the English value
+        async function fetchAndDisplayMapData(mapValue) {
             dataContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
+            const mapIndex = mapColumnMapping[mapValue];
+
+            if (mapIndex === undefined) {
+                dataContainer.innerHTML = `<p>해당 맵(${mapValue})에 대한 열 정보가 없습니다.</p>`;
+                return;
+            }
+
             try {
-                // Use the Netlify function endpoint to get sheet data
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=지도`);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const result = await response.json();
                 const data = result.data;
-
-                const headers = data[0];
-                const mapIndex = headers.findIndex(h => h === mapName); // This should now work
-
-                if (mapIndex === -1) {
-                    dataContainer.innerHTML = `<p>해당 맵(${mapName})의 데이터를 찾을 수 없습니다. 시트 헤더를 확인하세요.</p>`; // More informative error
-                    return;
-                }
 
                 const facility = {};
                 const outdoorMobs = {};
@@ -147,22 +159,18 @@
 
         // Event listener for map selection
         mapSelector.addEventListener('change', (event) => {
-            const selectedOption = event.target.options[event.target.selectedIndex];
-            const selectedMapValue = selectedOption.value;
-            const selectedMapText = selectedOption.text;
+            const selectedMapValue = event.target.value;
+            const selectedMapText = event.target.options[event.target.selectedIndex].text;
             
-            // Update image
             mapImage.src = `${imageBaseUrl}${selectedMapValue}.png`;
             mapImage.alt = `${selectedMapText} 지도 이미지`;
 
-            // Fetch and display data using the VALUE (English name)
             fetchAndDisplayMapData(selectedMapValue);
         });
 
         // Initial data load for the default selected map
-        // Use DOMContentLoaded to ensure the script runs after the page is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
-            const initialMapValue = mapSelector.value; // Use .value to get the English name
+            const initialMapValue = mapSelector.value;
             fetchAndDisplayMapData(initialMapValue);
         });
     </script>
