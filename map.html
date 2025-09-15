@@ -48,8 +48,14 @@
             height: auto;
             display: block;
         }
+        #map-data-container h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
         #map-data-container {
             margin-top: 20px;
+        }
+        .flex-container {
             display: flex;
             align-items: flex-start;
             gap: 20px;
@@ -122,6 +128,7 @@
         const imageBaseUrl = 'images/map/';
 
         function parseValue(str) {
+            if (str === '?') return 0.01; // Treat '?’ as slightly above 0 for sorting
             return parseFloat(str.replace('%', ''));
         }
 
@@ -151,7 +158,7 @@
                 const mapIndex = headers.findIndex(h => h.trim() === mapName.trim());
 
                 if (mapIndex === -1) {
-                    dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다.</p><p><b>[디버그 정보]</b> 받은 헤더 목록: ${JSON.stringify(headers)}</p>`;
+                    dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다.</p>`;
                     return;
                 }
 
@@ -178,20 +185,23 @@
                 const sortedIndoor = [...indoorMobs].sort((a, b) => parseValue(b.value) - parseValue(a.value));
                 const top4IndoorList = sortedIndoor.slice(0, 4).map(m => m.name).join(', ');
 
-                const zeroMobs = [...outdoorMobs, ...indoorMobs].filter(m => m.value === '0%').map(m => m.name);
-                const nonAppearingMobsList = zeroMobs.length > 0 ? zeroMobs.join(', ') : '없음';
+                const zeroOutdoor = outdoorMobs.filter(m => m.value === '0%').map(m => m.name);
+                const nonAppearingOutdoorList = zeroOutdoor.length > 0 ? zeroOutdoor.join(', ') : '없음';
+                const zeroIndoor = indoorMobs.filter(m => m.value === '0%').map(m => m.name);
+                const nonAppearingIndoorList = zeroIndoor.length > 0 ? zeroIndoor.join(', ') : '없음';
 
                 summaryContainer.innerHTML = `<table>` +
                     `<colgroup><col style="width:25%"><col style="width:37.5%"><col style="width:37.5%"></colgroup>` +
                     `<thead><tr><th>시설</th><th>많이 등장하는 몹</th><th>등장하지 않는 몹</th></tr></thead>` +
                     `<tbody>` +
                     `<tr>` +
-                    `<td rowspan="2">${topFacility}</td>` +
-                    `<td>${top2OutdoorList}</td>` +
-                    `<td rowspan="2">${nonAppearingMobsList}</td>` +
+                    `<td rowspan="2"><b>${topFacility}</b></td>` +
+                    `<td><b>${top2OutdoorList}</b></td>` +
+                    `<td>${nonAppearingOutdoorList}</td>` +
                     `</tr>` +
                     `<tr>` +
-                    `<td>${top4IndoorList}</td>` +
+                    `<td><b>${top4IndoorList}</b></td>` +
+                    `<td>${nonAppearingIndoorList}</td>` +
                     `</tr>` +
                     `</tbody></table>`;
 
@@ -215,7 +225,7 @@
 
                 const leftColumnHtml = `<div class="data-column">${facilityTable}${outdoorMobsTable}</div>`;
                 const rightColumnHtml = `<div class="data-column">${indoorMobsTable}</div>`;
-                dataContainer.innerHTML = leftColumnHtml + rightColumnHtml;
+                dataContainer.innerHTML = `<h2>상세 정보</h2><div class="flex-container">${leftColumnHtml}${rightColumnHtml}</div>`;
 
             } catch (error) {
                 console.error('Error fetching map data:', error);
