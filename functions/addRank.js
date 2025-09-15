@@ -28,8 +28,26 @@ exports.handler = async function(event, context) {
         };
     }
 
-    // Get current timestamp
-    const timestamp = new Date().toLocaleString();
+    // Get current timestamp in Korean format (YYYY. MM. DD. 오전/오후 HH:MM:SS)
+    const now = new Date();
+    const options = {
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+        hour12: false, // Use 24-hour format first
+        timeZone: 'Asia/Seoul'
+    };
+    let formatted = new Intl.DateTimeFormat('ko-KR', options).format(now);
+
+    // Manual conversion to 오전/오후
+    const parts = formatted.split(' ');
+    const datePart = parts.slice(0, 3).join('. ') + '.'; // YYYY. MM. DD.
+    const timePart = parts[3]; // HH:MM:SS
+    const hour = parseInt(timePart.split(':')[0]);
+    const ampm = hour < 12 ? '오전' : '오후';
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12; // Convert 0 to 12 for AM/PM
+
+    const newTimePart = `${ampm} ${displayHour}:${timePart.split(':')[1]}:${timePart.split(':')[2]}`;
+    const timestamp = `${datePart} ${newTimePart}`;
 
     // 3. Prepare Google Sheets authentication
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;

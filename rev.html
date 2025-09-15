@@ -34,9 +34,15 @@
             </div>
         </div>
 
-        <div class="calc-section">
-            <div style="text-align: center;"><label>총 필요 계시</label></div>
-            <div id="total-rev-display" style="font-size: 28px; font-weight: bold; color: #0056b3; text-align: center; margin-top: 10px;">0 개</div>
+        <div class="calc-section" style="display: flex; justify-content: space-around;">
+            <div>
+                <div style="text-align: center;"><label>총 필요 계시</label></div>
+                <div id="total-rev-display" style="font-size: 28px; font-weight: bold; color: #0056b3; text-align: center; margin-top: 10px;">0 개</div>
+            </div>
+            <div>
+                <div style="text-align: center;"><label>총 판수(피로도)</label></div>
+                <div id="total-fatigue-display" style="font-size: 28px; font-weight: bold; color: #0056b3; text-align: center; margin-top: 10px;">0(0)</div>
+            </div>
         </div>
     </div>
 
@@ -46,6 +52,7 @@
         const rev2CountInput = document.getElementById('rev2-count');
         const rev3CountInput = document.getElementById('rev3-count');
         const totalRevDisplay = document.getElementById('total-rev-display');
+        const totalFatigueDisplay = document.getElementById('total-fatigue-display');
 
         // --- Main Calculation Function ---
         function calculateAndDisplay() {
@@ -54,13 +61,14 @@
             const count_rev2 = parseInt(rev2CountInput.value) || 0; // 찬란한 (350)
             const count_rev3 = parseInt(rev3CountInput.value) || 0; // 화려한 (85)
 
-            // Calculate n using the correct coefficients for each type
-            // rev3.png (화려한) -> 85
-            // rev2.png (찬란한) -> 350
-            // rev.png (영롱한) -> 750
+            // Calculate total revelation needed
             const n = (count_rev3 * 85) + (count_rev2 * 350) + (count_rev * 750);
-
             totalRevDisplay.innerHTML = `${n.toLocaleString('en-US')} 개`;
+
+            // Calculate total emblems and fatigue
+            const totalEmblems = count_rev + count_rev2 + count_rev3;
+            const fatigue = totalEmblems * 8;
+            totalFatigueDisplay.innerHTML = `${totalEmblems}(${fatigue})`;
         }
 
         // --- Event Listeners ---
