@@ -94,7 +94,7 @@
         }
 
         // Function to fetch and display map data
-        async function fetchAndDisplayMapData(mapName) {
+        async function fetchAndDisplayMapData(mapName) { // mapName will now be the English value
             dataContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
             try {
                 // Use the Netlify function endpoint to get sheet data
@@ -106,10 +106,10 @@
                 const data = result.data;
 
                 const headers = data[0];
-                const mapIndex = headers.findIndex(h => h === mapName);
+                const mapIndex = headers.findIndex(h => h === mapName); // This should now work
 
                 if (mapIndex === -1) {
-                    dataContainer.innerHTML = '<p>해당 맵의 데이터를 찾을 수 없습니다.</p>';
+                    dataContainer.innerHTML = `<p>해당 맵(${mapName})의 데이터를 찾을 수 없습니다. 시트 헤더를 확인하세요.</p>`; // More informative error
                     return;
                 }
 
@@ -155,15 +155,15 @@
             mapImage.src = `${imageBaseUrl}${selectedMapValue}.png`;
             mapImage.alt = `${selectedMapText} 지도 이미지`;
 
-            // Fetch and display data
-            fetchAndDisplayMapData(selectedMapText);
+            // Fetch and display data using the VALUE (English name)
+            fetchAndDisplayMapData(selectedMapValue);
         });
 
         // Initial data load for the default selected map
         // Use DOMContentLoaded to ensure the script runs after the page is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
-            const initialMapText = mapSelector.options[mapSelector.selectedIndex].text;
-            fetchAndDisplayMapData(initialMapText);
+            const initialMapValue = mapSelector.value; // Use .value to get the English name
+            fetchAndDisplayMapData(initialMapValue);
         });
     </script>
 
