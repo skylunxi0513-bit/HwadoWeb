@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>지도 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
-        <style>
+            <style>
         #map-selector-container {
             margin: 20px 0;
         }
@@ -81,6 +81,148 @@
             font-weight: bold;
         }
     </style>
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+
+    <div id="map-selector-container">
+        <select id="mapSelector">
+            <option value="Experimentation">익스페리멘테이션</option>
+            <option value="Assurance">어슈어런스</option>
+            <option value="Vow">보우</option>
+            <option value="Offense">오펜스</option>
+            <option value="March">머치</option>
+            <option value="Adamance">애더먼스</option>
+            <option value="Rend">렌드</option>
+            <option value="Dine">다인</option>
+            <option value="Titan">타이탄</option>
+            <option value="Embrion">엠브리언</option>
+            <option value="Artifice">아터피스</option>
+        </select>
+    </div>
+
+    <div id="summary-table-container"></div>
+
+    <div id="image-container">
+        <img id="mapImage" src="images/map/Experimentation.png" alt="지도 이미지">
+    </div>
+
+    <div id="map-data-container"></div>
+
+    <script>
+        const mapSelector = document.getElementById('mapSelector');
+        const summaryContainer = document.getElementById('summary-table-container');
+        const mapImage = document.getElementById('mapImage');
+        const dataContainer = document.getElementById('map-data-container');
+        const imageBaseUrl = 'images/map/';
+
+        function parseValue(str) {
+            return parseFloat(str.replace('%', ''));
+        }
+
+        function createTable(title, data) {
+            if (data.length === 0) return '';
+            let tableHtml = `<table><thead><tr><th colspan="2">${title}</th></tr></thead><tbody>`;
+            data.forEach(item => {
+                const isZero = item.value === '0%';
+                const rowClass = isZero ? 'strikethrough' : (item.isBold ? 'bold' : '');
+                tableHtml += `<tr class="${rowClass}"><td>${item.name}</td><td>${item.value}</td></tr>`;
+            });
+            tableHtml += '</tbody></table>';
+            return tableHtml;
+        }
+
+        async function fetchAndDisplayMapData(mapName) {
+            dataContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
+            summaryContainer.innerHTML = ''; // Clear previous summary
+            
+            try {
+                const response = await fetch(`/.netlify/functions/sheets?sheetName=지도`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                const data = result.data;
+
+                const headers = data[0];
+                const mapIndex = headers.findIndex(h => h.trim() === mapName.trim());
+
+                if (mapIndex === -1) {
+                    dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다.</p><p><b>[디버그 정보]</b> 받은 헤더 목록: ${JSON.stringify(headers)}</p>`;
+                    return;
+                }
+
+                let facility = [], outdoorMobs = [], indoorMobs = [];
+
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    const category = row[0], itemName = row[1], value = row[mapIndex];
+                    if (!category || !itemName || value === undefined) continue;
+                    
+                    const item = { name: itemName, value: value, isBold: false };
+                    if (category === '시설') facility.push(item);
+                    else if (category === '외부 몹') outdoorMobs.push(item);
+                    else if (category === '내부 몹') indoorMobs.push(item);
+                }
+
+                // --- Summary Table Logic ---
+                const topFacility = facility.length > 0 ? [...facility].sort((a, b) => parseValue(b.value) - parseValue(a.value))[0].name : '없음';
+                
+                const top2Outdoor = [...outdoorMobs].sort((a, b) => parseValue(b.value) - parseValue(a.value)).slice(0, 2).map(m => m.name);
+                const top4Indoor = [...indoorMobs].sort((a, b) => parseValue(b.value) - parseValue(a.value)).slice(0, 4).map(m => m.name);
+                const frequentMobsList = [...top2Outdoor, ...top4Indoor].join(', ');
+
+                const zeroMobs = [...outdoorMobs, ...indoorMobs].filter(m => m.value === '0%').map(m => m.name);
+                const nonAppearingMobsList = zeroMobs.length > 0 ? zeroMobs.join(', ') : '없음';
+
+                summaryContainer.innerHTML = `<table>` +
+                                         `<colgroup><col style="width:20%"><col style="width:40%"><col style="width:40%"></colgroup>` +
+                                         `<thead><tr><th>시설</th><th>많이 등장하는 몹</th><th>등장하지 않는 몹</th></tr></thead>` +
+                                         `<tbody><tr><td>${topFacility}</td><td>${frequentMobsList}</td><td>${nonAppearingMobsList}</td></tr></tbody></table>`;
+
+                // --- Detailed Tables Logic ---
+                facility.sort((a, b) => parseValue(b.value) - parseValue(a.value));
+                indoorMobs.sort((a, b) => parseValue(b.value) - parseValue(a.value));
+                
+                let circuitBee = outdoorMobs.find(m => m.name === '회로 벌');
+                let otherOutdoorMobs = outdoorMobs.filter(m => m.name !== '회로 벌');
+                otherOutdoorMobs.sort((a, b) => parseValue(b.value) - parseValue(a.value));
+                outdoorMobs = circuitBee ? [circuitBee, ...otherOutdoorMobs] : otherOutdoorMobs;
+
+                facility.forEach(item => { if (parseValue(item.value) >= 66.67) item.isBold = true; });
+                const outdoorMaxVal = Math.max(...outdoorMobs.map(m => parseValue(m.value)));
+                const outdoorTop = outdoorMobs.find(m => parseValue(m.value) === outdoorMaxVal);
+                if(outdoorTop) outdoorTop.isBold = true;
+                indoorMobs.slice(0, 3).forEach(item => item.isBold = true);
+
+                const facilityTable = createTable('시설', facility);
+                const outdoorMobsTable = createTable('외부 몹', outdoorMobs);
+                const indoorMobsTable = createTable('내부 몹', indoorMobs);
+
+                const leftColumnHtml = `<div class="data-column">${facilityTable}${outdoorMobsTable}</div>`;
+                const rightColumnHtml = `<div class="data-column">${indoorMobsTable}</div>`;
+                dataContainer.innerHTML = leftColumnHtml + rightColumnHtml;
+
+            } catch (error) {
+                console.error('Error fetching map data:', error);
+                dataContainer.innerHTML = '<p>데이터를 불러오는 데 실패했습니다.</p>';
+            }
+        }
+
+        mapSelector.addEventListener('change', (event) => {
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            mapImage.src = `${imageBaseUrl}${selectedOption.value}.png`;
+            mapImage.alt = `${selectedOption.text} 지도 이미지`;
+            fetchAndDisplayMapData(selectedOption.text);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialMapText = mapSelector.options[mapSelector.selectedIndex].text;
+            fetchAndDisplayMapData(initialMapText);
+        });
+    </script>
+
+</body>
 </head>
 <body>
     <a href="index.html" class="header-link">
