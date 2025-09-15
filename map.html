@@ -29,6 +29,23 @@
             height: auto;
             display: block;
         }
+        #map-data-container {
+            margin-top: 20px;
+        }
+        #map-data-container table {
+            width: 100%;
+            max-width: 400px;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        #map-data-container th, #map-data-container td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #map-data-container h3 {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -56,15 +73,97 @@
         <img id="mapImage" src="images/map/Experimentation.png" alt="지도 이미지">
     </div>
 
+    <div id="map-data-container"></div>
+
     <script>
         const mapSelector = document.getElementById('mapSelector');
         const mapImage = document.getElementById('mapImage');
+        const dataContainer = document.getElementById('map-data-container');
         const imageBaseUrl = 'images/map/';
 
+        // Function to create a table for a category
+        function createTable(title, data) {
+            if (Object.keys(data).length === 0) return '';
+            
+            let tableHtml = `<h3>${title}</h3><table>`;
+            for (const [key, value] of Object.entries(data)) {
+                tableHtml += `<tr><td>${key}</td><td>${value}</td></tr>`;
+            }
+            tableHtml += '</table>';
+            return tableHtml;
+        }
+
+        // Function to fetch and display map data
+        async function fetchAndDisplayMapData(mapName) {
+            dataContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
+            try {
+                // Use the Netlify function endpoint to get sheet data
+                const response = await fetch(`/.netlify/functions/sheets?sheetName=지도`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                const data = result.data;
+
+                const headers = data[0];
+                const mapIndex = headers.findIndex(h => h === mapName);
+
+                if (mapIndex === -1) {
+                    dataContainer.innerHTML = '<p>해당 맵의 데이터를 찾을 수 없습니다.</p>';
+                    return;
+                }
+
+                const facility = {};
+                const outdoorMobs = {};
+                const indoorMobs = {};
+
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    const key = row[0];
+                    const value = row[mapIndex];
+
+                    if (!key || !value) continue;
+
+                    if (key.startsWith('시설')) {
+                        facility[key.replace('시설', '')] = value;
+                    } else if (key.startsWith('외부 몹')) {
+                        outdoorMobs[key.replace('외부 몹', '')] = value;
+                    } else if (key.startsWith('내부 몹')) {
+                        indoorMobs[key.replace('내부 몹', '')] = value;
+                    }
+                }
+                
+                const facilityTable = createTable('시설', facility);
+                const outdoorMobsTable = createTable('외부 몹', outdoorMobs);
+                const indoorMobsTable = createTable('내부 몹', indoorMobs);
+
+                dataContainer.innerHTML = facilityTable + outdoorMobsTable + indoorMobsTable;
+
+            } catch (error) {
+                console.error('Error fetching map data:', error);
+                dataContainer.innerHTML = '<p>데이터를 불러오는 데 실패했습니다.</p>';
+            }
+        }
+
+        // Event listener for map selection
         mapSelector.addEventListener('change', (event) => {
-            const selectedMap = event.target.value;
-            mapImage.src = `${imageBaseUrl}${selectedMap}.png`;
-            mapImage.alt = `${selectedMap} 지도 이미지`;
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            const selectedMapValue = selectedOption.value;
+            const selectedMapText = selectedOption.text;
+            
+            // Update image
+            mapImage.src = `${imageBaseUrl}${selectedMapValue}.png`;
+            mapImage.alt = `${selectedMapText} 지도 이미지`;
+
+            // Fetch and display data
+            fetchAndDisplayMapData(selectedMapText);
+        });
+
+        // Initial data load for the default selected map
+        // Use DOMContentLoaded to ensure the script runs after the page is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialMapText = mapSelector.options[mapSelector.selectedIndex].text;
+            fetchAndDisplayMapData(initialMapText);
         });
     </script>
 
