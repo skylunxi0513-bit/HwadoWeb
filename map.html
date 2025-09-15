@@ -32,26 +32,37 @@
         #map-data-container {
             margin-top: 20px;
             display: flex;
-            align-items: flex-start; /* Align columns to the top */
-            gap: 20px; /* Space between columns */
+            align-items: flex-start;
+            gap: 20px;
         }
         .data-column {
             flex: 1;
+            min-width: 0; /* Prevents flex items from overflowing */
         }
         .data-column table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed; /* Ensure consistent column widths */
         }
         .data-column th, .data-column td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            word-wrap: break-word;
         }
+        .data-column td:last-child { width: 35%; }
         .data-column thead th {
             background-color: #f2f2f2;
             text-align: center;
             font-size: 1.1em;
+        }
+        .strikethrough {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .bold {
+            font-weight: bold;
         }
     </style>
 </head>
@@ -90,27 +101,29 @@
         const dataContainer = document.getElementById('map-data-container');
         const imageBaseUrl = 'images/map/';
 
-        // Function to create a table with a title row
+        function parseValue(str) {
+            return parseFloat(str.replace('%', ''));
+        }
+
         function createTable(title, data) {
             if (data.length === 0) return '';
             
             let tableHtml = `<table><thead><tr><th colspan="2">${title}</th></tr></thead><tbody>`;
             data.forEach(item => {
-                tableHtml += `<tr><td>${item.name}</td><td>${item.value}</td></tr>`;
+                const isZero = item.value === '0%';
+                const rowClass = isZero ? 'strikethrough' : (item.isBold ? 'bold' : '');
+                tableHtml += `<tr class="${rowClass}"><td>${item.name}</td><td>${item.value}</td></tr>`;
             });
             tableHtml += '</tbody></table>';
             return tableHtml;
         }
 
-        // Function to fetch and display map data
         async function fetchAndDisplayMapData(mapName) {
             dataContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
             
             try {
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=지도`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
                 const data = result.data;
 
@@ -118,44 +131,46 @@
                 const mapIndex = headers.findIndex(h => h.trim() === mapName.trim());
 
                 if (mapIndex === -1) {
-                    // The user fixed this by adding a row, but we leave the debug logic just in case.
                     dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다.</p><p><b>[디버그 정보]</b> 받은 헤더 목록: ${JSON.stringify(headers)}</p>`;
                     return;
                 }
 
-                const facility = [];
-                const outdoorMobs = [];
-                const indoorMobs = [];
+                let facility = [], outdoorMobs = [], indoorMobs = [];
 
-                // Start from row 2 (index 1)
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
-                    const category = row[0]; // A열: 카테고리
-                    const itemName = row[1]; // B열: 아이템 이름
-                    const value = row[mapIndex];    // C~M열: 값
-
-                    if (!category || !itemName || !value) continue;
-
-                    const item = { name: itemName, value: value };
-
-                    switch (category) {
-                        case '시설':
-                            facility.push(item);
-                            break;
-                        case '외부 몹':
-                            outdoorMobs.push(item);
-                            break;
-                        case '내부 몹':
-                            indoorMobs.push(item);
-                            break;
-                    }
+                    const category = row[0], itemName = row[1], value = row[mapIndex];
+                    if (!category || !itemName || value === undefined) continue;
+                    
+                    const item = { name: itemName, value: value, isBold: false };
+                    if (category === '시설') facility.push(item);
+                    else if (category === '외부 몹') outdoorMobs.push(item);
+                    else if (category === '내부 몹') indoorMobs.push(item);
                 }
+
+                // 2. Sorting
+                facility.sort((a, b) => parseValue(b.value) - parseValue(a.value));
+                indoorMobs.sort((a, b) => parseValue(b.value) - parseValue(a.value));
                 
+                let circuitBee = outdoorMobs.find(m => m.name === '회로 벌');
+                let otherOutdoorMobs = outdoorMobs.filter(m => m.name !== '회로 벌');
+                otherOutdoorMobs.sort((a, b) => parseValue(b.value) - parseValue(a.value));
+                outdoorMobs = circuitBee ? [circuitBee, ...otherOutdoorMobs] : otherOutdoorMobs;
+
+                // 4. Bolding
+                facility.forEach(item => { if (parseValue(item.value) >= 66.67) item.isBold = true; });
+
+                const outdoorMaxVal = Math.max(...outdoorMobs.map(m => parseValue(m.value)));
+                const outdoorTop = outdoorMobs.find(m => parseValue(m.value) === outdoorMaxVal);
+                if(outdoorTop) outdoorTop.isBold = true;
+
+                indoorMobs.slice(0, 3).forEach(item => item.isBold = true);
+
+                // Build HTML
                 const facilityTable = createTable('시설', facility);
                 const outdoorMobsTable = createTable('외부 몹', outdoorMobs);
                 const indoorMobsTable = createTable('내부 몹', indoorMobs);
 
-                // Build the two-column layout
                 const leftColumnHtml = `<div class="data-column">${facilityTable}${outdoorMobsTable}</div>`;
                 const rightColumnHtml = `<div class="data-column">${indoorMobsTable}</div>`;
 
@@ -167,19 +182,13 @@
             }
         }
 
-        // Event listener for map selection
         mapSelector.addEventListener('change', (event) => {
             const selectedOption = event.target.options[event.target.selectedIndex];
-            const selectedMapValue = selectedOption.value;
-            const selectedMapText = selectedOption.text;
-            
-            mapImage.src = `${imageBaseUrl}${selectedMapValue}.png`;
-            mapImage.alt = `${selectedMapText} 지도 이미지`;
-
-            fetchAndDisplayMapData(selectedMapText);
+            mapImage.src = `${imageBaseUrl}${selectedOption.value}.png`;
+            mapImage.alt = `${selectedOption.text} 지도 이미지`;
+            fetchAndDisplayMapData(selectedOption.text);
         });
 
-        // Initial data load for the default selected map
         document.addEventListener('DOMContentLoaded', () => {
             const initialMapText = mapSelector.options[mapSelector.selectedIndex].text;
             fetchAndDisplayMapData(initialMapText);
