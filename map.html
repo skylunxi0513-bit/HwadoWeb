@@ -81,42 +81,22 @@
         const dataContainer = document.getElementById('map-data-container');
         const imageBaseUrl = 'images/map/';
 
-        const mapColumnMapping = {
-            'Experimentation': 2, // C열
-            'Assurance': 3,       // D열
-            'Vow': 4,             // E열
-            'Offense': 5,         // F열
-            'March': 6,           // G열
-            'Adamance': 7,        // H열
-            'Rend': 8,            // I열
-            'Dine': 9,            // J열
-            'Titan': 10,          // K열
-            'Embrion': 11,        // L열
-            'Artifice': 12        // M열
-        };
-
         // Function to create a table for a category
         function createTable(title, data) {
-            if (Object.keys(data).length === 0) return '';
+            if (data.length === 0) return '';
             
             let tableHtml = `<h3>${title}</h3><table>`;
-            for (const [key, value] of Object.entries(data)) {
-                tableHtml += `<tr><td>${key}</td><td>${value}</td></tr>`;
-            }
+            data.forEach(item => {
+                tableHtml += `<tr><td>${item.name}</td><td>${item.value}</td></tr>`;
+            });
             tableHtml += '</table>';
             return tableHtml;
         }
 
         // Function to fetch and display map data
-        async function fetchAndDisplayMapData(mapValue) {
+        async function fetchAndDisplayMapData(mapName) {
             dataContainer.innerHTML = '<p>데이터를 불러오는 중...</p>';
-            const mapIndex = mapColumnMapping[mapValue];
-
-            if (mapIndex === undefined) {
-                dataContainer.innerHTML = `<p>해당 맵(${mapValue})에 대한 열 정보가 없습니다.</p>`;
-                return;
-            }
-
+            
             try {
                 const response = await fetch(`/.netlify/functions/sheets?sheetName=지도`);
                 if (!response.ok) {
@@ -125,23 +105,39 @@
                 const result = await response.json();
                 const data = result.data;
 
-                const facility = {};
-                const outdoorMobs = {};
-                const indoorMobs = {};
+                const headers = data[0];
+                const mapIndex = headers.findIndex(h => h === mapName);
 
+                if (mapIndex === -1) {
+                    dataContainer.innerHTML = `<p>시트에서 '${mapName}' 맵 정보를 찾을 수 없습니다. 시트 헤더를 확인하세요.</p>`;
+                    return;
+                }
+
+                const facility = [];
+                const outdoorMobs = [];
+                const indoorMobs = [];
+
+                // Start from row 2 (index 1)
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
-                    const key = row[0];
-                    const value = row[mapIndex];
+                    const category = row[0]; // A열: 카테고리
+                    const itemName = row[1]; // B열: 아이템 이름
+                    const value = row[mapIndex];    // C~M열: 값
 
-                    if (!key || !value) continue;
+                    if (!category || !itemName || !value) continue;
 
-                    if (key.startsWith('시설')) {
-                        facility[key.replace('시설', '')] = value;
-                    } else if (key.startsWith('외부 몹')) {
-                        outdoorMobs[key.replace('외부 몹', '')] = value;
-                    } else if (key.startsWith('내부 몹')) {
-                        indoorMobs[key.replace('내부 몹', '')] = value;
+                    const item = { name: itemName, value: value };
+
+                    switch (category) {
+                        case '시설':
+                            facility.push(item);
+                            break;
+                        case '외부 몹':
+                            outdoorMobs.push(item);
+                            break;
+                        case '내부 몹':
+                            indoorMobs.push(item);
+                            break;
                     }
                 }
                 
@@ -159,19 +155,21 @@
 
         // Event listener for map selection
         mapSelector.addEventListener('change', (event) => {
-            const selectedMapValue = event.target.value;
-            const selectedMapText = event.target.options[event.target.selectedIndex].text;
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            const selectedMapValue = selectedOption.value;
+            const selectedMapText = selectedOption.text;
             
             mapImage.src = `${imageBaseUrl}${selectedMapValue}.png`;
             mapImage.alt = `${selectedMapText} 지도 이미지`;
 
-            fetchAndDisplayMapData(selectedMapValue);
+            // Fetch data using the Korean map name from the option's text
+            fetchAndDisplayMapData(selectedMapText);
         });
 
         // Initial data load for the default selected map
         document.addEventListener('DOMContentLoaded', () => {
-            const initialMapValue = mapSelector.value;
-            fetchAndDisplayMapData(initialMapValue);
+            const initialMapText = mapSelector.options[mapSelector.selectedIndex].text;
+            fetchAndDisplayMapData(initialMapText);
         });
     </script>
 
