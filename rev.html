@@ -40,8 +40,8 @@
                 <div id="total-rev-display" style="font-size: 28px; font-weight: bold; color: #0056b3; text-align: center; margin-top: 10px;">0 개</div>
             </div>
             <div>
-                <div style="text-align: center;"><label>총 판수(피로도)</label></div>
-                <div id="total-fatigue-display" style="font-size: 28px; font-weight: bold; color: #0056b3; text-align: center; margin-top: 10px;">0(0)</div>
+                <div style="text-align: center;"><label>총 판수 <span style="font-size: 0.8em;">(피로도)</span></label></div>
+                <div id="total-fatigue-display" style="font-size: 28px; font-weight: bold; color: #0056b3; text-align: center; margin-top: 10px;">0 <span style="font-size: 0.8em;">(0)</span></div>
             </div>
         </div>
     </div>
@@ -68,7 +68,7 @@
             // Calculate total emblems and fatigue
             const totalEmblems = count_rev + count_rev2 + count_rev3;
             const fatigue = totalEmblems * 8;
-            totalFatigueDisplay.innerHTML = `${totalEmblems}(${fatigue})`;
+            totalFatigueDisplay.innerHTML = `${totalEmblems} <span style="font-size: 0.8em;">(${fatigue})</span>`;
         }
 
         // --- Event Listeners ---
