@@ -128,7 +128,7 @@
         const imageBaseUrl = 'images/map/';
 
         function parseValue(str) {
-            if (str === '?') return 0.01; // Treat '?’ as slightly above 0 for sorting
+            if (str === '?') return 0.01;
             return parseFloat(str.replace('%', ''));
         }
 
@@ -180,10 +180,12 @@
                 const topFacility = sortedFacility.length > 0 ? sortedFacility[0].name : '없음';
 
                 const sortedOutdoor = [...outdoorMobs].sort((a, b) => parseValue(b.value) - parseValue(a.value));
-                const top2OutdoorList = sortedOutdoor.slice(0, 2).map(m => m.name).join(', ');
+                const top2Outdoor = sortedOutdoor.slice(0, 2);
+                let top2OutdoorHtml = top2Outdoor.map((m, index) => index === 0 ? `<b>${m.name}</b>` : m.name).join(', ');
 
                 const sortedIndoor = [...indoorMobs].sort((a, b) => parseValue(b.value) - parseValue(a.value));
-                const top4IndoorList = sortedIndoor.slice(0, 4).map(m => m.name).join(', ');
+                const top4Indoor = sortedIndoor.slice(0, 4);
+                let top4IndoorHtml = top4Indoor.map((m, index) => index === 0 ? `<b>${m.name}</b>` : m.name).join(', ');
 
                 const zeroOutdoor = outdoorMobs.filter(m => m.value === '0%').map(m => m.name);
                 const nonAppearingOutdoorList = zeroOutdoor.length > 0 ? zeroOutdoor.join(', ') : '없음';
@@ -196,11 +198,11 @@
                     `<tbody>` +
                     `<tr>` +
                     `<td rowspan="2"><b>${topFacility}</b></td>` +
-                    `<td><b>${top2OutdoorList}</b></td>` +
+                    `<td>${top2OutdoorHtml}</td>` +
                     `<td>${nonAppearingOutdoorList}</td>` +
                     `</tr>` +
                     `<tr>` +
-                    `<td><b>${top4IndoorList}</b></td>` +
+                    `<td>${top4IndoorHtml}</td>` +
                     `<td>${nonAppearingIndoorList}</td>` +
                     `</tr>` +
                     `</tbody></table>`;
