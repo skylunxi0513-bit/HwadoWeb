@@ -32,10 +32,10 @@
         }
         /* New styles for dropdowns that need more width */
         #luck-type { /* For "2번 터진판이" */
-            width: 150px; /* Increased width */
+            width: 150px;
         }
         #item-subtype { /* For "아무거나" */
-            width: 150px; /* Increased width */
+            width: 150px;
         }
         .input-group {
             display: flex;
@@ -239,20 +239,85 @@
             }
 
             let finalProb = 0;
+
+            let effectiveMultiplier = multiplier;
+            let effectiveDesiredCount = desiredCount;
+
+            // --- New Logic for '심숭이' and '레전' ---
+            if (locationSelect.options[locationSelect.selectedIndex].text === '심숭이' && rarityText === '레전') {
+                effectiveMultiplier = multiplier - runs; // Number of random trials
+                effectiveDesiredCount = desiredCount - runs; // Number of additional items needed
+
+                if (effectiveDesiredCount <= 0) {
+                    if (probabilityType === 'atLeast') {
+                        finalProb = 1; // 100% chance if we need 0 or less additional items
+                    } else if (probabilityType === 'exactly') {
+                        if (effectiveMultiplier < 0) {
+                            finalProb = 0;
+                        } else {
+                            finalProb = binomialProb(effectiveMultiplier, 0, baseProb);
+                        }
+                    } else if (probabilityType === 'lessThan') {
+                        finalProb = 0; // If we get guaranteed items, we can't get less than desiredCount if desiredCount <= runs
+                    }
+                    if (finalProb === 1 || finalProb === 0) {
+                        finalProb *= luckProbModifier;
+                        resultDiv.style.fontSize = '2.5em';
+                        lotteryComparisonDiv.textContent = '';
+
+                        if (finalProb === 0) {
+                            resultDiv.textContent = '불가능';
+                            expectedRunsDiv.textContent = '';
+                            return;
+                        }
+
+                        if (finalProb > 0 && finalProb < 2e-18) {
+                            resultDiv.innerHTML = '계산 불가<span style="font-size: 0.6em;">(지나치게 낮음!)</span>';
+                            expectedRunsDiv.textContent = '';
+                        } else {
+                            if (finalProb * 100 < 0.0000000001) {
+                                resultDiv.style.fontSize = '1.8em';
+                                resultDiv.textContent = (finalProb * 100).toFixed(20) + '%';
+                            } else {
+                                resultDiv.textContent = (finalProb * 100).toFixed(10) + '%';
+                            }
+                            const expected = Math.round(1 / finalProb);
+                            expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
+
+                            if (finalProb > 0) {
+                                let comparisonText = '';
+                                if (finalProb > LOTTERY_PROBABILITY) {
+                                    const ratio = (finalProb / LOTTERY_PROBABILITY).toFixed(2);
+                                    comparisonText = `(로또 1등 확률보다 ${ratio}배 쉬움)`;
+                                } else if (finalProb < LOTTERY_PROBABILITY) {
+                                    const ratio = (LOTTERY_PROBABILITY / finalProb).toFixed(2);
+                                    comparisonText = `(로또 1등 확률보다 ${ratio}배 어려움)`;
+                                } else {
+                                    comparisonText = `(로또 1등 확률과 같음)`;
+                                }
+                                lotteryComparisonDiv.textContent = comparisonText;
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+            // --- End of New Logic ---
+
             switch (probabilityType) {
                 case 'atLeast':
-                    if (desiredCount <= multiplier) {
-                        finalProb = atLeastBinomialProb(multiplier, desiredCount, baseProb) * luckProbModifier;
+                    if (effectiveDesiredCount <= effectiveMultiplier) {
+                        finalProb = atLeastBinomialProb(effectiveMultiplier, effectiveDesiredCount, baseProb) * luckProbModifier;
                     }
                     break;
                 case 'exactly':
-                    if (desiredCount <= multiplier) {
-                        finalProb = binomialProb(multiplier, desiredCount, baseProb) * luckProbModifier;
+                    if (effectiveDesiredCount <= effectiveMultiplier) {
+                        finalProb = binomialProb(effectiveMultiplier, effectiveDesiredCount, baseProb) * luckProbModifier;
                     }
                     break;
                 case 'lessThan':
-                    if (desiredCount > 0) { // Cannot have less than 0 items
-                        finalProb = lessThanBinomialProb(multiplier, desiredCount, baseProb) * luckProbModifier;
+                    if (effectiveDesiredCount > 0 && effectiveDesiredCount <= effectiveMultiplier) {
+                        finalProb = lessThanBinomialProb(effectiveMultiplier, effectiveDesiredCount, baseProb) * luckProbModifier;
                     }
                     break;
             }
