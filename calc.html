@@ -13,19 +13,27 @@
             font-size: 1.2em;
             max-width: 800px;
             margin: 0 auto;
+            text-align: center; /* Center align all lines */
         }
         .calculator-container select,
-        .calculator-container input {
+        .calculator-container input[type="number"] {
             padding: 8px;
             font-size: 1em;
             border-radius: 5px;
             border: 1px solid #ccc;
             background-color: #fff; /* 흰색 배경 */
             color: #000; /* 검은색 글씨 */
+            width: 120px; /* Default width for selects and number inputs */
+            max-width: 100%; /* Ensure responsiveness */
+        }
+        /* Specific width for smaller number inputs */
+        #runs, #luck-runs, #item-count {
+            width: 80px;
         }
         .input-group {
             display: flex;
             align-items: center;
+            justify-content: center; /* Center items within input-group */
             gap: 10px;
             flex-wrap: wrap;
         }
@@ -105,13 +113,15 @@
                     <option value="28">자거시</option>
                 </select>
             </div>
-            <label>를</label>
-            <input type="number" id="item-count" value="1" min="1">
-            <select id="probability-type">
-                <option value="atLeast" selected>이상</option>
-                <option value="exactly">정확히</option>
-                <option value="lessThan">미만</option>
-            </select>
+            <span style="display: inline-flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <label>를</label>
+                <input type="number" id="item-count" value="1" min="1">
+                <select id="probability-type">
+                    <option value="atLeast" selected>이상</option>
+                    <option value="exactly">정확히</option>
+                    <option value="lessThan">미만</option>
+                </select>
+            </span>
             <label>개 먹을 확률은?</label>
         </div>
 
