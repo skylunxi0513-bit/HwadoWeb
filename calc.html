@@ -51,6 +51,11 @@
             color: #aaa;
             margin-top: 5px;
         }
+        #lottery-comparison {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
         .hidden {
             display: none;
         }
@@ -84,7 +89,7 @@
         </div>
 
         <div id="luck-section" class="input-group hidden">
-            <label>행운이</label>
+            <label>행운</label>
             <select id="luck-type">
                 <option value="none">상관 없이</option>
                 <option value="once">1번 터진판이</option>
@@ -128,6 +133,7 @@
         <div id="result-container">
             <div id="result">0.0000%</div>
             <div id="expected-runs"></div>
+            <div id="lottery-comparison"></div> <!-- New div for lottery comparison -->
         </div>
     </div>
 
@@ -143,9 +149,13 @@
         const itemSubtypeContainer = document.getElementById('item-subtype-container');
         const itemSubtypeSelect = document.getElementById('item-subtype');
         const itemCountInput = document.getElementById('item-count');
-        const probabilityTypeSelect = document.getElementById('probability-type'); // New
+        const probabilityTypeSelect = document.getElementById('probability-type');
         const resultDiv = document.getElementById('result');
         const expectedRunsDiv = document.getElementById('expected-runs');
+        const lotteryComparisonDiv = document.getElementById('lottery-comparison'); // New DOM element reference
+
+        // --- Constants ---
+        const LOTTERY_PROBABILITY = 1 / 8145060; // 1 in 8,145,060 for 6/45 lottery
 
         // --- Helper Functions for Probability ---
         const memoize = (fn) => {
@@ -197,7 +207,7 @@
             const locationMultiplier = parseInt(locationSelect.value);
             const runs = parseInt(runsInput.value);
             const desiredCount = parseInt(itemCountInput.value);
-            const probabilityType = probabilityTypeSelect.value; // New
+            const probabilityType = probabilityTypeSelect.value;
 
             let multiplier = locationMultiplier * runs;
             let luckProbModifier = 1.0;
@@ -224,7 +234,6 @@
             }
 
             let finalProb = 0;
-            // New switch statement for probability type
             switch (probabilityType) {
                 case 'atLeast':
                     if (desiredCount <= multiplier) {
@@ -245,6 +254,7 @@
 
             // --- Display Logic ---
             resultDiv.style.fontSize = '2.5em'; // Reset font size
+            lotteryComparisonDiv.textContent = ''; // Clear previous comparison
 
             if (finalProb === 0) {
                 resultDiv.textContent = '불가능';
@@ -256,15 +266,30 @@
             if (finalProb > 0 && finalProb < 2e-18) {
                 resultDiv.innerHTML = '계산 불가<span style="font-size: 0.6em;">(지나치게 낮음!)</span>';
                 expectedRunsDiv.textContent = '';
-            } else if (finalProb * 100 < 0.0000000001) {
-                resultDiv.style.fontSize = '1.8em'; // Reduce font size
-                resultDiv.textContent = (finalProb * 100).toFixed(20) + '%';
-                const expected = Math.round(1 / finalProb);
-                expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
             } else {
-                resultDiv.textContent = (finalProb * 100).toFixed(10) + '%';
+                if (finalProb * 100 < 0.0000000001) {
+                    resultDiv.style.fontSize = '1.8em'; // Reduce font size
+                    resultDiv.textContent = (finalProb * 100).toFixed(20) + '%';
+                } else {
+                    resultDiv.textContent = (finalProb * 100).toFixed(10) + '%';
+                }
                 const expected = Math.round(1 / finalProb);
                 expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
+
+                // Lottery Comparison Logic
+                if (finalProb > 0) { // Only compare if finalProb is positive
+                    let comparisonText = '';
+                    if (finalProb > LOTTERY_PROBABILITY) {
+                        const ratio = (finalProb / LOTTERY_PROBABILITY).toFixed(2);
+                        comparisonText = `(로또 1등 확률보다 ${ratio}배 쉬움)`;
+                    } else if (finalProb < LOTTERY_PROBABILITY) {
+                        const ratio = (LOTTERY_PROBABILITY / finalProb).toFixed(2);
+                        comparisonText = `(로또 1등 확률보다 ${ratio}배 어려움)`;
+                    } else {
+                        comparisonText = `(로또 1등 확률과 같음)`;
+                    }
+                    lotteryComparisonDiv.textContent = comparisonText;
+                }
             }
         }
 
@@ -278,6 +303,12 @@
             luckRunsContainer.classList.toggle('hidden', luckType === 'none');
             itemSubtypeContainer.classList.toggle('hidden', rarityText !== '에픽' && rarityText !== '태초');
             
+            // Update "행운이 상관 없이" to "행운 상관 없이"
+            const luckNoneOption = luckTypeSelect.querySelector('option[value="none"]');
+            if (luckNoneOption) {
+                luckNoneOption.textContent = '상관 없이'; // Changed from '행운이 상관 없이'
+            }
+
             calculateProbability();
         }
 
