@@ -210,9 +210,9 @@
                 return;
             }
 
-            // 0.000000000000000025% is 2.5e-19
-            if (finalProb > 0 && finalProb < 2.5e-19) {
-                resultDiv.textContent = '계산 불가(지나치게 낮음!)';
+            // 0.0000000000000002% is 2e-18
+            if (finalProb > 0 && finalProb < 2e-18) {
+                resultDiv.innerHTML = '계산 불가<span style="font-size: 0.6em;">(지나치게 낮음!)</span>';
                 expectedRunsDiv.textContent = '';
             } else if (finalProb * 100 < 0.0000000001) {
                 resultDiv.style.fontSize = '1.8em'; // Reduce font size
