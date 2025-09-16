@@ -207,14 +207,20 @@
             if (finalProb === 0) {
                 resultDiv.textContent = '불가능';
                 expectedRunsDiv.textContent = '';
+                return;
+            }
+
+            const expected = Math.round(1 / finalProb);
+
+            if (!isFinite(expected)) {
+                resultDiv.textContent = '계산 불가(지나치게 낮음!)';
+                expectedRunsDiv.textContent = '';
             } else if (finalProb * 100 < 0.0000000001) {
                 resultDiv.style.fontSize = '1.8em'; // Reduce font size
                 resultDiv.textContent = (finalProb * 100).toFixed(20) + '%';
-                const expected = Math.round(1 / finalProb);
                 expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
             } else {
                 resultDiv.textContent = (finalProb * 100).toFixed(10) + '%';
-                const expected = Math.round(1 / finalProb);
                 expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
             }
         }
