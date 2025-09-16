@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>확률 계산기 - 화도웹</title>
+    <title>기댓값 계산기 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
     <style>
         .calculator-container {
@@ -19,9 +19,9 @@
             padding: 8px;
             font-size: 1em;
             border-radius: 5px;
-            border: 1px solid #555;
-            background-color: #333;
-            color: #fff;
+            border: 1px solid #ccc;
+            background-color: #fff; /* 흰색 배경 */
+            color: #000; /* 검은색 글씨 */
         }
         .input-group {
             display: flex;
@@ -29,12 +29,19 @@
             gap: 10px;
             flex-wrap: wrap;
         }
+        #result-container {
+            text-align: center;
+            margin-top: 20px;
+        }
         #result {
             font-size: 2.5em;
             font-weight: bold;
-            color: #c56eff; /* 보라색 */
-            text-align: center;
-            margin-top: 20px;
+            color: #ff4d4d; /* 빨간색 */
+        }
+        #expected-runs {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
         }
         .hidden {
             display: none;
@@ -47,6 +54,7 @@
     </a>
 
     <div class="calculator-container">
+        <h2>기댓값 계산기</h2>
         <div class="input-group">
             <select id="location">
                 <option value="1">헬</option>
@@ -70,11 +78,12 @@
         <div id="luck-section" class="input-group hidden">
             <label>행운이</label>
             <select id="luck-type">
-                <option value="none">안터지고</option>
+                <option value="none">상관 없이</option>
                 <option value="once">1번 터진판이</option>
                 <option value="twice">2번 터진판이</option>
             </select>
             <div id="luck-runs-container" class="hidden">
+                <label>최소</label>
                 <input type="number" id="luck-runs" value="1" min="1">
                 <label>판</label>
             </div>
@@ -101,7 +110,10 @@
             <label>개 먹을 확률은?</label>
         </div>
 
-        <div id="result">0.0000%</div>
+        <div id="result-container">
+            <div id="result">0.0000%</div>
+            <div id="expected-runs"></div>
+        </div>
     </div>
 
     <script>
@@ -117,18 +129,15 @@
         const itemSubtypeSelect = document.getElementById('item-subtype');
         const itemCountInput = document.getElementById('item-count');
         const resultDiv = document.getElementById('result');
+        const expectedRunsDiv = document.getElementById('expected-runs');
 
         // --- Helper Functions for Probability ---
         const memoize = (fn) => {
             const cache = {};
             return (...args) => {
                 const key = JSON.stringify(args);
-                if (cache[key]) {
-                    return cache[key];
-                }
-                const result = fn(...args);
-                cache[key] = result;
-                return result;
+                if (cache[key]) return cache[key];
+                return cache[key] = fn(...args);
             };
         };
 
@@ -166,7 +175,6 @@
             let multiplier = locationMultiplier * runs;
             let luckProbModifier = 1.0;
 
-            // 행운 섹션 처리
             if (locationSelect.options[locationSelect.selectedIndex].text === '헬') {
                 const luckType = luckTypeSelect.value;
                 if (luckType !== 'none') {
@@ -181,7 +189,6 @@
                 }
             }
 
-            // 아이템 드랍 확률 처리
             let baseProb = parseFloat(itemRaritySelect.value);
             const rarityText = itemRaritySelect.options[itemRaritySelect.selectedIndex].text;
             if (rarityText === '에픽' || rarityText === '태초') {
@@ -189,15 +196,27 @@
                 baseProb /= subtypeDivisor;
             }
 
-            // 최종 확률 계산
-            if (desiredCount > multiplier) {
-                resultDiv.textContent = '0.0000000000%';
-                return;
+            let finalProb = 0;
+            if (desiredCount <= multiplier) {
+                 finalProb = atLeastBinomialProb(multiplier, desiredCount, baseProb) * luckProbModifier;
             }
+
+            // --- Display Logic ---
+            resultDiv.style.fontSize = '2.5em'; // Reset font size
             
-            const finalProb = atLeastBinomialProb(multiplier, desiredCount, baseProb) * luckProbModifier;
-            
-            resultDiv.textContent = (finalProb * 100).toFixed(10) + '%';
+            if (finalProb === 0) {
+                resultDiv.textContent = '불가능';
+                expectedRunsDiv.textContent = '';
+            } else if (finalProb * 100 < 0.0000000001) {
+                resultDiv.style.fontSize = '1.8em'; // Reduce font size
+                resultDiv.textContent = (finalProb * 100).toFixed(20) + '%';
+                const expected = Math.round(1 / finalProb);
+                expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
+            } else {
+                resultDiv.textContent = (finalProb * 100).toFixed(10) + '%';
+                const expected = Math.round(1 / finalProb);
+                expectedRunsDiv.textContent = `(${expected.toLocaleString()}회 시도해서 성공할 확률)`;
+            }
         }
 
         // --- UI Update Logic ---
@@ -206,26 +225,9 @@
             const rarityText = itemRaritySelect.options[itemRaritySelect.selectedIndex].text;
             const luckType = luckTypeSelect.value;
 
-            // 행운 섹션 보이기/숨기기
-            if (locationText === '헬') {
-                luckSection.classList.remove('hidden');
-            } else {
-                luckSection.classList.add('hidden');
-            }
-            
-            // 행운 판수 입력칸 보이기/숨기기
-            if (luckType === 'once' || luckType === 'twice') {
-                luckRunsContainer.classList.remove('hidden');
-            } else {
-                luckRunsContainer.classList.add('hidden');
-            }
-
-            // 아이템 서브타입 섹션 보이기/숨기기
-            if (rarityText === '에픽' || rarityText === '태초') {
-                itemSubtypeContainer.classList.remove('hidden');
-            } else {
-                itemSubtypeContainer.classList.add('hidden');
-            }
+            luckSection.classList.toggle('hidden', locationText !== '헬');
+            luckRunsContainer.classList.toggle('hidden', luckType === 'none');
+            itemSubtypeContainer.classList.toggle('hidden', rarityText !== '에픽' && rarityText !== '태초');
             
             calculateProbability();
         }
