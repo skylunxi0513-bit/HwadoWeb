@@ -37,7 +37,23 @@ exports.handler = async function(event, context) {
     const spreadsheetId = '1H5Hb_zXA9A34XtkScIovnTNAMFXwHQc_fCPqQfB_ALQ';
     const sheetName = '캐릭터';
 
-    // 3. Append data to the sheet (Server, Nickname)
+    // 3. Check for duplicates
+    const existingData = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:B`,
+    });
+
+    const rows = existingData.data.values || [];
+    const isDuplicate = rows.some(row => row[0] === server && row[1] && row[1].toLowerCase() === nickname.toLowerCase());
+
+    if (isDuplicate) {
+      return {
+        statusCode: 409, // Conflict
+        body: JSON.stringify({ message: '이미 등록된 캐릭터입니다.' })
+      };
+    }
+
+    // 4. Append data to the sheet (Server, Nickname)
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: `${sheetName}!A:B`,
@@ -50,13 +66,13 @@ exports.handler = async function(event, context) {
       }
     });
 
-    // 4. Return success response
+    // 5. Return success response
     return {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ message: 'Character added successfully!', updatedRange: response.data.updates.updatedRange })
+      body: JSON.stringify({ message: '캐릭터가 성공적으로 추가되었습니다.', added: { server, nickname } })
     };
 
   } catch (error) {

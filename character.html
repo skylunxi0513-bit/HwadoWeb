@@ -26,15 +26,38 @@
         }
         .input-container button {
             padding: 8px 15px;
-            border: none;
-            background-color: #4CAF50; /* Green */
-            color: white;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            color: #000;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
         }
         .input-container button:hover {
-            background-color: #45a049;
+            background-color: #f0f0f0;
+        }
+        #message-area {
+            text-align: center;
+            min-height: 20px;
+            margin-bottom: 20px;
+            color: green;
+        }
+        #message-area.error {
+            color: red;
+        }
+        #character-table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 90%;
+            max-width: 500px;
+        }
+        #character-table th, #character-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        #character-table th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
@@ -59,45 +82,111 @@
         <button id="add-button">추가</button>
     </div>
 
+    <div id="message-area"></div>
+
+    <table id="character-table">
+        <thead>
+            <tr>
+                <th>서버</th>
+                <th>닉네임</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Character rows will be inserted here -->
+        </tbody>
+    </table>
+
     <script>
         const serverSelect = document.getElementById('server-select');
         const nicknameInput = document.getElementById('nickname-input');
         const addButton = document.getElementById('add-button');
+        const messageArea = document.getElementById('message-area');
+        const tableBody = document.querySelector('#character-table tbody');
 
-        addButton.addEventListener('click', async () => {
+        // --- Functions ---
+
+        function showMessage(message, isError = false) {
+            messageArea.textContent = message;
+            messageArea.className = isError ? 'error' : '';
+        }
+
+        function addCharacterToTable(server, nickname) {
+            const row = tableBody.insertRow();
+            const serverCell = row.insertCell(0);
+            const nicknameCell = row.insertCell(1);
+            serverCell.textContent = server;
+            nicknameCell.textContent = nickname;
+        }
+
+        async function fetchAndDisplayCharacters() {
+            try {
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터');
+                if (!response.ok) {
+                    throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
+                }
+                const { data } = await response.json();
+                tableBody.innerHTML = ''; // Clear existing table
+                if (data) {
+                    data.forEach(row => {
+                        if (row[0] && row[1]) { // Ensure both server and nickname exist
+                            addCharacterToTable(row[0], row[1]);
+                        }
+                    });
+                }
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+        async function handleAddCharacter() {
             const server = serverSelect.value;
             const nickname = nicknameInput.value.trim();
 
             if (!nickname) {
-                alert('닉네임을 입력해주세요.');
+                showMessage('닉네임을 입력해주세요.', true);
                 return;
             }
 
+            showMessage(''); // Clear previous message
             addButton.disabled = true;
             addButton.textContent = '추가 중...';
 
             try {
                 const response = await fetch('/.netlify/functions/addCharacter', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ server, nickname }),
                 });
 
+                const result = await response.json();
+
                 if (response.ok) {
-                    alert('캐릭터가 성공적으로 추가되었습니다.');
-                    nicknameInput.value = ''; // Clear the input
+                    showMessage(result.message, false);
+                    addCharacterToTable(result.added.server, result.added.nickname);
+                    nicknameInput.value = '';
+                    nicknameInput.focus();
+                } else if (response.status === 409) {
+                    showMessage(result.message, true);
                 } else {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || '캐릭터 추가에 실패했습니다.');
+                    throw new Error(result.message || '캐릭터 추가에 실패했습니다.');
                 }
             } catch (error) {
-                console.error('Error adding character:', error);
-                alert(`오류가 발생했습니다: ${error.message}`);
+                showMessage(`오류가 발생했습니다: ${error.message}`, true);
             } finally {
                 addButton.disabled = false;
                 addButton.textContent = '추가';
+            }
+        }
+
+        // --- Event Listeners ---
+
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayCharacters);
+
+        addButton.addEventListener('click', handleAddCharacter);
+
+        nicknameInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleAddCharacter();
             }
         });
     </script>
