@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캐릭터 분석 - 화도웹</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .input-container select,
+        .input-container input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .input-container input[type="text"] {
+            flex-grow: 1;
+            max-width: 200px;
+        }
+        .input-container button {
+            padding: 8px 15px;
+            border: none;
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .input-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="header-link">
+        <h1>화도웹</h1>
+    </a>
+    <div class="separator"></div>
+
+    <div class="input-container">
+        <select id="server-select">
+            <option value="카인">카인</option>
+            <option value="디레지에">디레지에</option>
+            <option value="시로코">시로코</option>
+            <option value="프레이">프레이</option>
+            <option value="카시야스">카시야스</option>
+            <option value="힐더">힐더</option>
+            <option value="안톤">안톤</option>
+            <option value="바칼">바칼</option>
+        </select>
+        <input type="text" id="nickname-input" placeholder="닉네임">
+        <button id="add-button">추가</button>
+    </div>
+
+    <script>
+        const serverSelect = document.getElementById('server-select');
+        const nicknameInput = document.getElementById('nickname-input');
+        const addButton = document.getElementById('add-button');
+
+        addButton.addEventListener('click', async () => {
+            const server = serverSelect.value;
+            const nickname = nicknameInput.value.trim();
+
+            if (!nickname) {
+                alert('닉네임을 입력해주세요.');
+                return;
+            }
+
+            addButton.disabled = true;
+            addButton.textContent = '추가 중...';
+
+            try {
+                const response = await fetch('/.netlify/functions/addCharacter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ server, nickname }),
+                });
+
+                if (response.ok) {
+                    alert('캐릭터가 성공적으로 추가되었습니다.');
+                    nicknameInput.value = ''; // Clear the input
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '캐릭터 추가에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Error adding character:', error);
+                alert(`오류가 발생했습니다: ${error.message}`);
+            } finally {
+                addButton.disabled = false;
+                addButton.textContent = '추가';
+            }
+        });
+    </script>
+
+</body>
+</html>
