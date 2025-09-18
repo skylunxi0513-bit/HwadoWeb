@@ -19,7 +19,7 @@ function getKstTimestamp() {
     const options = {
         year: 'numeric', month: 'numeric', day: 'numeric',
         hour: 'numeric', minute: 'numeric', second: 'numeric',
-        hour12: false, // Use 24-hour format first
+        hour12: false, 
         timeZone: 'Asia/Seoul'
     };
     let formatted = new Intl.DateTimeFormat('ko-KR', options).format(now);
@@ -47,26 +47,7 @@ exports.handler = async function(event, context) {
         return { statusCode: 400, body: JSON.stringify({ message: '서버와 닉네임을 모두 입력해주세요.' }) };
     }
 
-    // 1. Fetch Character ID from Neople API
-    const serverId = SERVER_MAP[server];
-    if (!serverId) {
-        return { statusCode: 400, body: JSON.stringify({ message: '유효하지 않은 서버 이름입니다.' }) };
-    }
-
-    const neopleUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters?characterName=${encodeURIComponent(nickname)}&apikey=${API_KEY}`;
-    const neopleResponse = await fetch(neopleUrl);
-    
-    if (!neopleResponse.ok) {
-        throw new Error('Neople API 호출에 실패했습니다.');
-    }
-
-    const neopleData = await neopleResponse.json();
-    if (!neopleData.rows || neopleData.rows.length === 0) {
-        return { statusCode: 404, body: JSON.stringify({ message: 'Neople API에서 해당 캐릭터를 찾을 수 없습니다.' }) };
-    }
-    const characterId = neopleData.rows[0].characterId;
-
-    // 2. Prepare Google Sheets authentication
+    // 1. Authenticate with Google Sheets
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     if (!privateKey) {
       return { statusCode: 500, body: JSON.stringify({ message: 'Service account key not found.' }) };
@@ -78,30 +59,45 @@ exports.handler = async function(event, context) {
       credentials.private_key.replace(/\\n/g, '\n'),
       ['https://www.googleapis.com/auth/spreadsheets']
     );
-
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = '1H5Hb_zXA9A34XtkScIovnTNAMFXwHQc_fCPqQfB_ALQ';
     const sheetName = '캐릭터';
 
-    // 3. Check for duplicates
-    const existingData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A:B` });
+    // 2. Find the character's row
+    const existingData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A:D` });
     const rows = existingData.data.values || [];
-    const isDuplicate = rows.some(row => row[0] === server && row[1] && row[1].toLowerCase() === nickname.toLowerCase());
+    const rowIndex = rows.findIndex(row => row[0] === server && row[1] && row[1].toLowerCase() === nickname.toLowerCase());
 
-    if (isDuplicate) {
-      return { statusCode: 409, body: JSON.stringify({ message: '이미 등록된 캐릭터입니다.' }) };
+    if (rowIndex === -1) {
+        return { statusCode: 404, body: JSON.stringify({ message: '시트에서 해당 캐릭터를 찾을 수 없습니다.' }) };
     }
 
-    // 4. Append data to the sheet
-    const timestamp = getKstTimestamp();
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp]];
+    const sheetRowIndex = rowIndex + 1; // 0-based to 1-based index
+    const originalRegisterDate = rows[rowIndex][3] || ''; // Get original registration date
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `${sheetName}!A:E`,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      resource: { values: valuesToAppend }
+    // 3. Fetch new Character ID from Neople API
+    const serverId = SERVER_MAP[server];
+    const neopleUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters?characterName=${encodeURIComponent(nickname)}&apikey=${API_KEY}`;
+    const neopleResponse = await fetch(neopleUrl);
+    if (!neopleResponse.ok) {
+        throw new Error('Neople API 호출에 실패했습니다.');
+    }
+    const neopleData = await neopleResponse.json();
+    if (!neopleData.rows || neopleData.rows.length === 0) {
+        return { statusCode: 404, body: JSON.stringify({ message: 'Neople API에서 해당 캐릭터를 찾을 수 없습니다.' }) };
+    }
+    const newCharacterId = neopleData.rows[0].characterId;
+
+    // 4. Update the sheet
+    const newRefreshTimestamp = getKstTimestamp();
+    const updateRange = `${sheetName}!C${sheetRowIndex}:E${sheetRowIndex}`;
+    const valuesToUpdate = [[newCharacterId, originalRegisterDate, newRefreshTimestamp]];
+
+    await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: updateRange,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: valuesToUpdate }
     });
 
     // 5. Return success response
@@ -109,13 +105,13 @@ exports.handler = async function(event, context) {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
-          message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp } 
+          message: '캐릭터 정보가 새로고침되었습니다.', 
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp } 
       })
     };
 
   } catch (error) {
-    console.error('Error processing character submission:', error);
+    console.error('Error processing character refresh:', error);
     return { statusCode: 500, body: JSON.stringify({ message: error.message || 'Failed to process request.' }) };
   }
 };
