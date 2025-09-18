@@ -16,23 +16,23 @@ const SERVER_MAP = {
 // Function to get KST timestamp
 function getKstTimestamp() {
     const now = new Date();
-    const options = {
-        year: 'numeric', month: 'numeric', day: 'numeric',
-        hour: 'numeric', minute: 'numeric', second: 'numeric',
-        hour12: false, 
-        timeZone: 'Asia/Seoul'
-    };
-    let formatted = new Intl.DateTimeFormat('ko-KR', options).format(now);
+    // Use toLocaleString to get date parts in the correct timezone.
+    const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
 
-    const parts = formatted.split(' ');
-    const datePart = parts.slice(0, 3).join('. ') + '.';
-    const timePart = parts[3];
-    const hour = parseInt(timePart.split(':')[0]);
+    const year = kstDate.getFullYear();
+    const month = kstDate.getMonth() + 1;
+    const day = kstDate.getDate();
+    const hour = kstDate.getHours();
+    const minute = kstDate.getMinutes();
+    const second = kstDate.getSeconds();
+
     const ampm = hour < 12 ? '오전' : '오후';
     const displayHour = hour % 12 === 0 ? 12 : hour % 12;
 
-    const newTimePart = `${ampm} ${displayHour}:${timePart.split(':')[1]}:${timePart.split(':')[2]}`;
-    return `${datePart} ${newTimePart}`;
+    const datePart = `${year}. ${month}. ${day}.`;
+    const timePart = `${ampm} ${displayHour}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+
+    return `${datePart} ${timePart}`;
 }
 
 exports.handler = async function(event, context) {
