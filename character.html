@@ -49,7 +49,7 @@
             margin: 0 auto;
             border-collapse: collapse;
             width: 90%;
-            max-width: 960px; /* Increased width for new columns */
+            max-width: 800px; /* Increased width for new columns */
         }
         #character-table th, #character-table td {
             border: 1px solid #ddd;
@@ -101,7 +101,6 @@
                 <th>모험단</th>
                 <th>서버</th>
                 <th>닉네임</th>
-                <th>던담딜</th>
                 <th>길드</th>
                 <th>새로고침</th>
             </tr>
@@ -136,41 +135,32 @@
             return `${year}-${month}-${day} ${hourStr}:${minute}`;
         }
 
-        function formatDeal(deal) {
-            if (deal === 'N/A' || isNaN(deal)) return 'N/A';
-            return Number(deal).toLocaleString('en-US');
-        }
-
         function showMessage(message, isError = false) {
             messageArea.textContent = message;
             messageArea.className = isError ? 'error' : '';
         }
 
-        function addCharacterToTable(data) {
+        function addCharacterToTable(adventureName, server, nickname, guildName, refreshTimestamp) {
             const row = tableBody.insertRow();
-            row.insertCell(0).textContent = data.adventureName || '-';
-            row.insertCell(1).textContent = data.server;
-            row.insertCell(2).textContent = data.nickname;
-            row.insertCell(3).textContent = formatDeal(data.dundamDeal);
-            row.insertCell(4).textContent = data.guildName || '-';
-            row.insertCell(5).textContent = formatTimestamp(data.timestamp);
+            row.insertCell(0).textContent = adventureName || '-';
+            row.insertCell(1).textContent = server;
+            row.insertCell(2).textContent = nickname;
+            row.insertCell(3).textContent = guildName || '-';
+            row.insertCell(4).textContent = formatTimestamp(refreshTimestamp);
         }
 
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:H');
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:G');
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
                 if (data) {
                     data.forEach(row => {
-                        // A:server, B:nickname, C:id, D:registered, E:refreshed, F:adventure, G:guild, H:deal
+                        // A:server, B:nickname, C:id, D:registered, E:refreshed, F:adventure, G:guild
                         if (row[0] && row[1]) {
-                            addCharacterToTable({ 
-                                adventureName: row[5], server: row[0], nickname: row[1], 
-                                guildName: row[6], timestamp: row[4], dundamDeal: row[7]
-                            });
+                            addCharacterToTable(row[5], row[0], row[1], row[6], row[4]);
                         }
                     });
                 }
@@ -201,7 +191,8 @@
                 if (!response.ok) throw new Error(result.message);
 
                 showMessage(result.message, false);
-                addCharacterToTable(result.added);
+                const { added } = result;
+                addCharacterToTable(added.adventureName, added.server, added.nickname, added.guildName, added.timestamp);
                 nicknameInput.value = '';
                 nicknameInput.focus();
 
@@ -234,9 +225,8 @@
 
                 const { refreshed } = result;
                 row.cells[0].textContent = refreshed.adventureName;
-                row.cells[3].textContent = formatDeal(refreshed.dundamDeal);
-                row.cells[4].textContent = refreshed.guildName;
-                row.cells[5].textContent = formatTimestamp(refreshed.timestamp);
+                row.cells[3].textContent = refreshed.guildName;
+                row.cells[4].textContent = formatTimestamp(refreshed.timestamp);
                 showMessage(result.message, false);
 
             } catch (error) {
