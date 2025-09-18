@@ -117,6 +117,27 @@
 
         // --- Functions ---
 
+        function formatTimestamp(fullTimestamp) {
+            if (!fullTimestamp || typeof fullTimestamp !== 'string') return 'N/A';
+
+            const match = fullTimestamp.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
+            if (!match) return fullTimestamp; // Return original if format is unexpected
+
+            let [, year, month, day, ampm, hour, minute] = match;
+
+            year = year.slice(-2);
+            month = month.padStart(2, '0');
+            day = day.padStart(2, '0');
+
+            hour = parseInt(hour, 10);
+            if (ampm === '오후' && hour !== 12) hour += 12;
+            if (ampm === '오전' && hour === 12) hour = 0;
+            
+            const hourStr = String(hour).padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hourStr}:${minute}`;
+        }
+
         function showMessage(message, isError = false) {
             messageArea.textContent = message;
             messageArea.className = isError ? 'error' : '';
@@ -126,7 +147,7 @@
             const row = tableBody.insertRow();
             row.insertCell(0).textContent = server;
             row.insertCell(1).textContent = nickname;
-            row.insertCell(2).textContent = refreshTimestamp || 'N/A';
+            row.insertCell(2).textContent = formatTimestamp(refreshTimestamp);
         }
 
         async function fetchAndDisplayCharacters() {
@@ -206,7 +227,7 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
 
-                row.cells[2].textContent = result.refreshed.timestamp;
+                row.cells[2].textContent = formatTimestamp(result.refreshed.timestamp);
                 showMessage(result.message, false);
 
             } catch (error) {
