@@ -76,7 +76,32 @@ exports.handler = async function(event, context) {
     const adventureName = timelineData.adventureName || '-';
     const guildName = timelineData.guildName || '-';
 
-    // 3. Prepare Google Sheets authentication
+    // 3. Fetch Deal Info from dundam.xyz
+    let dundamDeal = 'N/A';
+    try {
+        const dundamUrl = `https://dundam.xyz/dat/viewData.jsp?image=${characterId}&server=${serverId}`;
+        const dundamResponse = await fetch(dundamUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://dundam.xyz/'
+            }
+        });
+        if (dundamResponse.ok) {
+            const dundamData = await dundamResponse.json();
+            const rankingData = dundamData?.damageList?.vsRanking || [];
+            if (rankingData.length > 0) {
+                const totalDamageInfo = rankingData[rankingData.length - 1];
+                if (totalDamageInfo?.name === '총 합') {
+                    dundamDeal = totalDamageInfo.dam;
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch from dundam.xyz', e);
+        // Keep dundamDeal as 'N/A' if fetching fails
+    }
+
+    // 4. Prepare Google Sheets authentication
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     if (!privateKey) {
       return { statusCode: 500, body: JSON.stringify({ message: 'Service account key not found.' }) };
@@ -93,7 +118,7 @@ exports.handler = async function(event, context) {
     const spreadsheetId = '1H5Hb_zXA9A34XtkScIovnTNAMFXwHQc_fCPqQfB_ALQ';
     const sheetName = '캐릭터';
 
-    // 4. Check for duplicates
+    // 5. Check for duplicates
     const existingData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A:B` });
     const rows = existingData.data.values || [];
     const isDuplicate = rows.some(row => row[0] === server && row[1] && row[1].toLowerCase() === nickname.toLowerCase());
@@ -102,25 +127,25 @@ exports.handler = async function(event, context) {
       return { statusCode: 409, body: JSON.stringify({ message: '이미 등록된 캐릭터입니다.' }) };
     }
 
-    // 5. Append data to the sheet
+    // 6. Append data to the sheet
     const timestamp = getKstTimestamp();
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName]];
+    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, dundamDeal]];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${sheetName}!A:G`,
+      range: `${sheetName}!A:H`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: { values: valuesToAppend }
     });
 
-    // 6. Return success response
+    // 7. Return success response
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp, adventureName, guildName } 
+          added: { server, nickname, timestamp, adventureName, guildName, dundamDeal } 
       })
     };
 

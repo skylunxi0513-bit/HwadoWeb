@@ -98,10 +98,34 @@ exports.handler = async function(event, context) {
     const newAdventureName = timelineData.adventureName || '-';
     const newGuildName = timelineData.guildName || '-';
 
-    // 5. Update the sheet
+    // 5. Fetch Deal Info from dundam.xyz
+    let newDundamDeal = 'N/A';
+    try {
+        const dundamUrl = `https://dundam.xyz/dat/viewData.jsp?image=${newCharacterId}&server=${serverId}`;
+        const dundamResponse = await fetch(dundamUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://dundam.xyz/'
+            }
+        });
+        if (dundamResponse.ok) {
+            const dundamData = await dundamResponse.json();
+            const rankingData = dundamData?.damageList?.vsRanking || [];
+            if (rankingData.length > 0) {
+                const totalDamageInfo = rankingData[rankingData.length - 1];
+                if (totalDamageInfo?.name === '총 합') {
+                    newDundamDeal = totalDamageInfo.dam;
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch from dundam.xyz', e);
+    }
+
+    // 6. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
-    const updateRange = `${sheetName}!C${sheetRowIndex}:G${sheetRowIndex}`;
-    const valuesToUpdate = [[newCharacterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName]];
+    const updateRange = `${sheetName}!C${sheetRowIndex}:H${sheetRowIndex}`;
+    const valuesToUpdate = [[newCharacterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newDundamDeal]];
 
     await sheets.spreadsheets.values.update({
         spreadsheetId,
@@ -110,13 +134,13 @@ exports.handler = async function(event, context) {
         resource: { values: valuesToUpdate }
     });
 
-    // 6. Return success response
+    // 7. Return success response
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터 정보가 새로고침되었습니다.', 
-          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName } 
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, dundamDeal: newDundamDeal } 
       })
     };
 
