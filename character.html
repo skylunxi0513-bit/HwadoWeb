@@ -43,6 +43,7 @@
         <thead>
             <tr>
                 <th>모험단</th>
+                <th>서버</th>
                 <th>닉네임</th>
                 <th>명성</th>
                 <th>무기</th>
@@ -77,11 +78,11 @@
 
         function getWeaponColor(rarity) {
             switch (rarity) {
-                case '레어': return '#b39ddb'; // Light Purple
-                case '유니크': return '#d81b60'; // Magenta
-                case '레전더리': return '#ff8f00'; // Orange
-                case '에픽': return '#ffca28'; // Gold
-                case '태초': return '#26a69a'; // Teal
+                case '레어': return '#b39ddb';
+                case '유니크': return '#d81b60';
+                case '레전더리': return '#ff8f00';
+                case '에픽': return '#ffca28';
+                case '태초': return '#26a69a';
                 default: return '#000';
             }
         }
@@ -90,7 +91,6 @@
             if (!weapon || weapon.name === 'N/A') return 'N/A';
             const { name, rarity, reinforce, amplification, refine } = weapon;
             const mainValue = amplification > 0 ? amplification : reinforce;
-            
             let nickname = rarity;
             if (rarity === '레전더리') {
                 nickname = name.includes('전설 속의 전승') ? '전승' : '레거시';
@@ -116,16 +116,17 @@
             row.dataset.nickname = char.nickname;
 
             row.insertCell(0).textContent = char.adventureName || '-';
-            row.insertCell(1).textContent = char.nickname;
-            row.insertCell(2).textContent = Number(char.fame || 0).toLocaleString('en-US');
+            row.insertCell(1).textContent = char.server;
+            row.insertCell(2).textContent = char.nickname;
+            row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
             
-            const weaponCell = row.insertCell(3);
+            const weaponCell = row.insertCell(4);
             const weapon = { name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine };
             weaponCell.textContent = formatWeapon(weapon);
             weaponCell.style.color = getWeaponColor(char.weaponRarity);
 
-            row.insertCell(4).textContent = char.guildName || '-';
-            row.insertCell(5).textContent = formatTimestamp(char.timestamp);
+            row.insertCell(5).textContent = char.guildName || '-';
+            row.insertCell(6).textContent = formatTimestamp(char.timestamp);
         }
 
         async function fetchAndDisplayCharacters() {
@@ -177,7 +178,7 @@
 
         async function handleRefreshCharacter(event) {
             const row = event.target.closest('tr');
-            if (!row) return;
+            if (!row || !row.dataset.server) return;
 
             const server = row.dataset.server;
             const nickname = row.dataset.nickname;
@@ -192,13 +193,14 @@
 
                 const { refreshed } = result;
                 row.cells[0].textContent = refreshed.adventureName;
-                row.cells[2].textContent = Number(refreshed.fame || 0).toLocaleString('en-US');
-                const weaponCell = row.cells[3];
+                // row.cells[1] (server) and row.cells[2] (nickname) don't change
+                row.cells[3].textContent = Number(refreshed.fame || 0).toLocaleString('en-US');
+                const weaponCell = row.cells[4];
                 const weapon = { name: refreshed.weaponName, rarity: refreshed.weaponRarity, reinforce: refreshed.reinforce, amplification: refreshed.amplification, refine: refreshed.refine };
                 weaponCell.textContent = formatWeapon(weapon);
                 weaponCell.style.color = getWeaponColor(refreshed.weaponRarity);
-                row.cells[4].textContent = refreshed.guildName;
-                row.cells[5].textContent = formatTimestamp(refreshed.timestamp);
+                row.cells[5].textContent = refreshed.guildName;
+                row.cells[6].textContent = formatTimestamp(refreshed.timestamp);
                 showMessage(result.message, false);
 
             } catch (error) {

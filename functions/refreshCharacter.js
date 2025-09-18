@@ -94,8 +94,8 @@ exports.handler = async function(event, context) {
     const weapon = equipData.equipment.find(e => e.slotId === 'WEAPON');
     const newWeaponName = weapon?.itemName || 'N/A';
     const newWeaponRarity = weapon?.itemRarity || 'N/A';
-    const reinforce = weapon?.upgradeInfo?.reinforce || 0;
-    const refine = weapon?.upgradeInfo?.refine || 0;
+    const reinforce = weapon?.reinforce || 0;
+    const refine = weapon?.refine || 0;
     const amplificationName = weapon?.amplificationName;
     const newAmplificationValue = amplificationName ? reinforce : 0;
     const newReinforceValue = amplificationName ? 0 : reinforce;
