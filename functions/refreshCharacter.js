@@ -88,10 +88,20 @@ exports.handler = async function(event, context) {
     }
     const newCharacterId = neopleData.rows[0].characterId;
 
-    // 4. Update the sheet
+    // 4. Fetch new Adventure and Guild Name from Timeline API
+    const timelineUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${newCharacterId}/timeline?limit=1&apikey=${API_KEY}`;
+    const timelineResponse = await fetch(timelineUrl);
+    if (!timelineResponse.ok) {
+        throw new Error('Neople 타임라인 API 호출에 실패했습니다.');
+    }
+    const timelineData = await timelineResponse.json();
+    const newAdventureName = timelineData.adventureName || '-';
+    const newGuildName = timelineData.guildName || '-';
+
+    // 5. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
-    const updateRange = `${sheetName}!C${sheetRowIndex}:E${sheetRowIndex}`;
-    const valuesToUpdate = [[newCharacterId, originalRegisterDate, newRefreshTimestamp]];
+    const updateRange = `${sheetName}!C${sheetRowIndex}:G${sheetRowIndex}`;
+    const valuesToUpdate = [[newCharacterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName]];
 
     await sheets.spreadsheets.values.update({
         spreadsheetId,
@@ -100,13 +110,13 @@ exports.handler = async function(event, context) {
         resource: { values: valuesToUpdate }
     });
 
-    // 5. Return success response
+    // 6. Return success response
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터 정보가 새로고침되었습니다.', 
-          refreshed: { server, nickname, timestamp: newRefreshTimestamp } 
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName } 
       })
     };
 

@@ -49,7 +49,7 @@
             margin: 0 auto;
             border-collapse: collapse;
             width: 90%;
-            max-width: 600px; /* Increased width for new column */
+            max-width: 800px; /* Increased width for new columns */
         }
         #character-table th, #character-table td {
             border: 1px solid #ddd;
@@ -98,9 +98,11 @@
     <table id="character-table">
         <thead>
             <tr>
+                <th>모험단</th>
                 <th>서버</th>
                 <th>닉네임</th>
-                <th>최근 새로고침 날짜</th>
+                <th>길드</th>
+                <th>새로고침</th>
             </tr>
         </thead>
         <tbody>
@@ -119,22 +121,17 @@
 
         function formatTimestamp(fullTimestamp) {
             if (!fullTimestamp || typeof fullTimestamp !== 'string') return 'N/A';
-
             const match = fullTimestamp.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
-            if (!match) return fullTimestamp; // Return original if format is unexpected
+            if (!match) return fullTimestamp;
 
             let [, year, month, day, ampm, hour, minute] = match;
-
             year = year.slice(-2);
             month = month.padStart(2, '0');
             day = day.padStart(2, '0');
-
             hour = parseInt(hour, 10);
             if (ampm === '오후' && hour !== 12) hour += 12;
             if (ampm === '오전' && hour === 12) hour = 0;
-            
             const hourStr = String(hour).padStart(2, '0');
-
             return `${year}-${month}-${day} ${hourStr}:${minute}`;
         }
 
@@ -143,24 +140,27 @@
             messageArea.className = isError ? 'error' : '';
         }
 
-        function addCharacterToTable(server, nickname, refreshTimestamp) {
+        function addCharacterToTable(adventureName, server, nickname, guildName, refreshTimestamp) {
             const row = tableBody.insertRow();
-            row.insertCell(0).textContent = server;
-            row.insertCell(1).textContent = nickname;
-            row.insertCell(2).textContent = formatTimestamp(refreshTimestamp);
+            row.insertCell(0).textContent = adventureName || '-';
+            row.insertCell(1).textContent = server;
+            row.insertCell(2).textContent = nickname;
+            row.insertCell(3).textContent = guildName || '-';
+            row.insertCell(4).textContent = formatTimestamp(refreshTimestamp);
         }
 
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:E');
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:G');
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
                 if (data) {
                     data.forEach(row => {
-                        if (row[0] && row[1]) { // Server and Nickname must exist
-                            addCharacterToTable(row[0], row[1], row[4]); // row[4] is refresh time
+                        // A:server, B:nickname, C:id, D:registered, E:refreshed, F:adventure, G:guild
+                        if (row[0] && row[1]) {
+                            addCharacterToTable(row[5], row[0], row[1], row[6], row[4]);
                         }
                     });
                 }
@@ -172,7 +172,6 @@
         async function handleAddCharacter() {
             const server = serverSelect.value;
             const nickname = nicknameInput.value.trim();
-
             if (!nickname) {
                 showMessage('닉네임을 입력해주세요.', true);
                 return;
@@ -188,17 +187,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ server, nickname }),
                 });
-
                 const result = await response.json();
+                if (!response.ok) throw new Error(result.message);
 
-                if (response.ok) {
-                    showMessage(result.message, false);
-                    addCharacterToTable(result.added.server, result.added.nickname, result.added.timestamp);
-                    nicknameInput.value = '';
-                    nicknameInput.focus();
-                } else {
-                    throw new Error(result.message || '캐릭터 추가에 실패했습니다.');
-                }
+                showMessage(result.message, false);
+                const { added } = result;
+                addCharacterToTable(added.adventureName, added.server, added.nickname, added.guildName, added.timestamp);
+                nicknameInput.value = '';
+                nicknameInput.focus();
+
             } catch (error) {
                 showMessage(error.message, true);
             } finally {
@@ -211,8 +208,8 @@
             const row = event.target.closest('tr');
             if (!row) return;
 
-            const server = row.cells[0].textContent;
-            const nickname = row.cells[1].textContent;
+            const server = row.cells[1].textContent;
+            const nickname = row.cells[2].textContent;
             
             row.classList.add('refreshing');
             showMessage(`${nickname} 캐릭터 정보 새로고침 중...`);
@@ -223,11 +220,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ server, nickname }),
                 });
-
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
 
-                row.cells[2].textContent = formatTimestamp(result.refreshed.timestamp);
+                const { refreshed } = result;
+                row.cells[0].textContent = refreshed.adventureName;
+                row.cells[3].textContent = refreshed.guildName;
+                row.cells[4].textContent = formatTimestamp(refreshed.timestamp);
                 showMessage(result.message, false);
 
             } catch (error) {
@@ -238,7 +237,6 @@
         }
 
         // --- Event Listeners ---
-
         document.addEventListener('DOMContentLoaded', fetchAndDisplayCharacters);
         addButton.addEventListener('click', handleAddCharacter);
         nicknameInput.addEventListener('keyup', (event) => {

@@ -66,7 +66,17 @@ exports.handler = async function(event, context) {
     }
     const characterId = neopleData.rows[0].characterId;
 
-    // 2. Prepare Google Sheets authentication
+    // 2. Fetch Adventure and Guild Name from Timeline API
+    const timelineUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/timeline?limit=1&apikey=${API_KEY}`;
+    const timelineResponse = await fetch(timelineUrl);
+    if (!timelineResponse.ok) {
+        throw new Error('Neople 타임라인 API 호출에 실패했습니다.');
+    }
+    const timelineData = await timelineResponse.json();
+    const adventureName = timelineData.adventureName || '-';
+    const guildName = timelineData.guildName || '-';
+
+    // 3. Prepare Google Sheets authentication
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     if (!privateKey) {
       return { statusCode: 500, body: JSON.stringify({ message: 'Service account key not found.' }) };
@@ -83,7 +93,7 @@ exports.handler = async function(event, context) {
     const spreadsheetId = '1H5Hb_zXA9A34XtkScIovnTNAMFXwHQc_fCPqQfB_ALQ';
     const sheetName = '캐릭터';
 
-    // 3. Check for duplicates
+    // 4. Check for duplicates
     const existingData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A:B` });
     const rows = existingData.data.values || [];
     const isDuplicate = rows.some(row => row[0] === server && row[1] && row[1].toLowerCase() === nickname.toLowerCase());
@@ -92,25 +102,25 @@ exports.handler = async function(event, context) {
       return { statusCode: 409, body: JSON.stringify({ message: '이미 등록된 캐릭터입니다.' }) };
     }
 
-    // 4. Append data to the sheet
+    // 5. Append data to the sheet
     const timestamp = getKstTimestamp();
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp]];
+    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName]];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `${sheetName}!A:E`,
+      range: `${sheetName}!A:G`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: { values: valuesToAppend }
     });
 
-    // 5. Return success response
+    // 6. Return success response
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp } 
+          added: { server, nickname, timestamp, adventureName, guildName } 
       })
     };
 
