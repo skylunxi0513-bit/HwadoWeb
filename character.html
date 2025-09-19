@@ -121,7 +121,13 @@
             row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
             
             const weaponCell = row.insertCell(4);
-            const weapon = { name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine };
+            const weapon = {
+                name: char.weaponName,
+                rarity: char.weaponRarity,
+                reinforce: Number(char.reinforce || 0),
+                amplification: Number(char.amplification || 0),
+                refine: Number(char.refine || 0)
+            };
             weaponCell.textContent = formatWeapon(weapon);
             weaponCell.style.color = getWeaponColor(char.weaponRarity);
 
@@ -196,7 +202,13 @@
                 // row.cells[1] (server) and row.cells[2] (nickname) don't change
                 row.cells[3].textContent = Number(refreshed.fame || 0).toLocaleString('en-US');
                 const weaponCell = row.cells[4];
-                const weapon = { name: refreshed.weaponName, rarity: refreshed.weaponRarity, reinforce: refreshed.reinforce, amplification: refreshed.amplification, refine: refreshed.refine };
+                const weapon = {
+                    name: refreshed.weaponName,
+                    rarity: refreshed.weaponRarity,
+                    reinforce: Number(refreshed.reinforce || 0),
+                    amplification: Number(refreshed.amplification || 0),
+                    refine: Number(refreshed.refine || 0)
+                };
                 weaponCell.textContent = formatWeapon(weapon);
                 weaponCell.style.color = getWeaponColor(refreshed.weaponRarity);
                 row.cells[5].textContent = refreshed.guildName;
