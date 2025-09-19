@@ -90,8 +90,20 @@
         function formatWeapon(weapon) {
             if (!weapon || weapon.name === 'N/A') return 'N/A';
             const { name, rarity, reinforce, amplification, refine } = weapon;
-            const mainValue = amplification > 0 ? amplification : reinforce;
-            let nickname = rarity;
+
+            // Determine mainValue: prioritize amplification if it exists and is > 0, otherwise use reinforce
+            let mainValue = 0;
+            if (amplification > 0) {
+                mainValue = amplification;
+            } else if (reinforce > 0) {
+                mainValue = reinforce;
+            }
+
+            // Ensure refine is a number, defaulting to 0
+            const actualRefine = Number(refine || 0);
+
+            // Determine nickname, defaulting to an empty string if rarity is not defined
+            let nickname = rarity || ''; // Default to empty string if rarity is undefined/null
             if (rarity === '레전더리') {
                 nickname = name.includes('전설 속의 전승') ? '전승' : '레거시';
             } else if (rarity === '에픽') {
@@ -101,7 +113,8 @@
                 else if (name.includes('첫')) nickname = '원만 무기';
                 else nickname = '태거시';
             }
-            return `+${mainValue}(${refine}) ${nickname}`;
+
+            return `+${mainValue}(${actualRefine}) ${nickname}`;
         }
 
         function showMessage(message, isError = false) {
