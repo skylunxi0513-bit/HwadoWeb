@@ -62,13 +62,7 @@
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
-            box-sizing: border-box; /* To include padding in the width */
-        }
-        #adventure-filter-input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            box-sizing: border-box; /* To include padding in the width */
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -130,6 +124,7 @@
     </div>
 
     <script>
+        // Global Elements
         const serverSelect = document.getElementById('server-select');
         const nicknameInput = document.getElementById('nickname-input');
         const addButton = document.getElementById('add-button');
@@ -137,33 +132,30 @@
         const tableBody = document.querySelector('#character-table tbody');
         const tableHead = document.querySelector('#character-table thead');
 
-        // Filter Modal Elements
+        // Column Filter Modal Elements
         const filterButton = document.getElementById('filter-button');
         const filterModal = document.getElementById('filter-modal');
         const filterCloseBtn = document.getElementById('filter-close-btn');
         const filterCheckboxes = document.getElementById('filter-checkboxes');
 
+        // Adventure Name Filter Modal Elements
+        const adventureFilterModal = document.getElementById('adventure-filter-modal');
+        const adventureFilterInput = document.getElementById('adventure-filter-input');
+        const adventureFilterCloseBtn = document.getElementById('adventure-filter-close-btn');
+
+        // State
         let characterData = [];
-        let sortState = {
-            column: 'fame',
-            direction: 'desc'
-        };
         let adventureNameFilter = '';
+        let sortState = { column: 'fame', direction: 'desc' };
 
         const columnConfig = [
-            { key: 'adventureName', label: '모험단' },
-            { key: 'nickname', label: '닉네임' },
-            { key: 'jobGrowName', label: '직업' },
-            { key: 'fame', label: '명성' },
-            { key: 'weapon', label: '무기' },
-            { key: 'averageReinforceAmp', label: '평균 증폭' },
-            { key: 'equipment', label: '장비' },
-            { key: 'venusFusion', label: '베누스 융합' },
-            { key: 'nabelFusion', label: '나벨 융합' },
-            { key: 'characterCreationDate', label: '캐릭터 생성일' },
+            { key: 'adventureName', label: '모험단' }, { key: 'nickname', label: '닉네임' },
+            { key: 'jobGrowName', label: '직업' }, { key: 'fame', label: '명성' },
+            { key: 'weapon', label: '무기' }, { key: 'averageReinforceAmp', label: '평균 증폭' },
+            { key: 'equipment', label: '장비' }, { key: 'venusFusion', label: '베누스 융합' },
+            { key: 'nabelFusion', label: '나벨 융합' }, { key: 'characterCreationDate', label: '캐릭터 생성일' },
             { key: 'timestamp', label: '새로고침' },
         ];
-
         let columnVisibility = columnConfig.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
 
         // --- Formatting Functions ---
@@ -172,140 +164,95 @@
             const match = fullTimestamp.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
             if (!match) return fullTimestamp;
             let [, year, month, day, ampm, hour, minute] = match;
-            year = year.slice(-2);
-            month = month.padStart(2, '0');
-            day = day.padStart(2, '0');
+            year = year.slice(-2); month = month.padStart(2, '0'); day = day.padStart(2, '0');
             hour = parseInt(hour, 10);
             if (ampm === '오후' && hour !== 12) hour += 12;
             if (ampm === '오전' && hour === 12) hour = 0;
             return `${year}-${month}-${day} ${String(hour).padStart(2, '0')}:${minute}`;
         }
-
         function getWeaponColor(rarity) {
             switch (rarity) {
-                case '레어': return '#b39ddb';
-                case '유니크': return '#d81b60';
-                case '레전더리': return '#ff8f00';
-                case '에픽': return '#ffca28';
-                case '태초': return '#26a69a';
-                default: return '#000';
+                case '레어': return '#b39ddb'; case '유니크': return '#d81b60';
+                case '레전더리': return '#ff8f00'; case '에픽': return '#ffca28';
+                case '태초': return '#26a69a'; default: return '#000';
             }
         }
-
         function formatWeapon(weapon) {
             if (!weapon || weapon.name === 'N/A') return 'N/A';
             const { name, rarity, reinforce, amplification, refine } = weapon;
-            let mainValue = 0;
-            let mainValueColor = '';
-            if (amplification > 0) {
-                mainValue = amplification;
-                mainValueColor = '#800080';
-            } else if (reinforce > 0) {
-                mainValue = reinforce;
-                mainValueColor = '#1E90FF';
-            }
+            let mainValue = 0, mainValueColor = '';
+            if (amplification > 0) { mainValue = amplification; mainValueColor = '#800080'; }
+            else if (reinforce > 0) { mainValue = reinforce; mainValueColor = '#1E90FF'; }
             const actualRefine = Number(refine || 0);
             const rarityColor = getWeaponColor(rarity);
             let nickname = rarity || '';
-            if (rarity === '레전더리') {
-                nickname = name.includes('전설 속의 전승') ? '전승' : '레거시';
-            } else if (rarity === '에픽') {
-                nickname = name.includes('서사시') ? '서사시' : '에거시';
-            } else if (rarity === '태초') {
+            if (rarity === '레전더리') nickname = name.includes('전설 속의 전승') ? '전승' : '레거시';
+            else if (rarity === '에픽') nickname = name.includes('서사시') ? '서사시' : '에거시';
+            else if (rarity === '태초') {
                 if (name.includes('태초의 별')) nickname = '태별';
                 else if (name.includes('첫')) nickname = '원만 무기';
                 else nickname = '태거시';
             }
             let prefix = '';
-            if (mainValue > 0 || actualRefine > 0) {
-                prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:#000">${actualRefine}</span>) `;
-            }
+            if (mainValue > 0 || actualRefine > 0) prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:#000">${actualRefine}</span>) `;
             return `${prefix}<span style="color:${rarityColor}">${nickname}</span>`;
         }
-
-        function showMessage(message, isError = false) {
-            messageArea.textContent = message;
-            messageArea.className = isError ? 'error' : '';
-        }
-
+        function showMessage(message, isError = false) { messageArea.textContent = message; messageArea.className = isError ? 'error' : ''; }
         function formatRaritySummary(summaryString) {
             if (!summaryString) return '';
-            const parts = summaryString.split(' ');
             let html = '';
-            parts.forEach(part => {
+            summaryString.split(' ').forEach(part => {
                 const match = part.match(/([가-힣]+)(\d+)/);
                 if (match) {
-                    let rarity = match[1];
-                    const count = match[2];
-                    let displayRarity = rarity;
-                    if (rarity === '레전더리') displayRarity = '레전';
-                    else if (rarity === '유니크') displayRarity = '유닠';
-                    const color = getWeaponColor(rarity);
-                    html += `<span style="color:${color}">${displayRarity}${count}</span> `;
+                    let rarity = match[1], count = match[2], displayRarity = rarity;
+                    if (rarity === '레전더리') displayRarity = '레전'; else if (rarity === '유니크') displayRarity = '유닠';
+                    html += `<span style="color:${getWeaponColor(rarity)}">${displayRarity}${count}</span> `;
                 }
             });
             return html.trim();
         }
-
         function formatFusionSummaryDisplay(summaryString) {
             if (!summaryString || summaryString.trim() === '' || summaryString.trim() === '0 0 0 0 0') return '';
-            const counts = summaryString.split(' ').map(Number);
-            const [uniqueEpic, setEpic, uniqueUnique, setUnique, other] = counts;
+            const [uniqueEpic, setEpic, uniqueUnique, setUnique, other] = summaryString.split(' ').map(Number);
             let parts = [];
             const totalEpic = uniqueEpic + setEpic;
-            if (totalEpic > 0) {
-                parts.push(`<span style="color:#ffca28">에픽${totalEpic}(${uniqueEpic})</span>`);
-            }
+            if (totalEpic > 0) parts.push(`<span style="color:#ffca28">에픽${totalEpic}(${uniqueEpic})</span>`);
             const totalUnique = uniqueUnique + setUnique;
-            if (totalUnique > 0) {
-                parts.push(`<span style="color:#d81b60">유닠${totalUnique}(${uniqueUnique})</span>`);
-            }
-            if (other > 0) {
-                parts.push(`<span style="color:#000">기타${other}</span>`);
-            }
+            if (totalUnique > 0) parts.push(`<span style="color:#d81b60">유닠${totalUnique}(${uniqueUnique})</span>`);
+            if (other > 0) parts.push(`<span style="color:#000">기타${other}</span>`);
             return parts.join(' ');
         }
 
         // --- Sorting & Filtering Helpers ---
         const RARITY_ORDER = { '태초': 5, '에픽': 4, '레전더리': 3, '유니크': 2, '레어': 1 };
-
         function getWeaponSortScore(char) {
-            const rarity = char.weaponRarity;
-            const name = char.weaponName;
-            const rarityScore = RARITY_ORDER[rarity] || 0;
+            const { weaponRarity, weaponName, reinforce, amplification } = char;
+            const rarityScore = RARITY_ORDER[weaponRarity] || 0;
             let subRarityScore = 0;
-            if (rarity === '태초' && name.includes('태거시')) subRarityScore = 1;
-            else if (rarity === '에픽' && name.includes('에거시')) subRarityScore = 1;
-            else if (rarity === '레전더리' && name.includes('레거시')) subRarityScore = 1;
-            const mainValue = Math.max(char.reinforce || 0, char.amplification || 0);
+            if (weaponRarity === '태초' && weaponName.includes('태거시')) subRarityScore = 1;
+            else if (weaponRarity === '에픽' && weaponName.includes('에거시')) subRarityScore = 1;
+            else if (weaponRarity === '레전더리' && weaponName.includes('레거시')) subRarityScore = 1;
+            const mainValue = Math.max(reinforce || 0, amplification || 0);
             return [rarityScore, subRarityScore, mainValue];
         }
-
         function getEquipmentSortScore(char) {
             const summary = char.formattedRaritySummary || '';
             const counts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
             summary.split(' ').forEach(part => {
                 const match = part.match(/([가-힣]+)(\d+)/);
-                if (match && counts.hasOwnProperty(match[1])) {
-                    counts[match[1]] = Number(match[2]);
-                }
+                if (match && counts.hasOwnProperty(match[1])) counts[match[1]] = Number(match[2]);
             });
             return [counts['태초'], counts['에픽'], counts['레전더리'], counts['유니크'], counts['레어']];
         }
-
         function getFusionSortScore(summaryString) {
             if (!summaryString) return [0, 0];
-            const counts = summaryString.split(' ').map(Number);
-            const [uniqueEpic, setEpic] = counts;
+            const [uniqueEpic, setEpic] = summaryString.split(' ').map(Number);
             return [uniqueEpic + setEpic, uniqueEpic];
         }
-
         function parseDate(dateString) {
             if (!dateString) return new Date(0);
             const creationMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\./);
-            if (creationMatch) {
-                return new Date(creationMatch[1], creationMatch[2] - 1, creationMatch[3]);
-            }
+            if (creationMatch) return new Date(creationMatch[1], creationMatch[2] - 1, creationMatch[3]);
             const timestampMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
             if (timestampMatch) {
                 let [, year, month, day, ampm, hour, minute, second] = timestampMatch;
@@ -317,15 +264,6 @@
             return new Date(0);
         }
 
-        function updateColumnVisibility() {
-            columnConfig.forEach((col, index) => {
-                const visible = columnVisibility[col.key];
-                const display = visible ? '' : 'none';
-                document.querySelectorAll(`#character-table th:nth-child(${index + 1})`).forEach(el => el.style.display = display);
-                document.querySelectorAll(`#character-table td:nth-child(${index + 1})`).forEach(el => el.style.display = display);
-            });
-        }
-
         // --- Main Data Display Logic ---
         function displayData() {
             // 1. Filter
@@ -333,14 +271,13 @@
             if (adventureNameFilter) {
                 const filterNames = adventureNameFilter.split(',').map(name => name.trim().toLowerCase()).filter(Boolean);
                 if (filterNames.length > 0) {
-                    dataToDisplay = characterData.filter(char => filterNames.includes(char.adventureName.toLowerCase()));
+                    dataToDisplay = characterData.filter(char => char.adventureName && filterNames.includes(char.adventureName.toLowerCase()));
                 }
             }
 
             // 2. Sort
             const { column, direction } = sortState;
             const dirMultiplier = direction === 'asc' ? 1 : -1;
-            // Use slice() to sort a copy, preserving original order for subsequent filtering
             dataToDisplay = dataToDisplay.slice().sort((a, b) => {
                 let result = 0;
                 switch (column) {
@@ -392,40 +329,31 @@
             updateColumnVisibility();
         }
 
+        function updateColumnVisibility() {
+            columnConfig.forEach((col, index) => {
+                const display = columnVisibility[col.key] ? '' : 'none';
+                document.querySelectorAll(`#character-table th:nth-child(${index + 1})`).forEach(el => el.style.display = display);
+                document.querySelectorAll(`#character-table tr td:nth-child(${index + 1})`).forEach(el => el.style.display = display);
+            });
+        }
+
+        // --- Data Fetching and Handling ---
         async function fetchAndDisplayCharacters() {
             try {
                 const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:S');
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 const { data } = await response.json();
                 if (data) {
-                    characterData = data.map(row => {
-                        if (!row[0] || !row[1]) return null;
-                        return {
-                            server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
-                            guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
-                            reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0),
-                            formattedRaritySummary: row[13] || '',
-                            averageReinforceAmp: row[14] || '0.0',
-                            formattedPColumnFusionSummary: row[15] || '',
-                            formattedQColumnFusionSummary: row[16] || '',
-                            jobGrowName: row[17] || '',
-                            characterCreationDate: row[18] || ''
-                        };
-                    }).filter(Boolean);
+                    characterData = data.map(row => row[0] && row[1] ? { server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '', guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '', reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0), formattedRaritySummary: row[13] || '', averageReinforceAmp: row[14] || '0.0', formattedPColumnFusionSummary: row[15] || '', formattedQColumnFusionSummary: row[16] || '', jobGrowName: row[17] || '', characterCreationDate: row[18] || '' } : null).filter(Boolean);
                     displayData(); // Initial filter, sort, and render
                 }
-            } catch (error) {
-                showMessage(error.message, true);
-            }
+            } catch (error) { showMessage(error.message, true); }
         }
 
         async function handleAddCharacter() {
-            const server = serverSelect.value;
-            const nickname = nicknameInput.value.trim();
+            const server = serverSelect.value, nickname = nicknameInput.value.trim();
             if (!nickname) { showMessage('닉네임을 입력해주세요.', true); return; }
-            showMessage('');
-            addButton.disabled = true;
-            addButton.textContent = '추가 중...';
+            showMessage(''); addButton.disabled = true; addButton.textContent = '추가 중...';
             try {
                 const response = await fetch('/.netlify/functions/addCharacter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ server, nickname }) });
                 const result = await response.json();
@@ -433,40 +361,26 @@
                 showMessage(result.message, false);
                 characterData.push(result.added);
                 displayData();
-                nicknameInput.value = '';
-                nicknameInput.focus();
-            } catch (error) {
-                showMessage(error.message, true);
-            } finally {
-                addButton.disabled = false;
-                addButton.textContent = '추가';
-            }
+                nicknameInput.value = ''; nicknameInput.focus();
+            } catch (error) { showMessage(error.message, true); }
+            finally { addButton.disabled = false; addButton.textContent = '추가'; }
         }
 
         async function handleRefreshCharacter(event) {
             const row = event.target.closest('tr');
-            if (!row || !row.dataset.server) return;
-            if (row.classList.contains('refreshing')) return;
-            const server = row.dataset.server;
-            const nickname = row.dataset.nickname;
-            row.classList.add('refreshing');
-            showMessage(`${nickname} 캐릭터 정보 새로고침 중...`);
+            if (!row || !row.dataset.server || row.classList.contains('refreshing')) return;
+            const { server, nickname } = row.dataset;
+            row.classList.add('refreshing'); showMessage(`${nickname} 캐릭터 정보 새로고침 중...`);
             try {
                 const response = await fetch('/.netlify/functions/refreshCharacter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ server, nickname }) });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
                 const charIndex = characterData.findIndex(c => c.server === server && c.nickname === nickname);
-                if (charIndex > -1) {
-                    characterData[charIndex] = { ...characterData[charIndex], ...result.refreshed };
-                }
+                if (charIndex > -1) characterData[charIndex] = { ...characterData[charIndex], ...result.refreshed };
                 showMessage(result.message, false);
                 displayData();
-            } catch (error) {
-                showMessage(error.message, true);
-            } finally {
-                const refreshedRow = tableBody.querySelector(`tr[data-nickname="${nickname}"]`);
-                refreshedRow?.classList.remove('refreshing');
-            }
+            } catch (error) { showMessage(error.message, true); }
+            finally { row.classList.remove('refreshing'); }
         }
 
         function populateFilterCheckboxes() {
@@ -474,28 +388,18 @@
             columnConfig.forEach(col => {
                 const label = document.createElement('label');
                 const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.dataset.key = col.key;
-                checkbox.checked = columnVisibility[col.key];
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(col.label));
+                checkbox.type = 'checkbox'; checkbox.dataset.key = col.key; checkbox.checked = columnVisibility[col.key];
+                label.appendChild(checkbox); label.appendChild(document.createTextNode(col.label));
                 filterCheckboxes.appendChild(label);
             });
         }
 
         // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchAndDisplayCharacters();
-            populateFilterCheckboxes();
-        });
+        document.addEventListener('DOMContentLoaded', () => { fetchAndDisplayCharacters(); populateFilterCheckboxes(); });
         addButton.addEventListener('click', handleAddCharacter);
         nicknameInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') handleAddCharacter(); });
-        tableBody.addEventListener('click', (event) => {
-            const cell = event.target.closest('td');
-            if (cell && cell.cellIndex === 10) {
-                handleRefreshCharacter(event);
-            }
-        });
+        tableBody.addEventListener('click', (event) => { if (event.target.closest('td')?.cellIndex === 10) handleRefreshCharacter(event); });
+        
         tableHead.addEventListener('click', (event) => {
             const header = event.target.closest('th');
             if (!header) return;
@@ -521,11 +425,7 @@
         // Modal Listeners
         filterButton.addEventListener('click', () => { filterModal.style.display = 'flex'; });
         filterCloseBtn.addEventListener('click', () => { filterModal.style.display = 'none'; });
-        filterModal.addEventListener('click', (event) => {
-            if (event.target === filterModal) { // Close if overlay is clicked
-                filterModal.style.display = 'none';
-            }
-        });
+        filterModal.addEventListener('click', (event) => { if (event.target === filterModal) filterModal.style.display = 'none'; });
         filterCheckboxes.addEventListener('change', (event) => {
             const checkbox = event.target;
             if (checkbox.dataset.key) {
@@ -542,27 +442,6 @@
         });
         adventureFilterModal.addEventListener('click', (event) => { if (event.target === adventureFilterModal) adventureFilterCloseBtn.click(); });
         adventureFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') adventureFilterCloseBtn.click(); });
-
-    </script>
-</body>
-</html>isibility[checkbox.dataset.key] = checkbox.checked;
-                updateColumnVisibility();
-            }
-        });
-
-    </script>
-</body>
-</html>ey] = checkbox.checked;
-                updateColumnVisibility();
-            }
-        });
-
-    </script>
-</body>
-</html>isibility[checkbox.dataset.key] = checkbox.checked;
-                updateColumnVisibility();
-            }
-        });
 
     </script>
 </body>
