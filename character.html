@@ -13,7 +13,7 @@
         .input-container button:hover { background-color: #f0f0f0; }
         #message-area { text-align: center; min-height: 20px; margin-bottom: 20px; color: green; }
         #message-area.error { color: red; }
-        #character-table { margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 1024px; }
+        #character-table { margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 1130px; }
         #character-table th, #character-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
         #character-table th { background-color: #f2f2f2; }
         #character-table tbody tr { cursor: pointer; }
@@ -236,6 +236,9 @@
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
                 if (data) {
+                    // Sort data by fame (column H, index 7) in descending order
+                    data.sort((a, b) => (Number(b[7] || 0)) - (Number(a[7] || 0)));
+
                     console.log('Raw data from sheets Netlify function:', data);
                     data.forEach(row => {
                         if (row[0] && row[1]) { // server & nickname
