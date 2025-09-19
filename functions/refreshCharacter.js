@@ -18,8 +18,8 @@ const FUSION_SET_PREFIXES = ['황금', '용투', '정화', '행운', '돌파', '
 const FUSION_UNIQUE_PREFIXES = ['욕망', '배신', '기품', '테아나', '무지', '창조', '축복', '설계'];
 
 // Constants for equipment slots (P-column and Q-column)
-const P_COLUMN_SLOTS = ['SHOULDER', 'TOP', 'BOTTOM', 'BELT', 'SHOES']; // 머리어깨, 상의, 하의, 벨트, 신발
-const Q_COLUMN_SLOTS = ['BRACELET', 'NECKLACE', 'RING', 'SUB_EQUIPMENT', 'EARRING', 'MAGIC_STONE']; // 팔찌, 목걸이, 반지, 보조장비, 귀걸이, 마법석
+const P_COLUMN_SLOTS = ['SHOULDER', 'JACKET', 'PANTS', 'WAIST', 'SHOES']; // 머리어깨, 상의, 하의, 벨트, 신발
+const Q_COLUMN_SLOTS = ['WRIST', 'AMULET', 'RING', 'SUPPORT', 'EARRING', 'MAGIC_STON']; // 팔찌, 목걸이, 반지, 보조장비, 귀걸이, 마법석
 
 /**
  * Categorizes a fusion stone based on its name prefix and rarity.
