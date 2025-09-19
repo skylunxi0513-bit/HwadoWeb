@@ -114,7 +114,7 @@ exports.handler = async function(event, context) {
         itemCountForAverage++;
     }
 
-    const averageReinforceAmp = itemCountForAverage > 0 ? Math.round(totalReinforceAmp / itemCountForAverage) : 0;
+    const averageReinforceAmp = itemCountForAverage > 0 ? (totalReinforceAmp / itemCountForAverage).toFixed(1) : '0.0';
     // --- End New Logic (Average) ---
 
     // 3. Extract required data

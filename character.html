@@ -251,7 +251,8 @@
                     amplification: Number(refreshed.amplification || 0),
                     refine: Number(refreshed.refine || 0),
                     guildName: refreshed.guildName || '',
-                    timestamp: refreshed.timestamp || ''
+                    timestamp: refreshed.timestamp || '',
+                    formattedRaritySummary: refreshed.formattedRaritySummary || '' // ADDED THIS LINE
                 };
 
                 row.cells[0].textContent = processedRefreshed.adventureName;
