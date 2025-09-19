@@ -14,7 +14,7 @@ const SERVER_MAP = {
 };
 
 // Constants for fusion stone categorization
-const FUSION_SET_PREFIXES = ['황금', '용투', '정화', '행운', '돌파', '자연', '전장', '영원', '사냥', '영역'];
+const FUSION_SET_PREFIXES = ['황금', '용투', '정화', '행운', '돌파', '자연', '전장', '영원', '사냥', '영역', '암영', '영혼'];
 const FUSION_UNIQUE_PREFIXES = ['욕망', '배신', '기품', '테아나', '무지', '창조', '축복', '설계'];
 
 // Constants for equipment slots (P-column and Q-column)
@@ -192,7 +192,7 @@ exports.handler = async function(event, context) {
     });
 
     const formatFusionCounts = (counts) => {
-        return counts.join('');
+        return counts.join(' ');
     };
 
     const formattedPColumnFusionSummary = formatFusionCounts(pColumnFusionCounts);

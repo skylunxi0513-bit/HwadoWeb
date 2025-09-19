@@ -48,8 +48,8 @@
                 <th>무기</th>
                 <th>평균 증폭</th>
                 <th>장비</th>
-                <th>융합석 (P)</th>
-                <th>융합석 (Q)</th>
+                <th>베누스 융합</th>
+                <th>나벨 융합</th>
                 <th>새로고침</th>
             </tr>
         </thead>
@@ -158,6 +158,42 @@
             return html.trim();
         }
 
+        /**
+         * Formats the 5-number fusion summary string into a readable and colored display.
+         * Example: "3 1 1 0 0" -> "에픽4(3) 유닠1(1)"
+         * @param {string} summaryString - The 5-number string (e.g., "3 1 1 0 0").
+         * @returns {string} The formatted HTML string.
+         */
+        function formatFusionSummaryDisplay(summaryString) {
+            if (!summaryString || summaryString.trim() === '' || summaryString.trim() === '0 0 0 0 0') {
+                return '';
+            }
+
+            const counts = summaryString.split(' ').map(Number);
+            const [uniqueEpic, setEpic, uniqueUnique, setUnique, other] = counts;
+
+            let parts = [];
+
+            // Epic summary
+            const totalEpic = uniqueEpic + setEpic;
+            if (totalEpic > 0) {
+                parts.push(`<span style="color:#ffca28">에픽${totalEpic}(${uniqueEpic})</span>`);
+            }
+
+            // Unique summary
+            const totalUnique = uniqueUnique + setUnique;
+            if (totalUnique > 0) {
+                parts.push(`<span style="color:#d81b60">유닠${totalUnique}(${uniqueUnique})</span>`);
+            }
+
+            // Other summary
+            if (other > 0) {
+                parts.push(`<span style="color:#000">기타${other}</span>`);
+            }
+
+            return parts.join(' ');
+        }
+
         // --- Table & Data Functions ---
         function addCharacterToTable(char) {
             const row = tableBody.insertRow();
@@ -184,8 +220,8 @@
             avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
 
             row.insertCell(5).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column
-            row.insertCell(6).textContent = char.formattedPColumnFusionSummary; // '융합석 (P)' column
-            row.insertCell(7).textContent = char.formattedQColumnFusionSummary; // '융합석 (Q)' column
+            row.insertCell(6).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary); // '베누스 융합' column
+            row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary); // '나벨 융합' column
             row.insertCell(8).textContent = formatTimestamp(char.timestamp); // '새로고침' column
         }
 
@@ -295,8 +331,8 @@
                 row.cells[4].innerHTML = `<span style="color:#800080">+${processedRefreshed.averageReinforceAmp}</span>`;
 
                 row.cells[5].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column
-                row.cells[6].textContent = processedRefreshed.formattedPColumnFusionSummary; // '융합석 (P)' column
-                row.cells[7].textContent = processedRefreshed.formattedQColumnFusionSummary; // '융합석 (Q)' column
+                row.cells[6].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedPColumnFusionSummary); // '베누스 융합' column
+                row.cells[7].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedQColumnFusionSummary); // '나벨 융합' column
                 row.cells[8].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
                 showMessage(result.message, false);
 
