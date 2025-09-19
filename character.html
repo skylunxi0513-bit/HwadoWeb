@@ -119,7 +119,7 @@
 
             let prefix = '';
             if (mainValue > 0 || actualRefine > 0) { // Only show prefix if there's any value
-                prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:${rarityColor}">${actualRefine}</span>) `;
+                prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:#000">${actualRefine}</span>) `;
             }
 
             return `${prefix}<span style="color:${rarityColor}">${nickname}</span>`;

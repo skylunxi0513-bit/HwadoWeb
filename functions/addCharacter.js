@@ -88,12 +88,34 @@ exports.handler = async function(event, context) {
     let raritySummary = [];
     if (rarityCounts['태초'] > 0) raritySummary.push(`태초${rarityCounts['태초']}`);
     if (rarityCounts['에픽'] > 0) raritySummary.push(`에픽${rarityCounts['에픽']}`);
-    if (rarityCounts['레전더리'] > 0) raritySummary.push(`레전${rarityCounts['레전더리']}`);
-    if (rarityCounts['유니크'] > 0) raritySummary.push(`유닠${rarityCounts['유니크']}`);
+    if (rarityCounts['레전더리'] > 0) raritySummary.push(`레전더리${rarityCounts['레전더리']}`);
+    if (rarityCounts['유니크'] > 0) raritySummary.push(`유니크${rarityCounts['유니크']}`);
     if (rarityCounts['레어'] > 0) raritySummary.push(`레어${rarityCounts['레어']}`);
 
     const formattedRaritySummary = raritySummary.join(' ');
-    // --- End New Logic ---
+    // --- End New Logic (Rarity Summary) ---
+
+    // --- New Logic: Calculate Average Reinforce/Amplification ---
+    let totalReinforceAmp = 0;
+    let itemCountForAverage = 0;
+
+    // Add non-weapon equips
+    nonWeaponEquips.forEach(equip => {
+        const equipReinforce = equip.reinforce || 0;
+        const equipAmplification = equip.amplification || 0;
+        totalReinforceAmp += (equipAmplification > 0 ? equipAmplification : equipReinforce);
+        itemCountForAverage++;
+    });
+
+    // Add weapon if it's an amplification weapon
+    const isWeaponAmplified = weapon?.amplificationName; // Check if weapon is amplified
+    if (isWeaponAmplified) {
+        totalReinforceAmp += (weapon?.reinforce || 0); // weapon.reinforce holds amplification value here
+        itemCountForAverage++;
+    }
+
+    const averageReinforceAmp = itemCountForAverage > 0 ? Math.round(totalReinforceAmp / itemCountForAverage) : 0;
+    // --- End New Logic (Average) ---
 
     // 3. Extract required data
     const adventureName = timelineData.adventureName || '-';
