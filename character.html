@@ -159,7 +159,8 @@
                         if (row[0] && row[1]) { // server & nickname
                             addCharacterToTable({ 
                                 server: row[0], nickname: row[1], timestamp: row[4], adventureName: row[5], 
-                                guildName: row[6], fame: row[7], weaponName: row[8], weaponRarity: row[9],
+                                        weaponName: row[8] || '',
+                                weaponRarity: row[9] || '',
                                 reinforce: row[10], amplification: row[11], refine: row[12]
                             });
                         }
@@ -216,8 +217,8 @@
                 row.cells[3].textContent = Number(refreshed.fame || 0).toLocaleString('en-US');
                 const weaponCell = row.cells[4];
                 const weapon = {
-                    name: refreshed.weaponName,
-                    rarity: refreshed.weaponRarity,
+                    name: refreshed.weaponName || '',
+                    rarity: refreshed.weaponRarity || '',
                     reinforce: Number(refreshed.reinforce || 0),
                     amplification: Number(refreshed.amplification || 0),
                     refine: Number(refreshed.refine || 0)
