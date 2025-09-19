@@ -158,11 +158,9 @@
                     data.forEach(row => {
                         if (row[0] && row[1]) { // server & nickname
                             addCharacterToTable({ 
-                                server: row[0], nickname: row[1], timestamp: row[4], adventureName: row[5], 
-                                        weaponName: row[8] || '',
-                                weaponRarity: row[9] || '',
-                                reinforce: row[10], amplification: row[11], refine: row[12]
-                            });
+                                                                server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
+                                                                guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
+                                                                reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0)                            });
                         }
                     });
                 }
@@ -212,21 +210,36 @@
                 if (!response.ok) throw new Error(result.message);
 
                 const { refreshed } = result;
-                row.cells[0].textContent = refreshed.adventureName;
-                // row.cells[1] (server) and row.cells[2] (nickname) don't change
-                row.cells[3].textContent = Number(refreshed.fame || 0).toLocaleString('en-US');
-                const weaponCell = row.cells[4];
-                const weapon = {
-                    name: refreshed.weaponName || '',
-                    rarity: refreshed.weaponRarity || '',
+                // Ensure all refreshed values are handled gracefully
+                const processedRefreshed = {
+                    adventureName: refreshed.adventureName || '',
+                    server: refreshed.server || '',
+                    nickname: refreshed.nickname || '',
+                    fame: Number(refreshed.fame || 0),
+                    weaponName: refreshed.weaponName || '',
+                    weaponRarity: refreshed.weaponRarity || '',
                     reinforce: Number(refreshed.reinforce || 0),
                     amplification: Number(refreshed.amplification || 0),
-                    refine: Number(refreshed.refine || 0)
+                    refine: Number(refreshed.refine || 0),
+                    guildName: refreshed.guildName || '',
+                    timestamp: refreshed.timestamp || ''
+                };
+
+                row.cells[0].textContent = processedRefreshed.adventureName;
+                // row.cells[1] (server) and row.cells[2] (nickname) don't change
+                row.cells[3].textContent = processedRefreshed.fame.toLocaleString('en-US');
+                const weaponCell = row.cells[4];
+                const weapon = {
+                    name: processedRefreshed.weaponName,
+                    rarity: processedRefreshed.weaponRarity,
+                    reinforce: processedRefreshed.reinforce,
+                    amplification: processedRefreshed.amplification,
+                    refine: processedRefreshed.refine
                 };
                 weaponCell.textContent = formatWeapon(weapon);
-                weaponCell.style.color = getWeaponColor(refreshed.weaponRarity);
-                row.cells[5].textContent = refreshed.guildName;
-                row.cells[6].textContent = formatTimestamp(refreshed.timestamp);
+                weaponCell.style.color = getWeaponColor(processedRefreshed.weaponRarity);
+                row.cells[5].textContent = processedRefreshed.guildName;
+                row.cells[6].textContent = formatTimestamp(processedRefreshed.timestamp);
                 showMessage(result.message, false);
 
             } catch (error) {
