@@ -167,7 +167,7 @@
             row.insertCell(1).textContent = char.nickname;
             row.insertCell(2).textContent = Number(char.fame || 0).toLocaleString('en-US');
             
-            row.insertCell(3);
+            const weaponCell = row.insertCell(3); // Re-introduced this line
             const weapon = {
                 name: char.weaponName,
                 rarity: char.weaponRarity,
@@ -274,7 +274,7 @@
                 row.cells[0].textContent = processedRefreshed.adventureName;
                 // row.cells[1] (nickname) is already set by row.dataset.nickname and does not change
                 row.cells[2].textContent = processedRefreshed.fame.toLocaleString('en-US');
-                const weaponCell = row.cells[3];
+                const weaponCell = row.cells[3]; // Re-introduced this line
                 const weapon = {
                     name: processedRefreshed.weaponName,
                     rarity: processedRefreshed.weaponRarity,
