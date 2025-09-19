@@ -58,6 +58,18 @@
             padding: 10px;
             margin-top: 10px;
         }
+        #adventure-filter-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box; /* To include padding in the width */
+        }
+        #adventure-filter-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box; /* To include padding in the width */
+        }
     </style>
 </head>
 <body>
@@ -109,6 +121,14 @@
         </div>
     </div>
 
+    <!-- Adventure Name Filter Modal -->
+    <div id="adventure-filter-modal" class="modal-overlay">
+        <div class="modal-content">
+            <input type="text" id="adventure-filter-input" placeholder="모험단명을 입력하세요. (쉼표로 구분)">
+            <button id="adventure-filter-close-btn">닫기</button>
+        </div>
+    </div>
+
     <script>
         const serverSelect = document.getElementById('server-select');
         const nicknameInput = document.getElementById('nickname-input');
@@ -128,6 +148,7 @@
             column: 'fame',
             direction: 'desc'
         };
+        let adventureNameFilter = '';
 
         const columnConfig = [
             { key: 'adventureName', label: '모험단' },
@@ -305,94 +326,70 @@
             });
         }
 
-        // --- Table & Data Functions ---
-        function renderTable() {
-            tableBody.innerHTML = '';
-            characterData.forEach(char => {
-                const row = tableBody.insertRow();
-                row.dataset.server = char.server;
-                row.dataset.nickname = char.nickname;
+        // --- Main Data Display Logic ---
+        function displayData() {
+            // 1. Filter
+            let dataToDisplay = characterData;
+            if (adventureNameFilter) {
+                const filterNames = adventureNameFilter.split(',').map(name => name.trim().toLowerCase()).filter(Boolean);
+                if (filterNames.length > 0) {
+                    dataToDisplay = characterData.filter(char => filterNames.includes(char.adventureName.toLowerCase()));
+                }
+            }
 
+            // 2. Sort
+            const { column, direction } = sortState;
+            const dirMultiplier = direction === 'asc' ? 1 : -1;
+            // Use slice() to sort a copy, preserving original order for subsequent filtering
+            dataToDisplay = dataToDisplay.slice().sort((a, b) => {
+                let result = 0;
+                switch (column) {
+                    case 'adventureName': case 'nickname': case 'jobGrowName':
+                        result = (a[column] || '').localeCompare(b[column] || ''); break;
+                    case 'fame': case 'averageReinforceAmp':
+                        result = (Number(a[column] || 0)) - (Number(b[column] || 0)); break;
+                    case 'characterCreationDate': case 'timestamp':
+                        result = parseDate(a[column]) - parseDate(b[column]); break;
+                    case 'weapon':
+                        const sA = getWeaponSortScore(a), sB = getWeaponSortScore(b);
+                        for (let i = 0; i < sA.length; i++) { if (sA[i] !== sB[i]) { result = sA[i] - sB[i]; break; } }
+                        break;
+                    case 'equipment':
+                        const eA = getEquipmentSortScore(a), eB = getEquipmentSortScore(b);
+                        for (let i = 0; i < eA.length; i++) { if (eA[i] !== eB[i]) { result = eA[i] - eB[i]; break; } }
+                        break;
+                    case 'venusFusion': case 'nabelFusion':
+                        const key = column === 'venusFusion' ? 'formattedPColumnFusionSummary' : 'formattedQColumnFusionSummary';
+                        const fA = getFusionSortScore(a[key]), fB = getFusionSortScore(b[key]);
+                        for (let i = 0; i < fA.length; i++) { if (fA[i] !== fB[i]) { result = fA[i] - fB[i]; break; } }
+                        break;
+                }
+                return result * dirMultiplier;
+            });
+
+            // 3. Render
+            renderTable(dataToDisplay);
+        }
+
+        function renderTable(dataToRender) {
+            tableBody.innerHTML = '';
+            dataToRender.forEach(char => {
+                const row = tableBody.insertRow();
+                row.dataset.server = char.server; row.dataset.nickname = char.nickname;
                 row.insertCell(0).textContent = char.adventureName || '-';
                 row.insertCell(1).textContent = char.nickname;
                 row.insertCell(2).textContent = char.jobGrowName || '-';
                 row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
                 const weaponCell = row.insertCell(4);
-                const weapon = { name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine };
-                weaponCell.innerHTML = formatWeapon(weapon);
-                const avgAmpCell = row.insertCell(5);
-                avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
+                weaponCell.innerHTML = formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine });
+                row.insertCell(5).innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
                 row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary);
                 row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
                 row.insertCell(8).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary);
                 row.insertCell(9).textContent = char.characterCreationDate || '-';
                 row.insertCell(10).textContent = formatTimestamp(char.timestamp);
             });
-            updateColumnVisibility(); // Apply visibility after rendering
-        }
-
-        function sortData(column) {
-            const descDefaultColumns = ['fame', 'averageReinforceAmp', 'weapon', 'equipment', 'venusFusion', 'nabelFusion'];
-            let defaultDirection = descDefaultColumns.includes(column) ? 'desc' : 'asc';
-            let direction = defaultDirection;
-            if (sortState.column === column) {
-                direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-            }
-            sortState = { column, direction };
-            const dirMultiplier = direction === 'asc' ? 1 : -1;
-
-            characterData.sort((a, b) => {
-                let result = 0;
-                switch (column) {
-                    case 'adventureName':
-                    case 'nickname':
-                    case 'jobGrowName':
-                        result = (a[column] || '').localeCompare(b[column] || '');
-                        break;
-                    case 'fame':
-                    case 'averageReinforceAmp':
-                        result = (Number(a[column] || 0)) - (Number(b[column] || 0));
-                        break;
-                    case 'characterCreationDate':
-                    case 'timestamp':
-                        result = parseDate(a[column]) - parseDate(b[column]);
-                        break;
-                    case 'weapon':
-                        const scoreA = getWeaponSortScore(a);
-                        const scoreB = getWeaponSortScore(b);
-                        for (let i = 0; i < scoreA.length; i++) {
-                            if (scoreA[i] !== scoreB[i]) {
-                                result = scoreA[i] - scoreB[i];
-                                break;
-                            }
-                        }
-                        break;
-                    case 'equipment':
-                        const equipA = getEquipmentSortScore(a);
-                        const equipB = getEquipmentSortScore(b);
-                        for (let i = 0; i < equipA.length; i++) {
-                            if (equipA[i] !== equipB[i]) {
-                                result = equipA[i] - equipB[i];
-                                break;
-                            }
-                        }
-                        break;
-                    case 'venusFusion':
-                    case 'nabelFusion':
-                        const fusionKey = column === 'venusFusion' ? 'formattedPColumnFusionSummary' : 'formattedQColumnFusionSummary';
-                        const fusionA = getFusionSortScore(a[fusionKey]);
-                        const fusionB = getFusionSortScore(b[fusionKey]);
-                        for (let i = 0; i < fusionA.length; i++) {
-                            if (fusionA[i] !== fusionB[i]) {
-                                result = fusionA[i] - fusionB[i];
-                                break;
-                            }
-                        }
-                        break;
-                }
-                return result * dirMultiplier;
-            });
-            renderTable();
+            updateColumnVisibility();
         }
 
         async function fetchAndDisplayCharacters() {
@@ -415,8 +412,7 @@
                             characterCreationDate: row[18] || ''
                         };
                     }).filter(Boolean);
-                    characterData.sort((a, b) => (Number(b.fame || 0)) - (Number(a.fame || 0)));
-                    renderTable();
+                    displayData(); // Initial filter, sort, and render
                 }
             } catch (error) {
                 showMessage(error.message, true);
@@ -436,7 +432,7 @@
                 if (!response.ok) throw new Error(result.message);
                 showMessage(result.message, false);
                 characterData.push(result.added);
-                sortData(sortState.column);
+                displayData();
                 nicknameInput.value = '';
                 nicknameInput.focus();
             } catch (error) {
@@ -464,7 +460,7 @@
                     characterData[charIndex] = { ...characterData[charIndex], ...result.refreshed };
                 }
                 showMessage(result.message, false);
-                sortData(sortState.column);
+                displayData();
             } catch (error) {
                 showMessage(error.message, true);
             } finally {
@@ -502,8 +498,23 @@
         });
         tableHead.addEventListener('click', (event) => {
             const header = event.target.closest('th');
-            if (header && header.dataset.column) {
-                sortData(header.dataset.column);
+            if (!header) return;
+            const columnKey = header.dataset.column;
+
+            if (columnKey === 'adventureName') {
+                adventureFilterModal.style.display = 'flex';
+                adventureFilterInput.focus();
+            } else if (columnKey) {
+                const descDefault = ['fame', 'averageReinforceAmp', 'weapon', 'equipment', 'venusFusion', 'nabelFusion'];
+                const defaultDirection = descDefault.includes(columnKey) ? 'desc' : 'asc';
+                
+                let direction = defaultDirection;
+                if (sortState.column === columnKey) {
+                    direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+                }
+                
+                sortState = { column: columnKey, direction };
+                displayData();
             }
         });
 
@@ -519,6 +530,36 @@
             const checkbox = event.target;
             if (checkbox.dataset.key) {
                 columnVisibility[checkbox.dataset.key] = checkbox.checked;
+                updateColumnVisibility();
+            }
+        });
+
+        // Adventure Filter Modal Listeners
+        adventureFilterCloseBtn.addEventListener('click', () => {
+            adventureNameFilter = adventureFilterInput.value;
+            adventureFilterModal.style.display = 'none';
+            displayData();
+        });
+        adventureFilterModal.addEventListener('click', (event) => { if (event.target === adventureFilterModal) adventureFilterCloseBtn.click(); });
+        adventureFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') adventureFilterCloseBtn.click(); });
+
+    </script>
+</body>
+</html>isibility[checkbox.dataset.key] = checkbox.checked;
+                updateColumnVisibility();
+            }
+        });
+
+    </script>
+</body>
+</html>ey] = checkbox.checked;
+                updateColumnVisibility();
+            }
+        });
+
+    </script>
+</body>
+</html>isibility[checkbox.dataset.key] = checkbox.checked;
                 updateColumnVisibility();
             }
         });
