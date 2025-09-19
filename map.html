@@ -9,6 +9,11 @@
         #map-selector-container {
             margin: 20px 0;
         }
+        #main-content-wrapper {
+            max-width: 960px; /* Approx. 20% wider than an 800px map */
+            margin: 0 auto; /* Center the wrapper */
+            padding: 0 10px; /* Add some padding to the sides */
+        }
         #mapSelector {
             padding: 10px;
             font-size: 16px;
@@ -112,13 +117,15 @@
         </select>
     </div>
 
-    <div id="summary-table-container"></div>
+    <div id="main-content-wrapper">
+        <div id="summary-table-container"></div>
 
-    <div id="image-container">
-        <img id="mapImage" src="images/map/Experimentation.png" alt="지도 이미지">
+        <div id="image-container">
+            <img id="mapImage" src="images/map/Experimentation.png" alt="지도 이미지">
+        </div>
+
+        <div id="map-data-container"></div>
     </div>
-
-    <div id="map-data-container"></div>
 
     <script>
         const mapSelector = document.getElementById('mapSelector');
