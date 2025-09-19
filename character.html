@@ -201,8 +201,9 @@
                                 server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
                                 guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
                                 reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0),
-                                formattedRaritySummary: row[13] || '', // Get formattedRaritySummary from row[13] (Column N)
-                                formattedFusionRaritySummary: row[14] || '' // Get formattedFusionRaritySummary from row[14] (Column P)
+                                formattedRaritySummary: row[13] || '', // Column N
+                                averageReinforceAmp: row[14] || '0.0', // Column O
+                                formattedFusionRaritySummary: row[15] || '' // Column P
                             };
                             console.log('Char object before addCharacterToTable:', char);
                             addCharacterToTable(char);
@@ -268,7 +269,9 @@
                     refine: Number(refreshed.refine || 0),
                     guildName: refreshed.guildName || '',
                     timestamp: refreshed.timestamp || '',
-                    formattedRaritySummary: refreshed.formattedRaritySummary || '' // ADDED THIS LINE
+                    formattedRaritySummary: refreshed.formattedRaritySummary || '',
+                    averageReinforceAmp: refreshed.averageReinforceAmp || '0.0',
+                    formattedFusionRaritySummary: refreshed.formattedFusionRaritySummary || ''
                 };
 
                 row.cells[0].textContent = processedRefreshed.adventureName;

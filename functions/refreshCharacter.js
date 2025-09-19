@@ -85,6 +85,7 @@ exports.handler = async function(event, context) {
     const timelineData = await timelineRes.json();
     const statusData = await statusRes.json();
     const equipData = await equipRes.json();
+    console.log('equipData.equipment:', equipData.equipment);
 
     const newAdventureName = timelineData.adventureName || '-';
     const newGuildName = timelineData.guildName || '-';
@@ -137,11 +138,10 @@ exports.handler = async function(event, context) {
     };
 
     nonWeaponEquips.forEach(equip => {
-        // Neople API documentation suggests 'fusionOption' or 'fusionStoneEquipStatus'
-        // Let's check for 'fusionOption' first, as it's more commonly nested
         const fusionStone = equip.fusionOption; // Assuming fusionOption is the key for fusion stone data
+        console.log('Processing equip:', equip.slotId, 'Fusion Stone found:', fusionStone);
 
-        if (fusionStone && fusionStone.itemRarity) { // Assuming fusion stone itself has an itemRarity
+        if (fusionStone && fusionStone.itemRarity) {
             const rarity = fusionStone.itemRarity;
             if (fusionRarityCounts.hasOwnProperty(rarity)) {
                 fusionRarityCounts[rarity]++;
@@ -157,6 +157,7 @@ exports.handler = async function(event, context) {
     if (fusionRarityCounts['레어'] > 0) fusionRaritySummary.push(`레어${fusionRarityCounts['레어']}`);
 
     const formattedFusionRaritySummary = fusionRaritySummary.join(' ');
+    console.log('Formatted Fusion Rarity Summary:', formattedFusionRaritySummary);
     // --- End New Logic (Fusion Stones) ---
 
     // --- New Logic: Calculate Average Reinforce/Amplification ---

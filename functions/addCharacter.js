@@ -66,6 +66,21 @@ exports.handler = async function(event, context) {
     const timelineData = await timelineRes.json();
     const statusData = await statusRes.json();
     const equipData = await equipRes.json();
+    console.log('equipData.equipment:', equipData.equipment);
+
+    // --- Extract required data (including weapon) FIRST ---
+    const adventureName = timelineData.adventureName || '-';
+    const guildName = timelineData.guildName || '-';
+    const fame = statusData.status.find(s => s.name === '모험가 명성')?.value || 0;
+
+    const weapon = equipData.equipment.find(e => e.slotId === 'WEAPON');
+    const weaponName = weapon?.itemName || 'N/A';
+    const weaponRarity = weapon?.itemRarity || 'N/A';
+    const reinforce = weapon?.reinforce || 0;
+    const refine = weapon?.refine || 0;
+    const amplificationName = weapon?.amplificationName;
+    const amplificationValue = amplificationName ? reinforce : 0;
+    const reinforceValue = amplificationName ? 0 : reinforce;
 
     // --- New Logic: Process 11 non-weapon equipment slots ---
     const nonWeaponEquips = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE');
@@ -105,11 +120,10 @@ exports.handler = async function(event, context) {
     };
 
     nonWeaponEquips.forEach(equip => {
-        // Neople API documentation suggests 'fusionOption' or 'fusionStoneEquipStatus'
-        // Let's check for 'fusionOption' first, as it's more commonly nested
         const fusionStone = equip.fusionOption; // Assuming fusionOption is the key for fusion stone data
+        console.log('Processing equip:', equip.slotId, 'Fusion Stone found:', fusionStone);
 
-        if (fusionStone && fusionStone.itemRarity) { // Assuming fusion stone itself has an itemRarity
+        if (fusionStone && fusionStone.itemRarity) {
             const rarity = fusionStone.itemRarity;
             if (fusionRarityCounts.hasOwnProperty(rarity)) {
                 fusionRarityCounts[rarity]++;
@@ -125,6 +139,7 @@ exports.handler = async function(event, context) {
     if (fusionRarityCounts['레어'] > 0) fusionRaritySummary.push(`레어${fusionRarityCounts['레어']}`);
 
     const formattedFusionRaritySummary = fusionRaritySummary.join(' ');
+    console.log('Formatted Fusion Rarity Summary:', formattedFusionRaritySummary);
     // --- End New Logic (Fusion Stones) ---
 
     // --- New Logic: Calculate Average Reinforce/Amplification ---
@@ -140,28 +155,14 @@ exports.handler = async function(event, context) {
     });
 
     // Add weapon if it's an amplification weapon
-    const isWeaponAmplified = weapon?.amplificationName; // Check if weapon is amplified
+    const isWeaponAmplified = amplificationName; // Use amplificationName which is already extracted
     if (isWeaponAmplified) {
-        totalReinforceAmp += (weapon?.reinforce || 0); // weapon.reinforce holds amplification value here
+        totalReinforceAmp += (reinforce || 0); // Use reinforce which is already extracted
         itemCountForAverage++;
     }
 
     const averageReinforceAmp = itemCountForAverage > 0 ? (totalReinforceAmp / itemCountForAverage).toFixed(1) : '0.0';
     // --- End New Logic (Average) ---
-
-    // 3. Extract required data
-    const adventureName = timelineData.adventureName || '-';
-    const guildName = timelineData.guildName || '-';
-    const fame = statusData.status.find(s => s.name === '모험가 명성')?.value || 0;
-    
-    const weapon = equipData.equipment.find(e => e.slotId === 'WEAPON');
-    const weaponName = weapon?.itemName || 'N/A';
-    const weaponRarity = weapon?.itemRarity || 'N/A';
-    const reinforce = weapon?.reinforce || 0;
-    const refine = weapon?.refine || 0;
-    const amplificationName = weapon?.amplificationName;
-    const amplificationValue = amplificationName ? reinforce : 0;
-    const reinforceValue = amplificationName ? 0 : reinforce;
 
     // 4. Prepare Google Sheets auth
     const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
