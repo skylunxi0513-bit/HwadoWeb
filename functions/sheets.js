@@ -136,6 +136,7 @@ exports.handler = async function(event, context) {
     }
 
     const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+    console.log('Raw data from Google Sheets API:', response.data.values);
 
     let rows = response.data.values || [];
     let dataToReturn = rows.length > 1 ? rows.slice(1) : [];
@@ -163,6 +164,7 @@ exports.handler = async function(event, context) {
             return row;
         });
     }
+    console.log('Processed dataToReturn before sending to client:', dataToReturn);
 
     const filterColumn = event.queryStringParameters.filterColumn;
     const filterValue = event.queryStringParameters.filterValue;

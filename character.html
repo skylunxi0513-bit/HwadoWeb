@@ -88,8 +88,10 @@
         }
 
         function formatWeapon(weapon) {
+            console.log('Inside formatWeapon, input weapon:', weapon);
             if (!weapon || weapon.name === 'N/A') return 'N/A';
             const { name, rarity, reinforce, amplification, refine } = weapon;
+            console.log('formatWeapon destructured: name=', name, 'rarity=', rarity, 'reinforce=', reinforce, 'amplification=', amplification, 'refine=', refine);
 
             // Determine mainValue: prioritize amplification if it exists and is > 0, otherwise use reinforce
             let mainValue = 0;
@@ -113,7 +115,7 @@
                 else if (name.includes('첫')) nickname = '원만 무기';
                 else nickname = '태거시';
             }
-
+            console.log('formatWeapon calculated: mainValue=', mainValue, 'actualRefine=', actualRefine, 'nickname=', nickname);
             return `+${mainValue}(${actualRefine}) ${nickname}`;
         }
 
@@ -137,10 +139,11 @@
             const weapon = {
                 name: char.weaponName,
                 rarity: char.weaponRarity,
-                reinforce: Number(char.reinforce || 0),
-                amplification: Number(char.amplification || 0),
-                refine: Number(char.refine || 0)
+                reinforce: char.reinforce,
+                amplification: char.amplification,
+                refine: char.refine
             };
+            console.log('Weapon object before formatWeapon:', weapon);
             weaponCell.textContent = formatWeapon(weapon);
             weaponCell.style.color = getWeaponColor(char.weaponRarity);
 
@@ -155,12 +158,16 @@
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
                 if (data) {
+                    console.log('Raw data from sheets Netlify function:', data);
                     data.forEach(row => {
                         if (row[0] && row[1]) { // server & nickname
-                            addCharacterToTable({ 
-                                                                server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
-                                                                guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
-                                                                reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0)                            });
+                            const char = {
+                                server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
+                                guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
+                                reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0)
+                            };
+                            console.log('Char object before addCharacterToTable:', char);
+                            addCharacterToTable(char);
                         }
                     });
                 }
