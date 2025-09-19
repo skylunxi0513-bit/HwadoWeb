@@ -44,6 +44,7 @@
             <tr>
                 <th>모험단</th>
                 <th>닉네임</th>
+                <th>직업</th>
                 <th>명성</th>
                 <th>무기</th>
                 <th>평균 증폭</th>
@@ -51,6 +52,7 @@
                 <th>베누스 융합</th>
                 <th>나벨 융합</th>
                 <th>새로고침</th>
+                <th>캐릭터 생성일</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -202,9 +204,10 @@
 
             row.insertCell(0).textContent = char.adventureName || '-';
             row.insertCell(1).textContent = char.nickname;
-            row.insertCell(2).textContent = Number(char.fame || 0).toLocaleString('en-US');
+            row.insertCell(2).textContent = char.jobGrowName || '-'; // 직업
+            row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US'); // 명성
             
-            const weaponCell = row.insertCell(3); // Re-introduced this line
+            const weaponCell = row.insertCell(4); // 무기
             const weapon = {
                 name: char.weaponName,
                 rarity: char.weaponRarity,
@@ -215,19 +218,20 @@
             console.log('Weapon object before formatWeapon:', weapon);
             weaponCell.innerHTML = formatWeapon(weapon);
 
-            // New '평균 증폭' column
-            const avgAmpCell = row.insertCell(4);
+            // '평균 증폭' column
+            const avgAmpCell = row.insertCell(5);
             avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
 
-            row.insertCell(5).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column
-            row.insertCell(6).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary); // '베누스 융합' column
-            row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary); // '나벨 융합' column
-            row.insertCell(8).textContent = formatTimestamp(char.timestamp); // '새로고침' column
+            row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column
+            row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary); // '베누스 융합' column
+            row.insertCell(8).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary); // '나벨 융합' column
+            row.insertCell(9).textContent = formatTimestamp(char.timestamp); // '새로고침' column
+            row.insertCell(10).textContent = char.characterCreationDate || '-'; // 캐릭터 생성일
         }
 
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:Q'); // Changed range to A:Q
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:S'); // Changed range to A:S
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
@@ -242,7 +246,9 @@
                                 formattedRaritySummary: row[13] || '', // Column N
                                 averageReinforceAmp: row[14] || '0.0', // Column O
                                 formattedPColumnFusionSummary: row[15] || '', // Column P
-                                formattedQColumnFusionSummary: row[16] || '' // Column Q
+                                formattedQColumnFusionSummary: row[16] || '', // Column Q
+                                jobGrowName: row[17] || '', // Column R
+                                characterCreationDate: row[18] || '' // Column S
                             };
                             console.log('Char object before addCharacterToTable:', char);
                             addCharacterToTable(char);
@@ -311,13 +317,16 @@
                     formattedRaritySummary: refreshed.formattedRaritySummary || '',
                     averageReinforceAmp: refreshed.averageReinforceAmp || '0.0',
                     formattedPColumnFusionSummary: refreshed.formattedPColumnFusionSummary || '',
-                    formattedQColumnFusionSummary: refreshed.formattedQColumnFusionSummary || ''
+                    formattedQColumnFusionSummary: refreshed.formattedQColumnFusionSummary || '',
+                    jobGrowName: refreshed.newJobGrowName || '',
+                    characterCreationDate: refreshed.newCharacterCreationDate || ''
                 };
 
                 row.cells[0].textContent = processedRefreshed.adventureName;
-                // row.cells[1] (nickname) is already set by row.dataset.nickname and does not change
-                row.cells[2].textContent = processedRefreshed.fame.toLocaleString('en-US');
-                const weaponCell = row.cells[3];
+                row.cells[1].textContent = processedRefreshed.nickname;
+                row.cells[2].textContent = processedRefreshed.jobGrowName; // 직업
+                row.cells[3].textContent = processedRefreshed.fame.toLocaleString('en-US'); // 명성
+                const weaponCell = row.cells[4]; // 무기
                 const weapon = {
                     name: processedRefreshed.weaponName,
                     rarity: processedRefreshed.weaponRarity,
@@ -327,13 +336,14 @@
                 };
                 weaponCell.innerHTML = formatWeapon(weapon);
 
-                // New '평균 증폭' column
-                row.cells[4].innerHTML = `<span style="color:#800080">+${processedRefreshed.averageReinforceAmp}</span>`;
+                // '평균 증폭' column
+                row.cells[5].innerHTML = `<span style="color:#800080">+${processedRefreshed.averageReinforceAmp}</span>`;
 
-                row.cells[5].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column
-                row.cells[6].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedPColumnFusionSummary); // '베누스 융합' column
-                row.cells[7].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedQColumnFusionSummary); // '나벨 융합' column
-                row.cells[8].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
+                row.cells[6].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column
+                row.cells[7].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedPColumnFusionSummary); // '베누스 융합' column
+                row.cells[8].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedQColumnFusionSummary); // '나벨 융합' column
+                row.cells[9].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
+                row.cells[10].textContent = processedRefreshed.characterCreationDate || '-'; // 캐릭터 생성일
                 showMessage(result.message, false);
 
             } catch (error) {

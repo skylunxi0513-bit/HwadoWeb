@@ -61,6 +61,103 @@ function getKstTimestamp() {
     return `${datePart} ${timePart}`;
 }
 
+/**
+ * Fetches character creation date from Neople API timeline.
+ * @param {string} serverId - The server ID (e.g., 'cain').
+ * @param {string} characterId - The character ID.
+ * @param {string} apiKey - The Neople API key.
+ * @returns {Promise<string|null>} The character creation date in 'YYYY. MM. DD.' format (KST), or null if not found.
+ */
+async function getCharacterCreationDate(serverId, characterId, apiKey) {
+    const baseTimelineUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/timeline`;
+    const maxDays = 90; // Max range for one API call
+
+    let earliestCreationDate = null;
+
+    // Helper to format Date to YYYY-MM-DDTHH:MM (KST)
+    const formatApiDate = (date) => {
+        const kstDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+        const year = kstDate.getFullYear();
+        const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+        const day = String(kstDate.getDate()).padStart(2, '0');
+        const hours = String(kstDate.getHours()).padStart(2, '0');
+        const minutes = String(kstDate.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    // Start from today and go back in 90-day chunks
+    let currentEndDate = new Date(); // Current KST time
+    let currentStartDate = new Date(currentEndDate);
+    currentStartDate.setDate(currentStartDate.getDate() - maxDays);
+
+    // Define the earliest possible date for DFO timeline data (September 21, 2017)
+    const earliestApiDate = new Date('2017-09-21T00:00:00+09:00'); // KST
+
+    while (currentEndDate >= earliestApiDate) {
+        let nextCursor = null;
+        let hasMoreDataInWindow = true;
+
+        while (hasMoreDataInWindow) {
+            let url = `${baseTimelineUrl}?limit=100&apikey=${apiKey}`;
+            url += `&startDate=${formatApiDate(currentStartDate)}`;
+            url += `&endDate=${formatApiDate(currentEndDate)}`;
+
+            if (nextCursor) {
+                url += `&next=${nextCursor}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    console.error(`Failed to fetch timeline data: ${response.status} ${response.statusText}`);
+                    // If API returns 404 for very old dates, it means no data. Break the inner loop.
+                    if (response.status === 404) {
+                        hasMoreDataInWindow = false;
+                        break;
+                    }
+                    throw new Error(`API call failed: ${response.status}`);
+                }
+                const data = await response.json();
+
+                const rows = data.timeline?.rows || [];
+
+                for (const row of rows) {
+                    if (row.code === 101) { // Character creation event
+                        const creationDate = new Date(row.date); // Assuming row.date is parseable
+                        if (!earliestCreationDate || creationDate < earliestCreationDate) {
+                            earliestCreationDate = creationDate;
+                        }
+                    }
+                }
+
+                nextCursor = data.timeline?.next;
+                if (!nextCursor) {
+                    hasMoreDataInWindow = false;
+                }
+            } catch (error) {
+                console.error(`Error fetching timeline for ${characterId}:`, error);
+                hasMoreDataInWindow = false; // Stop trying for this window
+            }
+        }
+
+        // Move window backward
+        currentEndDate = new Date(currentStartDate); // End of new window is start of old window
+        currentEndDate.setSeconds(currentEndDate.getSeconds() - 1); // Go back 1 second to avoid overlap
+        currentStartDate = new Date(currentEndDate);
+        currentStartDate.setDate(currentStartDate.getDate() - maxDays);
+    }
+
+    if (earliestCreationDate) {
+        // Format to 'YYYY. MM. DD.' KST
+        const kstDate = new Date(earliestCreationDate.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+        const year = kstDate.getFullYear();
+        const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+        const day = String(kstDate.getDate()).padStart(2, '0');
+        return `${year}. ${month}. ${day}.`;
+    }
+    return null;
+}
+
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -106,6 +203,8 @@ exports.handler = async function(event, context) {
         return { statusCode: 404, body: JSON.stringify({ message: 'Neople API에서 해당 캐릭터를 찾을 수 없습니다.' }) };
     }
     const characterId = charInfoData.rows[0].characterId;
+    const newJobGrowName = charInfoData.rows[0].jobGrowName; // Added jobGrowName
+    const newCharacterCreationDate = await getCharacterCreationDate(serverId, characterId, API_KEY); // Added character creation date
 
     const timelineUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/timeline?limit=1&apikey=${API_KEY}`;
     const statusUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/status?apikey=${API_KEY}`;
@@ -133,7 +232,7 @@ exports.handler = async function(event, context) {
     const newReinforceValue = amplificationName ? 0 : reinforce;
 
     // --- New Logic: Process 11 non-weapon equipment slots ---
-    const nonWeaponEquips = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE');
+    const nonWeaponEquipsFiltered = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE' && e.slotId !== 'SUPPORT');
 
     const rarityCounts = {
         '태초': 0,
@@ -143,7 +242,7 @@ exports.handler = async function(event, context) {
         '레어': 0,
     };
 
-    nonWeaponEquips.forEach(equip => {
+    nonWeaponEquipsFiltered.forEach(equip => {
         const rarity = equip.itemRarity;
         if (rarityCounts.hasOwnProperty(rarity)) {
             rarityCounts[rarity]++;
@@ -197,14 +296,14 @@ exports.handler = async function(event, context) {
 
     const formattedPColumnFusionSummary = formatFusionCounts(pColumnFusionCounts);
     const formattedQColumnFusionSummary = formatFusionCounts(qColumnFusionCounts);
-    // --- End New Logic: Process Fusion Stones (Categorization) ---
+    // --- End New Logic (Categorization) ---
 
     // --- New Logic: Calculate Average Reinforce/Amplification ---
     let totalReinforceAmp = 0;
     let itemCountForAverage = 0;
 
     // Add non-weapon equips
-    nonWeaponEquips.forEach(equip => {
+    nonWeaponEquipsFiltered.forEach(equip => {
         const equipReinforce = equip.reinforce || 0;
         const equipAmplification = equip.amplification || 0;
         totalReinforceAmp += (equipAmplification > 0 ? equipAmplification : equipReinforce);
@@ -218,13 +317,13 @@ exports.handler = async function(event, context) {
         itemCountForAverage++;
     }
 
-    const averageReinforceAmp = itemCountForAverage > 0 ? (totalReinforceAmp / itemCountForAverage).toFixed(1) : '0.0';
+    const averageReinforceAmp = itemCountForAverage > 0 ? (totalReinforceAmp / itemCountForAverage).toFixed(2) : '0.00'; // Changed to toFixed(2)
     // --- End New Logic (Average) ---
 
     // 5. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
-    const updateRange = `${sheetName}!C${sheetRowIndex}:Q${sheetRowIndex}`; // Adjusted range to include Q column
-    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary]]; // Added P and Q column summaries
+    const updateRange = `${sheetName}!C${sheetRowIndex}:S${sheetRowIndex}`; // Adjusted range to include S column
+    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate]]; // Added newJobGrowName and newCharacterCreationDate
 
     await sheets.spreadsheets.values.update({ spreadsheetId, range: updateRange, valueInputOption: 'USER_ENTERED', resource: { values: valuesToUpdate } });
 
@@ -234,7 +333,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터 정보가 새로고침되었습니다.', 
-          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary }
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate }
       })
     };
 
