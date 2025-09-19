@@ -46,7 +46,9 @@
                 <th>닉네임</th>
                 <th>명성</th>
                 <th>무기</th>
+                <th>평균 증폭</th>
                 <th>장비</th>
+                <th>융합석</th>
                 <th>새로고침</th>
             </tr>
         </thead>
@@ -137,10 +139,19 @@
             parts.forEach(part => {
                 const match = part.match(/([가-힣]+)(\d+)/); // e.g., 태초2
                 if (match) {
-                    const rarity = match[1];
+                    let rarity = match[1];
                     const count = match[2];
-                    const color = getWeaponColor(rarity); // Use existing rarity colors
-                    html += `<span style="color:${color}">${rarity}${count}</span> `;
+                    let displayRarity = rarity; // What will be displayed
+
+                    // Abbreviate for display
+                    if (rarity === '레전더리') {
+                        displayRarity = '레전';
+                    } else if (rarity === '유니크') {
+                        displayRarity = '유닠';
+                    }
+
+                    const color = getWeaponColor(rarity); // Use original rarity for color lookup
+                    html += `<span style="color:${color}">${displayRarity}${count}</span> `;
                 }
             });
             return html.trim();
@@ -156,7 +167,7 @@
             row.insertCell(1).textContent = char.nickname;
             row.insertCell(2).textContent = Number(char.fame || 0).toLocaleString('en-US');
             
-            const weaponCell = row.insertCell(3);
+            row.insertCell(3);
             const weapon = {
                 name: char.weaponName,
                 rarity: char.weaponRarity,
@@ -166,15 +177,19 @@
             };
             console.log('Weapon object before formatWeapon:', weapon);
             weaponCell.innerHTML = formatWeapon(weapon);
-            // weaponCell.style.color = getWeaponColor(char.weaponRarity); // Handled by formatWeapon now
 
-            row.insertCell(4).innerHTML = formatRaritySummary(char.formattedRaritySummary); // New '장비' column
-            row.insertCell(5).textContent = formatTimestamp(char.timestamp);
+            // New '평균 증폭' column
+            const avgAmpCell = row.insertCell(4);
+            avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
+
+            row.insertCell(5).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column (index shifted)
+            row.insertCell(6).innerHTML = formatRaritySummary(char.formattedFusionRaritySummary); // New '융합석' column
+            row.insertCell(7).textContent = formatTimestamp(char.timestamp); // '새로고침' column (index shifted)
         }
 
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:N'); // Changed range to A:N
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:P'); // Changed range to A:P
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
@@ -186,7 +201,8 @@
                                 server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
                                 guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
                                 reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0),
-                                formattedRaritySummary: row[13] || '' // Get formattedRaritySummary from row[13] (Column N)
+                                formattedRaritySummary: row[13] || '', // Get formattedRaritySummary from row[13] (Column N)
+                                formattedFusionRaritySummary: row[14] || '' // Get formattedFusionRaritySummary from row[14] (Column P)
                             };
                             console.log('Char object before addCharacterToTable:', char);
                             addCharacterToTable(char);
@@ -268,8 +284,13 @@
                 };
                 weaponCell.innerHTML = formatWeapon(weapon);
                 // weaponCell.style.color = getWeaponColor(processedRefreshed.weaponRarity); // Handled by formatWeapon now
-                row.cells[4].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // New '장비' column
-                row.cells[5].textContent = formatTimestamp(processedRefreshed.timestamp);
+
+                // New '평균 증폭' column
+                row.cells[4].innerHTML = `<span style="color:#800080">+${processedRefreshed.averageReinforceAmp}</span>`;
+
+                row.cells[5].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column (index shifted)
+                row.cells[6].innerHTML = formatRaritySummary(processedRefreshed.formattedFusionRaritySummary); // New '융합석' column
+                row.cells[7].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column (index shifted)
                 showMessage(result.message, false);
 
             } catch (error) {

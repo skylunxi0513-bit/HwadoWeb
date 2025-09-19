@@ -95,6 +95,38 @@ exports.handler = async function(event, context) {
     const formattedRaritySummary = raritySummary.join(' ');
     // --- End New Logic (Rarity Summary) ---
 
+    // --- New Logic: Process Fusion Stones ---
+    const fusionRarityCounts = {
+        '태초': 0,
+        '에픽': 0,
+        '레전더리': 0,
+        '유니크': 0,
+        '레어': 0,
+    };
+
+    nonWeaponEquips.forEach(equip => {
+        // Neople API documentation suggests 'fusionOption' or 'fusionStoneEquipStatus'
+        // Let's check for 'fusionOption' first, as it's more commonly nested
+        const fusionStone = equip.fusionOption; // Assuming fusionOption is the key for fusion stone data
+
+        if (fusionStone && fusionStone.itemRarity) { // Assuming fusion stone itself has an itemRarity
+            const rarity = fusionStone.itemRarity;
+            if (fusionRarityCounts.hasOwnProperty(rarity)) {
+                fusionRarityCounts[rarity]++;
+            }
+        }
+    });
+
+    let fusionRaritySummary = [];
+    if (fusionRarityCounts['태초'] > 0) fusionRaritySummary.push(`태초${fusionRarityCounts['태초']}`);
+    if (fusionRarityCounts['에픽'] > 0) fusionRaritySummary.push(`에픽${fusionRarityCounts['에픽']}`);
+    if (fusionRarityCounts['레전더리'] > 0) fusionRaritySummary.push(`레전더리${fusionRarityCounts['레전더리']}`);
+    if (fusionRarityCounts['유니크'] > 0) fusionRaritySummary.push(`유니크${fusionRarityCounts['유니크']}`);
+    if (fusionRarityCounts['레어'] > 0) fusionRaritySummary.push(`레어${fusionRarityCounts['레어']}`);
+
+    const formattedFusionRaritySummary = fusionRaritySummary.join(' ');
+    // --- End New Logic (Fusion Stones) ---
+
     // --- New Logic: Calculate Average Reinforce/Amplification ---
     let totalReinforceAmp = 0;
     let itemCountForAverage = 0;
@@ -149,8 +181,9 @@ exports.handler = async function(event, context) {
 
     // 6. Append data to the sheet
     const timestamp = getKstTimestamp();
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary]];
-    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:N`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
+    // Extend range to A:P and add formattedFusionRaritySummary
+    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedFusionRaritySummary]];
+    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:P`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
 
     // 7. Return success response
     return {
@@ -158,7 +191,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary }
+          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedFusionRaritySummary }
       })
     };
 

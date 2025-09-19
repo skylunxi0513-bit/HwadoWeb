@@ -127,6 +127,38 @@ exports.handler = async function(event, context) {
     const formattedRaritySummary = raritySummary.join(' ');
     // --- End New Logic (Rarity Summary) ---
 
+    // --- New Logic: Process Fusion Stones ---
+    const fusionRarityCounts = {
+        '태초': 0,
+        '에픽': 0,
+        '레전더리': 0,
+        '유니크': 0,
+        '레어': 0,
+    };
+
+    nonWeaponEquips.forEach(equip => {
+        // Neople API documentation suggests 'fusionOption' or 'fusionStoneEquipStatus'
+        // Let's check for 'fusionOption' first, as it's more commonly nested
+        const fusionStone = equip.fusionOption; // Assuming fusionOption is the key for fusion stone data
+
+        if (fusionStone && fusionStone.itemRarity) { // Assuming fusion stone itself has an itemRarity
+            const rarity = fusionStone.itemRarity;
+            if (fusionRarityCounts.hasOwnProperty(rarity)) {
+                fusionRarityCounts[rarity]++;
+            }
+        }
+    });
+
+    let fusionRaritySummary = [];
+    if (fusionRarityCounts['태초'] > 0) fusionRaritySummary.push(`태초${fusionRarityCounts['태초']}`);
+    if (fusionRarityCounts['에픽'] > 0) fusionRaritySummary.push(`에픽${fusionRarityCounts['에픽']}`);
+    if (fusionRarityCounts['레전더리'] > 0) fusionRaritySummary.push(`레전더리${fusionRarityCounts['레전더리']}`);
+    if (fusionRarityCounts['유니크'] > 0) fusionRaritySummary.push(`유니크${fusionRarityCounts['유니크']}`);
+    if (fusionRarityCounts['레어'] > 0) fusionRaritySummary.push(`레어${fusionRarityCounts['레어']}`);
+
+    const formattedFusionRaritySummary = fusionRaritySummary.join(' ');
+    // --- End New Logic (Fusion Stones) ---
+
     // --- New Logic: Calculate Average Reinforce/Amplification ---
     let totalReinforceAmp = 0;
     let itemCountForAverage = 0;
@@ -151,8 +183,8 @@ exports.handler = async function(event, context) {
 
     // 5. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
-    const updateRange = `${sheetName}!C${sheetRowIndex}:O${sheetRowIndex}`;
-    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp]];
+    const updateRange = `${sheetName}!C${sheetRowIndex}:P${sheetRowIndex}`;
+    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedFusionRaritySummary]];
 
     await sheets.spreadsheets.values.update({ spreadsheetId, range: updateRange, valueInputOption: 'USER_ENTERED', resource: { values: valuesToUpdate } });
 
@@ -162,7 +194,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터 정보가 새로고침되었습니다.', 
-          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary, averageReinforceAmp }
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary, averageReinforceAmp, formattedFusionRaritySummary }
       })
     };
 
