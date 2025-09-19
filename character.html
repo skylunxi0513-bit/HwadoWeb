@@ -398,7 +398,7 @@
         document.addEventListener('DOMContentLoaded', () => { fetchAndDisplayCharacters(); populateFilterCheckboxes(); });
         addButton.addEventListener('click', handleAddCharacter);
         nicknameInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') handleAddCharacter(); });
-        tableBody.addEventListener('click', (event) => { if (event.target.closest('td')?.cellIndex === 10) handleRefreshCharacter(event); });
+        tableBody.addEventListener('click', handleRefreshCharacter);
         
         tableHead.addEventListener('click', (event) => {
             const header = event.target.closest('th');
