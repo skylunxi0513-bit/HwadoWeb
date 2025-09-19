@@ -130,12 +130,10 @@ exports.handler = async function(event, context) {
         return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required for generic query.' }) };
     }
 
-    let range = event.queryStringParameters.range || `${sheetName}!A:I`; // Default range
-    if (sheetName === '지도') {
-        range = '지도!A:M'; // Wider range for map data
-    }
+    let actualRange = event.queryStringParameters.range || 'A:I'; // Get just the range part (e.g., 'A:M')
+    let fullRange = `${sheetName}!${actualRange}`; // Combine with sheetName
 
-    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: fullRange });
     console.log('Raw data from Google Sheets API:', response.data.values);
 
     let rows = response.data.values || [];
