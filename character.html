@@ -43,11 +43,10 @@
         <thead>
             <tr>
                 <th>모험단</th>
-                <th>서버</th>
                 <th>닉네임</th>
                 <th>명성</th>
                 <th>무기</th>
-                <th>길드</th>
+                <th>장비</th>
                 <th>새로고침</th>
             </tr>
         </thead>
@@ -93,19 +92,19 @@
             const { name, rarity, reinforce, amplification, refine } = weapon;
             console.log('formatWeapon destructured: name=', name, 'rarity=', rarity, 'reinforce=', reinforce, 'amplification=', amplification, 'refine=', refine);
 
-            // Determine mainValue: prioritize amplification if it exists and is > 0, otherwise use reinforce
             let mainValue = 0;
+            let mainValueColor = ''; // To store color for reinforce/amplification
             if (amplification > 0) {
                 mainValue = amplification;
+                mainValueColor = '#800080'; // Purple for amplification
             } else if (reinforce > 0) {
                 mainValue = reinforce;
+                mainValueColor = '#87CEEB'; // Sky Blue for reinforce
             }
 
-            // Ensure refine is a number, defaulting to 0
             const actualRefine = Number(refine || 0);
 
-            // Determine nickname, defaulting to an empty string if rarity is not defined
-            let nickname = rarity || ''; // Default to empty string if rarity is undefined/null
+            let nickname = rarity || '';
             if (rarity === '레전더리') {
                 nickname = name.includes('전설 속의 전승') ? '전승' : '레거시';
             } else if (rarity === '에픽') {
@@ -116,12 +115,34 @@
                 else nickname = '태거시';
             }
             console.log('formatWeapon calculated: mainValue=', mainValue, 'actualRefine=', actualRefine, 'nickname=', nickname);
-            return `+${mainValue}(${actualRefine}) ${nickname}`;
+            
+            let prefix = '';
+            if (mainValue > 0 || actualRefine > 0) { // Only show prefix if there's any value
+                prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:#000">${actualRefine}</span>) `;
+            }
+            
+            return `${prefix}${nickname}`;
         }
 
         function showMessage(message, isError = false) {
             messageArea.textContent = message;
             messageArea.className = isError ? 'error' : '';
+        }
+
+        function formatRaritySummary(summaryString) {
+            if (!summaryString) return '';
+            const parts = summaryString.split(' ');
+            let html = '';
+            parts.forEach(part => {
+                const match = part.match(/([가-힣]+)(\d+)/); // e.g., 태초2
+                if (match) {
+                    const rarity = match[1];
+                    const count = match[2];
+                    const color = getWeaponColor(rarity); // Use existing rarity colors
+                    html += `<span style="color:${color}">${rarity}${count}</span> `;
+                }
+            });
+            return html.trim();
         }
 
         // --- Table & Data Functions ---
@@ -131,11 +152,10 @@
             row.dataset.nickname = char.nickname;
 
             row.insertCell(0).textContent = char.adventureName || '-';
-            row.insertCell(1).textContent = char.server;
-            row.insertCell(2).textContent = char.nickname;
-            row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
+            row.insertCell(1).textContent = char.nickname;
+            row.insertCell(2).textContent = Number(char.fame || 0).toLocaleString('en-US');
             
-            const weaponCell = row.insertCell(4);
+            const weaponCell = row.insertCell(3);
             const weapon = {
                 name: char.weaponName,
                 rarity: char.weaponRarity,
@@ -144,11 +164,11 @@
                 refine: char.refine
             };
             console.log('Weapon object before formatWeapon:', weapon);
-            weaponCell.textContent = formatWeapon(weapon);
-            weaponCell.style.color = getWeaponColor(char.weaponRarity);
+            weaponCell.innerHTML = formatWeapon(weapon);
+            // weaponCell.style.color = getWeaponColor(char.weaponRarity); // Handled by formatWeapon now
 
-            row.insertCell(5).textContent = char.guildName || '-';
-            row.insertCell(6).textContent = formatTimestamp(char.timestamp);
+            row.insertCell(4).innerHTML = formatRaritySummary(char.formattedRaritySummary); // New '장비' column
+            row.insertCell(5).textContent = formatTimestamp(char.timestamp);
         }
 
         async function fetchAndDisplayCharacters() {
@@ -233,9 +253,9 @@
                 };
 
                 row.cells[0].textContent = processedRefreshed.adventureName;
-                // row.cells[1] (server) and row.cells[2] (nickname) don't change
-                row.cells[3].textContent = processedRefreshed.fame.toLocaleString('en-US');
-                const weaponCell = row.cells[4];
+                // row.cells[1] (nickname) is already set by row.dataset.nickname and does not change
+                row.cells[2].textContent = processedRefreshed.fame.toLocaleString('en-US');
+                const weaponCell = row.cells[3];
                 const weapon = {
                     name: processedRefreshed.weaponName,
                     rarity: processedRefreshed.weaponRarity,
@@ -243,10 +263,10 @@
                     amplification: processedRefreshed.amplification,
                     refine: processedRefreshed.refine
                 };
-                weaponCell.textContent = formatWeapon(weapon);
-                weaponCell.style.color = getWeaponColor(processedRefreshed.weaponRarity);
-                row.cells[5].textContent = processedRefreshed.guildName;
-                row.cells[6].textContent = formatTimestamp(processedRefreshed.timestamp);
+                weaponCell.innerHTML = formatWeapon(weapon);
+                // weaponCell.style.color = getWeaponColor(processedRefreshed.weaponRarity); // Handled by formatWeapon now
+                row.cells[4].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // New '장비' column
+                row.cells[5].textContent = formatTimestamp(processedRefreshed.timestamp);
                 showMessage(result.message, false);
 
             } catch (error) {
