@@ -140,6 +140,30 @@ exports.handler = async function(event, context) {
     let rows = response.data.values || [];
     let dataToReturn = rows.length > 1 ? rows.slice(1) : [];
 
+    // Process character data for consistency, especially for weapon stats
+    if (sheetName === '캐릭터') { // Apply this processing only for the '캐릭터' sheet
+        dataToReturn = dataToReturn.map(row => {
+            // Ensure weaponName and weaponRarity are strings
+            row[8] = row[8] || ''; // weaponName
+            row[9] = row[9] || ''; // weaponRarity
+
+            // Ensure reinforce, amplification, refine are numbers, defaulting to 0
+            row[10] = Number(row[10] || 0); // reinforce
+            row[11] = Number(row[11] || 0); // amplification
+            row[12] = Number(row[12] || 0); // refine
+
+            // Also ensure fame and guildName are handled here for consistency
+            row[7] = Number(row[7] || 0); // fame
+            row[6] = row[6] || ''; // guildName
+            row[5] = row[5] || ''; // adventureName
+            row[4] = row[4] || ''; // timestamp
+            row[0] = row[0] || ''; // server
+            row[1] = row[1] || ''; // nickname
+
+            return row;
+        });
+    }
+
     const filterColumn = event.queryStringParameters.filterColumn;
     const filterValue = event.queryStringParameters.filterValue;
 
