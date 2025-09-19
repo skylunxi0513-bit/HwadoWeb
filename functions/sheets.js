@@ -130,7 +130,7 @@ exports.handler = async function(event, context) {
         return { statusCode: 400, body: JSON.stringify({ error: 'sheetName is required for generic query.' }) };
     }
 
-    let range = `${sheetName}!A:I`; // Default range
+    let range = event.queryStringParameters.range || `${sheetName}!A:I`; // Default range
     if (sheetName === '지도') {
         range = '지도!A:M'; // Wider range for map data
     }
