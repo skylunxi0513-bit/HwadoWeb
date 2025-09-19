@@ -165,9 +165,9 @@ exports.handler = async function(event, context) {
     const qColumnFusionCounts = [0, 0, 0, 0, 0]; // 고유 에픽, 세트 에픽, 고유 유니크, 세트 유니크, 기타
 
     equipData.equipment.forEach(equip => {
-        if (equip.fusionStone) {
-            const fusionStoneName = equip.fusionStone.itemName;
-            const fusionStoneRarity = equip.fusionStone.itemRarity;
+        if (equip.upgradeInfo && equip.upgradeInfo.itemName && equip.upgradeInfo.itemRarity) {
+            const fusionStoneName = equip.upgradeInfo.itemName;
+            const fusionStoneRarity = equip.upgradeInfo.itemRarity;
             const equipSlotId = equip.slotId;
 
             const category = getFusionStoneCategory(fusionStoneName, fusionStoneRarity);
