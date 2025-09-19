@@ -86,6 +86,19 @@ exports.handler = async function(event, context) {
     const statusData = await statusRes.json();
     const equipData = await equipRes.json();
 
+    const newAdventureName = timelineData.adventureName || '-';
+    const newGuildName = timelineData.guildName || '-';
+    const newFame = statusData.status.find(s => s.name === '모험가 명성')?.value || 0;
+
+    const weapon = equipData.equipment.find(e => e.slotId === 'WEAPON');
+    const newWeaponName = weapon?.itemName || 'N/A';
+    const newWeaponRarity = weapon?.itemRarity || 'N/A';
+    const reinforce = weapon?.reinforce || 0;
+    const refine = weapon?.refine || 0;
+    const amplificationName = weapon?.amplificationName;
+    const newAmplificationValue = amplificationName ? reinforce : 0;
+    const newReinforceValue = amplificationName ? 0 : reinforce;
+
     // --- New Logic: Process 11 non-weapon equipment slots ---
     const nonWeaponEquips = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE');
 
@@ -127,28 +140,14 @@ exports.handler = async function(event, context) {
     });
 
     // Add weapon if it's an amplification weapon
-    const isWeaponAmplified = weapon?.amplificationName; // Check if weapon is amplified
+    const isWeaponAmplified = amplificationName; // Use amplificationName which is already extracted
     if (isWeaponAmplified) {
-        totalReinforceAmp += (weapon?.reinforce || 0); // weapon.reinforce holds amplification value here
+        totalReinforceAmp += (reinforce || 0); // Use reinforce which is already extracted
         itemCountForAverage++;
     }
 
     const averageReinforceAmp = itemCountForAverage > 0 ? Math.round(totalReinforceAmp / itemCountForAverage) : 0;
     // --- End New Logic (Average) ---
-
-    // 4. Extract required data
-    const newAdventureName = timelineData.adventureName || '-';
-    const newGuildName = timelineData.guildName || '-';
-    const newFame = statusData.status.find(s => s.name === '모험가 명성')?.value || 0;
-    
-    const weapon = equipData.equipment.find(e => e.slotId === 'WEAPON');
-    const newWeaponName = weapon?.itemName || 'N/A';
-    const newWeaponRarity = weapon?.itemRarity || 'N/A';
-    const reinforce = weapon?.reinforce || 0;
-    const refine = weapon?.refine || 0;
-    const amplificationName = weapon?.amplificationName;
-    const newAmplificationValue = amplificationName ? reinforce : 0;
-    const newReinforceValue = amplificationName ? 0 : reinforce;
 
     // 5. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
