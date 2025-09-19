@@ -330,7 +330,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate }
+          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, jobGrowName: newJobGrowName, characterCreationDate: newCharacterCreationDate }
       })
     };
 

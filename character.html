@@ -51,8 +51,8 @@
                 <th>장비</th>
                 <th>베누스 융합</th>
                 <th>나벨 융합</th>
-                <th>새로고침</th>
                 <th>캐릭터 생성일</th>
+                <th>새로고침</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -225,8 +225,8 @@
             row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column
             row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary); // '베누스 융합' column
             row.insertCell(8).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary); // '나벨 융합' column
-            row.insertCell(9).textContent = formatTimestamp(char.timestamp); // '새로고침' column
-            row.insertCell(10).textContent = char.characterCreationDate || '-'; // 캐릭터 생성일
+            row.insertCell(9).textContent = char.characterCreationDate || '-'; // 캐릭터 생성일
+            row.insertCell(10).textContent = formatTimestamp(char.timestamp); // '새로고침' column
         }
 
         async function fetchAndDisplayCharacters() {
@@ -318,8 +318,8 @@
                     averageReinforceAmp: refreshed.averageReinforceAmp || '0.0',
                     formattedPColumnFusionSummary: refreshed.formattedPColumnFusionSummary || '',
                     formattedQColumnFusionSummary: refreshed.formattedQColumnFusionSummary || '',
-                    jobGrowName: refreshed.newJobGrowName || '',
-                    characterCreationDate: refreshed.newCharacterCreationDate || ''
+                    jobGrowName: refreshed.jobGrowName || '',
+                    characterCreationDate: refreshed.characterCreationDate || ''
                 };
 
                 row.cells[0].textContent = processedRefreshed.adventureName;
@@ -342,8 +342,8 @@
                 row.cells[6].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column
                 row.cells[7].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedPColumnFusionSummary); // '베누스 융합' column
                 row.cells[8].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedQColumnFusionSummary); // '나벨 융합' column
-                row.cells[9].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
-                row.cells[10].textContent = processedRefreshed.characterCreationDate || '-'; // 캐릭터 생성일
+                row.cells[9].textContent = processedRefreshed.characterCreationDate || '-'; // 캐릭터 생성일
+                row.cells[10].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
                 showMessage(result.message, false);
 
             } catch (error) {

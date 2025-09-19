@@ -333,7 +333,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터 정보가 새로고침되었습니다.', 
-          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate }
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, jobGrowName: newJobGrowName, characterCreationDate: newCharacterCreationDate }
       })
     };
 
