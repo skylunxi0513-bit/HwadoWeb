@@ -138,7 +138,7 @@ exports.handler = async function(event, context) {
     };
 
     nonWeaponEquips.forEach(equip => {
-        const fusionStone = equip.fusionOption; // Assuming fusionOption is the key for fusion stone data
+        const fusionStone = equip.fusionStone; // Corrected key based on search results
         console.log('Processing equip:', equip.slotId, 'Fusion Stone found:', fusionStone);
 
         if (fusionStone && fusionStone.itemRarity) {
