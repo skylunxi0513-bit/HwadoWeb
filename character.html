@@ -14,8 +14,8 @@
         #message-area { text-align: center; min-height: 20px; margin-bottom: 20px; color: green; }
         #message-area.error { color: red; }
         #character-table { margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 1130px; }
-        #character-table th, #character-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        #character-table th { background-color: #f2f2f2; }
+        #character-table th { background-color: #f2f2f2; cursor: pointer; }
+        #character-table th:hover { background-color: #e0e0e0; }
         #character-table tbody tr { cursor: pointer; }
         #character-table tbody tr:hover { background-color: #f5f5f5; }
         #character-table tbody tr.refreshing { cursor: wait; background-color: #e0e0e0; color: #888; }
@@ -42,17 +42,17 @@
     <table id="character-table">
         <thead>
             <tr>
-                <th>모험단</th>
-                <th>닉네임</th>
-                <th>직업</th>
-                <th>명성</th>
-                <th>무기</th>
-                <th>평균 증폭</th>
-                <th>장비</th>
-                <th>베누스 융합</th>
-                <th>나벨 융합</th>
-                <th>캐릭터 생성일</th>
-                <th>새로고침</th>
+                <th data-column="adventureName">모험단</th>
+                <th data-column="nickname">닉네임</th>
+                <th data-column="jobGrowName">직업</th>
+                <th data-column="fame">명성</th>
+                <th data-column="weapon">무기</th>
+                <th data-column="averageReinforceAmp">평균 증폭</th>
+                <th data-column="equipment">장비</th>
+                <th data-column="venusFusion">베누스 융합</th>
+                <th data-column="nabelFusion">나벨 융합</th>
+                <th data-column="characterCreationDate">캐릭터 생성일</th>
+                <th data-column="timestamp">새로고침</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -64,8 +64,15 @@
         const addButton = document.getElementById('add-button');
         const messageArea = document.getElementById('message-area');
         const tableBody = document.querySelector('#character-table tbody');
+        const tableHead = document.querySelector('#character-table thead');
 
-        // --- Formatting Functions ---
+        let characterData = [];
+        let sortState = {
+            column: 'fame',
+            direction: 'desc'
+        };
+
+        // --- Formatting Functions (mostly unchanged) ---
         function formatTimestamp(fullTimestamp) {
             if (!fullTimestamp || typeof fullTimestamp !== 'string') return 'N/A';
             const match = fullTimestamp.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
@@ -92,24 +99,19 @@
         }
 
         function formatWeapon(weapon) {
-            console.log('Inside formatWeapon, input weapon:', weapon);
             if (!weapon || weapon.name === 'N/A') return 'N/A';
             const { name, rarity, reinforce, amplification, refine } = weapon;
-            console.log('formatWeapon destructured: name=', name, 'rarity=', rarity, 'reinforce=', reinforce, 'amplification=', amplification, 'refine=', refine);
-
             let mainValue = 0;
-            let mainValueColor = ''; // To store color for reinforce/amplification
+            let mainValueColor = '';
             if (amplification > 0) {
                 mainValue = amplification;
-                mainValueColor = '#800080'; // Purple for amplification
+                mainValueColor = '#800080';
             } else if (reinforce > 0) {
                 mainValue = reinforce;
-                mainValueColor = '#1E90FF'; // DodgerBlue for reinforce (darker blue)
+                mainValueColor = '#1E90FF';
             }
-
             const actualRefine = Number(refine || 0);
-            const rarityColor = getWeaponColor(rarity); // Get rarity color for refine and nickname
-
+            const rarityColor = getWeaponColor(rarity);
             let nickname = rarity || '';
             if (rarity === '레전더리') {
                 nickname = name.includes('전설 속의 전승') ? '전승' : '레거시';
@@ -120,13 +122,10 @@
                 else if (name.includes('첫')) nickname = '원만 무기';
                 else nickname = '태거시';
             }
-            console.log('formatWeapon calculated: mainValue=', mainValue, 'actualRefine=', actualRefine, 'nickname=', nickname);
-
             let prefix = '';
-            if (mainValue > 0 || actualRefine > 0) { // Only show prefix if there's any value
+            if (mainValue > 0 || actualRefine > 0) {
                 prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:#000">${actualRefine}</span>) `;
             }
-
             return `${prefix}<span style="color:${rarityColor}">${nickname}</span>`;
         }
 
@@ -140,123 +139,219 @@
             const parts = summaryString.split(' ');
             let html = '';
             parts.forEach(part => {
-                const match = part.match(/([가-힣]+)(\d+)/); // e.g., 태초2
+                const match = part.match(/([가-힣]+)(\d+)/);
                 if (match) {
                     let rarity = match[1];
                     const count = match[2];
-                    let displayRarity = rarity; // What will be displayed
-
-                    // Abbreviate for display
-                    if (rarity === '레전더리') {
-                        displayRarity = '레전';
-                    } else if (rarity === '유니크') {
-                        displayRarity = '유닠';
-                    }
-
-                    const color = getWeaponColor(rarity); // Use original rarity for color lookup
+                    let displayRarity = rarity;
+                    if (rarity === '레전더리') displayRarity = '레전';
+                    else if (rarity === '유니크') displayRarity = '유닠';
+                    const color = getWeaponColor(rarity);
                     html += `<span style="color:${color}">${displayRarity}${count}</span> `;
                 }
             });
             return html.trim();
         }
 
-        /**
-         * Formats the 5-number fusion summary string into a readable and colored display.
-         * Example: "3 1 1 0 0" -> "에픽4(3) 유닠1(1)"
-         * @param {string} summaryString - The 5-number string (e.g., "3 1 1 0 0").
-         * @returns {string} The formatted HTML string.
-         */
         function formatFusionSummaryDisplay(summaryString) {
-            if (!summaryString || summaryString.trim() === '' || summaryString.trim() === '0 0 0 0 0') {
-                return '';
-            }
-
+            if (!summaryString || summaryString.trim() === '' || summaryString.trim() === '0 0 0 0 0') return '';
             const counts = summaryString.split(' ').map(Number);
             const [uniqueEpic, setEpic, uniqueUnique, setUnique, other] = counts;
-
             let parts = [];
-
-            // Epic summary
             const totalEpic = uniqueEpic + setEpic;
             if (totalEpic > 0) {
                 parts.push(`<span style="color:#ffca28">에픽${totalEpic}(${uniqueEpic})</span>`);
             }
-
-            // Unique summary
             const totalUnique = uniqueUnique + setUnique;
             if (totalUnique > 0) {
                 parts.push(`<span style="color:#d81b60">유닠${totalUnique}(${uniqueUnique})</span>`);
             }
-
-            // Other summary
             if (other > 0) {
                 parts.push(`<span style="color:#000">기타${other}</span>`);
             }
-
             return parts.join(' ');
         }
 
-        // --- Table & Data Functions ---
-        function addCharacterToTable(char) {
-            const row = tableBody.insertRow();
-            row.dataset.server = char.server;
-            row.dataset.nickname = char.nickname;
+        // --- Sorting Helper Functions ---
+        const RARITY_ORDER = { '태초': 5, '에픽': 4, '레전더리': 3, '유니크': 2, '레어': 1 };
 
-            row.insertCell(0).textContent = char.adventureName || '-';
-            row.insertCell(1).textContent = char.nickname;
-            row.insertCell(2).textContent = char.jobGrowName || '-'; // 직업
-            row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US'); // 명성
+        function getWeaponSortScore(char) {
+            const rarity = char.weaponRarity;
+            const name = char.weaponName;
+            const rarityScore = RARITY_ORDER[rarity] || 0;
             
-            const weaponCell = row.insertCell(4); // 무기
-            const weapon = {
-                name: char.weaponName,
-                rarity: char.weaponRarity,
-                reinforce: char.reinforce,
-                amplification: char.amplification,
-                refine: char.refine
-            };
-            console.log('Weapon object before formatWeapon:', weapon);
-            weaponCell.innerHTML = formatWeapon(weapon);
+            let subRarityScore = 0;
+            if (rarity === '태초' && name.includes('태거시')) subRarityScore = 1;
+            else if (rarity === '에픽' && name.includes('에거시')) subRarityScore = 1;
+            else if (rarity === '레전더리' && name.includes('레거시')) subRarityScore = 1;
 
-            // '평균 증폭' column
-            const avgAmpCell = row.insertCell(5);
-            avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
+            const mainValue = Math.max(char.reinforce || 0, char.amplification || 0);
+            return [rarityScore, subRarityScore, mainValue];
+        }
 
-            row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column
-            row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary); // '베누스 융합' column
-            row.insertCell(8).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary); // '나벨 융합' column
-            row.insertCell(9).textContent = char.characterCreationDate || '-'; // 캐릭터 생성일
-            row.insertCell(10).textContent = formatTimestamp(char.timestamp); // '새로고침' column
+        function getEquipmentSortScore(char) {
+            const summary = char.formattedRaritySummary || '';
+            const counts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
+            summary.split(' ').forEach(part => {
+                const match = part.match(/([가-힣]+)(\d+)/);
+                if (match && counts.hasOwnProperty(match[1])) {
+                    counts[match[1]] = Number(match[2]);
+                }
+            });
+            return [counts['태초'], counts['에픽'], counts['레전더리'], counts['유니크'], counts['레어']];
+        }
+
+        function getFusionSortScore(summaryString) {
+            if (!summaryString) return [0, 0];
+            const counts = summaryString.split(' ').map(Number);
+            const [uniqueEpic, setEpic] = counts;
+            return [uniqueEpic + setEpic, uniqueEpic];
+        }
+        
+        function parseDate(dateString) {
+            if (!dateString) return new Date(0);
+            
+            const creationMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\./);
+            if (creationMatch) {
+                return new Date(creationMatch[1], creationMatch[2] - 1, creationMatch[3]);
+            }
+
+            const timestampMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
+            if (timestampMatch) {
+                let [, year, month, day, ampm, hour, minute, second] = timestampMatch;
+                hour = parseInt(hour, 10);
+                if (ampm === '오후' && hour !== 12) hour += 12;
+                if (ampm === '오전' && hour === 12) hour = 0;
+                return new Date(year, month - 1, day, hour, minute, second);
+            }
+
+            return new Date(0);
+        }
+
+
+        // --- Table & Data Functions ---
+        function renderTable() {
+            tableBody.innerHTML = '';
+            characterData.forEach(char => {
+                const row = tableBody.insertRow();
+                row.dataset.server = char.server;
+                row.dataset.nickname = char.nickname;
+
+                row.insertCell(0).textContent = char.adventureName || '-';
+                row.insertCell(1).textContent = char.nickname;
+                row.insertCell(2).textContent = char.jobGrowName || '-';
+                row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
+                
+                const weaponCell = row.insertCell(4);
+                const weapon = { name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine };
+                weaponCell.innerHTML = formatWeapon(weapon);
+
+                const avgAmpCell = row.insertCell(5);
+                avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
+
+                row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary);
+                row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
+                row.insertCell(8).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary);
+                row.insertCell(9).textContent = char.characterCreationDate || '-';
+                row.insertCell(10).textContent = formatTimestamp(char.timestamp);
+            });
+        }
+
+        function sortData(column) {
+            const descDefaultColumns = ['fame', 'averageReinforceAmp', 'weapon', 'equipment', 'venusFusion', 'nabelFusion'];
+            let defaultDirection = descDefaultColumns.includes(column) ? 'desc' : 'asc';
+
+            let direction = defaultDirection;
+            if (sortState.column === column) {
+                direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            }
+
+            sortState = { column, direction };
+            const dirMultiplier = direction === 'asc' ? 1 : -1;
+
+            characterData.sort((a, b) => {
+                let result = 0;
+                switch (column) {
+                    case 'adventureName':
+                    case 'nickname':
+                    case 'jobGrowName':
+                        result = (a[column] || '').localeCompare(b[column] || '');
+                        break;
+                    
+                    case 'fame':
+                    case 'averageReinforceAmp':
+                        result = (Number(a[column] || 0)) - (Number(b[column] || 0));
+                        break;
+
+                    case 'characterCreationDate':
+                    case 'timestamp':
+                         result = parseDate(a[column]) - parseDate(b[column]);
+                         break;
+
+                    case 'weapon':
+                        const scoreA = getWeaponSortScore(a);
+                        const scoreB = getWeaponSortScore(b);
+                        for (let i = 0; i < scoreA.length; i++) {
+                            if (scoreA[i] !== scoreB[i]) {
+                                result = scoreA[i] - scoreB[i];
+                                break;
+                            }
+                        }
+                        break;
+
+                    case 'equipment':
+                        const equipA = getEquipmentSortScore(a);
+                        const equipB = getEquipmentSortScore(b);
+                         for (let i = 0; i < equipA.length; i++) {
+                            if (equipA[i] !== equipB[i]) {
+                                result = equipA[i] - equipB[i];
+                                break;
+                            }
+                        }
+                        break;
+
+                    case 'venusFusion':
+                    case 'nabelFusion':
+                        const fusionKey = column === 'venusFusion' ? 'formattedPColumnFusionSummary' : 'formattedQColumnFusionSummary';
+                        const fusionA = getFusionSortScore(a[fusionKey]);
+                        const fusionB = getFusionSortScore(b[fusionKey]);
+                        for (let i = 0; i < fusionA.length; i++) {
+                            if (fusionA[i] !== fusionB[i]) {
+                                result = fusionA[i] - fusionB[i];
+                                break;
+                            }
+                        }
+                        break;
+                }
+                return result * dirMultiplier;
+            });
+
+            renderTable();
         }
 
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:S'); // Changed range to A:S
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:S');
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 const { data } = await response.json();
-                tableBody.innerHTML = '';
+                
                 if (data) {
-                    // Sort data by fame (column H, index 7) in descending order
-                    data.sort((a, b) => (Number(b[7] || 0)) - (Number(a[7] || 0)));
+                    characterData = data.map(row => {
+                        if (!row[0] || !row[1]) return null;
+                        return {
+                            server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
+                            guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
+                            reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0),
+                            formattedRaritySummary: row[13] || '',
+                            averageReinforceAmp: row[14] || '0.0',
+                            formattedPColumnFusionSummary: row[15] || '',
+                            formattedQColumnFusionSummary: row[16] || '',
+                            jobGrowName: row[17] || '',
+                            characterCreationDate: row[18] || ''
+                        };
+                    }).filter(Boolean);
 
-                    console.log('Raw data from sheets Netlify function:', data);
-                    data.forEach(row => {
-                        if (row[0] && row[1]) { // server & nickname
-                            const char = {
-                                server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '',
-                                guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '',
-                                reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0),
-                                formattedRaritySummary: row[13] || '', // Column N
-                                averageReinforceAmp: row[14] || '0.0', // Column O
-                                formattedPColumnFusionSummary: row[15] || '', // Column P
-                                formattedQColumnFusionSummary: row[16] || '', // Column Q
-                                jobGrowName: row[17] || '', // Column R
-                                characterCreationDate: row[18] || '' // Column S
-                            };
-                            console.log('Char object before addCharacterToTable:', char);
-                            addCharacterToTable(char);
-                        }
-                    });
+                    sortData(sortState.column);
                 }
             } catch (error) {
                 showMessage(error.message, true);
@@ -276,8 +371,11 @@
                 const response = await fetch('/.netlify/functions/addCharacter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ server, nickname }) });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
+                
                 showMessage(result.message, false);
-                addCharacterToTable(result.added);
+                characterData.push(result.added);
+                sortData(sortState.column);
+                
                 nicknameInput.value = '';
                 nicknameInput.focus();
             } catch (error) {
@@ -292,6 +390,8 @@
             const row = event.target.closest('tr');
             if (!row || !row.dataset.server) return;
 
+            if (row.classList.contains('refreshing')) return;
+
             const server = row.dataset.server;
             const nickname = row.dataset.nickname;
             
@@ -303,56 +403,19 @@
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message);
 
-                const { refreshed } = result;
-                // Ensure all refreshed values are handled gracefully
-                const processedRefreshed = {
-                    adventureName: refreshed.adventureName || '',
-                    server: refreshed.server || '',
-                    nickname: refreshed.nickname || '',
-                    fame: Number(refreshed.fame || 0),
-                    weaponName: refreshed.weaponName || '',
-                    weaponRarity: refreshed.weaponRarity || '',
-                    reinforce: Number(refreshed.reinforce || 0),
-                    amplification: Number(refreshed.amplification || 0),
-                    refine: Number(refreshed.refine || 0),
-                    guildName: refreshed.guildName || '',
-                    timestamp: refreshed.timestamp || '',
-                    formattedRaritySummary: refreshed.formattedRaritySummary || '',
-                    averageReinforceAmp: refreshed.averageReinforceAmp || '0.0',
-                    formattedPColumnFusionSummary: refreshed.formattedPColumnFusionSummary || '',
-                    formattedQColumnFusionSummary: refreshed.formattedQColumnFusionSummary || '',
-                    jobGrowName: refreshed.jobGrowName || '',
-                    characterCreationDate: refreshed.characterCreationDate || ''
-                };
-
-                row.cells[0].textContent = processedRefreshed.adventureName;
-                row.cells[1].textContent = processedRefreshed.nickname;
-                row.cells[2].textContent = processedRefreshed.jobGrowName; // 직업
-                row.cells[3].textContent = processedRefreshed.fame.toLocaleString('en-US'); // 명성
-                const weaponCell = row.cells[4]; // 무기
-                const weapon = {
-                    name: processedRefreshed.weaponName,
-                    rarity: processedRefreshed.weaponRarity,
-                    reinforce: processedRefreshed.reinforce,
-                    amplification: processedRefreshed.amplification,
-                    refine: processedRefreshed.refine
-                };
-                weaponCell.innerHTML = formatWeapon(weapon);
-
-                // '평균 증폭' column
-                row.cells[5].innerHTML = `<span style="color:#800080">+${processedRefreshed.averageReinforceAmp}</span>`;
-
-                row.cells[6].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column
-                row.cells[7].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedPColumnFusionSummary); // '베누스 융합' column
-                row.cells[8].innerHTML = formatFusionSummaryDisplay(processedRefreshed.formattedQColumnFusionSummary); // '나벨 융합' column
-                row.cells[9].textContent = processedRefreshed.characterCreationDate || '-'; // 캐릭터 생성일
-                row.cells[10].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
+                const charIndex = characterData.findIndex(c => c.server === server && c.nickname === nickname);
+                if (charIndex > -1) {
+                    characterData[charIndex] = { ...characterData[charIndex], ...result.refreshed };
+                }
+                
                 showMessage(result.message, false);
+                sortData(sortState.column);
 
             } catch (error) {
                 showMessage(error.message, true);
             } finally {
-                row.classList.remove('refreshing');
+                const refreshedRow = tableBody.querySelector(`tr[data-nickname="${nickname}"]`);
+                refreshedRow?.classList.remove('refreshing');
             }
         }
 
@@ -360,7 +423,20 @@
         document.addEventListener('DOMContentLoaded', fetchAndDisplayCharacters);
         addButton.addEventListener('click', handleAddCharacter);
         nicknameInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') handleAddCharacter(); });
-        tableBody.addEventListener('click', handleRefreshCharacter);
+        
+        tableBody.addEventListener('click', (event) => {
+            const cell = event.target.closest('td');
+            if (cell && cell.cellIndex === 10) {
+                 handleRefreshCharacter(event);
+            }
+        });
+
+        tableHead.addEventListener('click', (event) => {
+            const header = event.target.closest('th');
+            if (header && header.dataset.column) {
+                sortData(header.dataset.column);
+            }
+        });
 
     </script>
 </body>
