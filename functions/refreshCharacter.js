@@ -86,6 +86,34 @@ exports.handler = async function(event, context) {
     const statusData = await statusRes.json();
     const equipData = await equipRes.json();
 
+    // --- New Logic: Process 11 non-weapon equipment slots ---
+    const nonWeaponEquips = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE');
+
+    const rarityCounts = {
+        '태초': 0,
+        '에픽': 0,
+        '레전더리': 0,
+        '유니크': 0,
+        '레어': 0,
+    };
+
+    nonWeaponEquips.forEach(equip => {
+        const rarity = equip.itemRarity;
+        if (rarityCounts.hasOwnProperty(rarity)) {
+            rarityCounts[rarity]++;
+        }
+    });
+
+    let raritySummary = [];
+    if (rarityCounts['태초'] > 0) raritySummary.push(`태초${rarityCounts['태초']}`);
+    if (rarityCounts['에픽'] > 0) raritySummary.push(`에픽${rarityCounts['에픽']}`);
+    if (rarityCounts['레전더리'] > 0) raritySummary.push(`레전${rarityCounts['레전더리']}`);
+    if (rarityCounts['유니크'] > 0) raritySummary.push(`유닠${rarityCounts['유니크']}`);
+    if (rarityCounts['레어'] > 0) raritySummary.push(`레어${rarityCounts['레어']}`);
+
+    const formattedRaritySummary = raritySummary.join(' ');
+    // --- End New Logic ---
+
     // 4. Extract required data
     const newAdventureName = timelineData.adventureName || '-';
     const newGuildName = timelineData.guildName || '-';
@@ -102,8 +130,8 @@ exports.handler = async function(event, context) {
 
     // 5. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
-    const updateRange = `${sheetName}!C${sheetRowIndex}:M${sheetRowIndex}`;
-    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine]];
+    const updateRange = `${sheetName}!C${sheetRowIndex}:N${sheetRowIndex}`;
+    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary]];
 
     await sheets.spreadsheets.values.update({ spreadsheetId, range: updateRange, valueInputOption: 'USER_ENTERED', resource: { values: valuesToUpdate } });
 
@@ -113,7 +141,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터 정보가 새로고침되었습니다.', 
-          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine }
+          refreshed: { server, nickname, timestamp: newRefreshTimestamp, adventureName: newAdventureName, guildName: newGuildName, fame: newFame, weaponName: newWeaponName, weaponRarity: newWeaponRarity, reinforce: newReinforceValue, amplification: newAmplificationValue, refine: refine, formattedRaritySummary }
       })
     };
 

@@ -67,6 +67,34 @@ exports.handler = async function(event, context) {
     const statusData = await statusRes.json();
     const equipData = await equipRes.json();
 
+    // --- New Logic: Process 11 non-weapon equipment slots ---
+    const nonWeaponEquips = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE');
+
+    const rarityCounts = {
+        '태초': 0,
+        '에픽': 0,
+        '레전더리': 0,
+        '유니크': 0,
+        '레어': 0,
+    };
+
+    nonWeaponEquips.forEach(equip => {
+        const rarity = equip.itemRarity;
+        if (rarityCounts.hasOwnProperty(rarity)) {
+            rarityCounts[rarity]++;
+        }
+    });
+
+    let raritySummary = [];
+    if (rarityCounts['태초'] > 0) raritySummary.push(`태초${rarityCounts['태초']}`);
+    if (rarityCounts['에픽'] > 0) raritySummary.push(`에픽${rarityCounts['에픽']}`);
+    if (rarityCounts['레전더리'] > 0) raritySummary.push(`레전${rarityCounts['레전더리']}`);
+    if (rarityCounts['유니크'] > 0) raritySummary.push(`유닠${rarityCounts['유니크']}`);
+    if (rarityCounts['레어'] > 0) raritySummary.push(`레어${rarityCounts['레어']}`);
+
+    const formattedRaritySummary = raritySummary.join(' ');
+    // --- End New Logic ---
+
     // 3. Extract required data
     const adventureName = timelineData.adventureName || '-';
     const guildName = timelineData.guildName || '-';
@@ -99,8 +127,8 @@ exports.handler = async function(event, context) {
 
     // 6. Append data to the sheet
     const timestamp = getKstTimestamp();
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine]];
-    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:M`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
+    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary]];
+    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:N`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
 
     // 7. Return success response
     return {
@@ -108,7 +136,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine }
+          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary }
       })
     };
 
