@@ -48,7 +48,8 @@
                 <th>무기</th>
                 <th>평균 증폭</th>
                 <th>장비</th>
-                <th>융합석</th>
+                <th>융합석 (P)</th>
+                <th>융합석 (Q)</th>
                 <th>새로고침</th>
             </tr>
         </thead>
@@ -182,14 +183,15 @@
             const avgAmpCell = row.insertCell(4);
             avgAmpCell.innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
 
-            row.insertCell(5).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column (index shifted)
-            row.insertCell(6).innerHTML = formatRaritySummary(char.formattedFusionRaritySummary); // New '융합석' column
-            row.insertCell(7).textContent = formatTimestamp(char.timestamp); // '새로고침' column (index shifted)
+            row.insertCell(5).innerHTML = formatRaritySummary(char.formattedRaritySummary); // '장비' column
+            row.insertCell(6).textContent = char.formattedPColumnFusionSummary; // '융합석 (P)' column
+            row.insertCell(7).textContent = char.formattedQColumnFusionSummary; // '융합석 (Q)' column
+            row.insertCell(8).textContent = formatTimestamp(char.timestamp); // '새로고침' column
         }
 
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:P'); // Changed range to A:P
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:Q'); // Changed range to A:Q
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 const { data } = await response.json();
                 tableBody.innerHTML = '';
@@ -203,7 +205,8 @@
                                 reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0),
                                 formattedRaritySummary: row[13] || '', // Column N
                                 averageReinforceAmp: row[14] || '0.0', // Column O
-                                formattedFusionRaritySummary: row[15] || '' // Column P
+                                formattedPColumnFusionSummary: row[15] || '', // Column P
+                                formattedQColumnFusionSummary: row[16] || '' // Column Q
                             };
                             console.log('Char object before addCharacterToTable:', char);
                             addCharacterToTable(char);
@@ -271,13 +274,14 @@
                     timestamp: refreshed.timestamp || '',
                     formattedRaritySummary: refreshed.formattedRaritySummary || '',
                     averageReinforceAmp: refreshed.averageReinforceAmp || '0.0',
-                    formattedFusionRaritySummary: refreshed.formattedFusionRaritySummary || ''
+                    formattedPColumnFusionSummary: refreshed.formattedPColumnFusionSummary || '',
+                    formattedQColumnFusionSummary: refreshed.formattedQColumnFusionSummary || ''
                 };
 
                 row.cells[0].textContent = processedRefreshed.adventureName;
                 // row.cells[1] (nickname) is already set by row.dataset.nickname and does not change
                 row.cells[2].textContent = processedRefreshed.fame.toLocaleString('en-US');
-                const weaponCell = row.cells[3]; // Re-introduced this line
+                const weaponCell = row.cells[3];
                 const weapon = {
                     name: processedRefreshed.weaponName,
                     rarity: processedRefreshed.weaponRarity,
@@ -286,14 +290,14 @@
                     refine: processedRefreshed.refine
                 };
                 weaponCell.innerHTML = formatWeapon(weapon);
-                // weaponCell.style.color = getWeaponColor(processedRefreshed.weaponRarity); // Handled by formatWeapon now
 
                 // New '평균 증폭' column
                 row.cells[4].innerHTML = `<span style="color:#800080">+${processedRefreshed.averageReinforceAmp}</span>`;
 
-                row.cells[5].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column (index shifted)
-                row.cells[6].innerHTML = formatRaritySummary(processedRefreshed.formattedFusionRaritySummary); // New '융합석' column
-                row.cells[7].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column (index shifted)
+                row.cells[5].innerHTML = formatRaritySummary(processedRefreshed.formattedRaritySummary); // '장비' column
+                row.cells[6].textContent = processedRefreshed.formattedPColumnFusionSummary; // '융합석 (P)' column
+                row.cells[7].textContent = processedRefreshed.formattedQColumnFusionSummary; // '융합석 (Q)' column
+                row.cells[8].textContent = formatTimestamp(processedRefreshed.timestamp); // '새로고침' column
                 showMessage(result.message, false);
 
             } catch (error) {

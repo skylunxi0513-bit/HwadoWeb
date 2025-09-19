@@ -13,6 +13,38 @@ const SERVER_MAP = {
     '바칼': 'bakal',
 };
 
+// Constants for fusion stone categorization
+const FUSION_SET_PREFIXES = ['황금', '용투', '정화', '행운', '돌파', '자연', '전장', '영원', '사냥', '영역'];
+const FUSION_UNIQUE_PREFIXES = ['욕망', '배신', '기품', '테아나', '무지', '창조', '축복', '설계'];
+
+// Constants for equipment slots (P-column and Q-column)
+const P_COLUMN_SLOTS = ['SHOULDER', 'TOP', 'BOTTOM', 'BELT', 'SHOES']; // 머리어깨, 상의, 하의, 벨트, 신발
+const Q_COLUMN_SLOTS = ['BRACELET', 'NECKLACE', 'RING', 'SUB_EQUIPMENT', 'EARRING', 'MAGIC_STONE']; // 팔찌, 목걸이, 반지, 보조장비, 귀걸이, 마법석
+
+/**
+ * Categorizes a fusion stone based on its name prefix and rarity.
+ * @param {string} itemName - The full name of the fusion stone (e.g., '축복 : 작열하는 태양').
+ * @param {string} itemRarity - The rarity of the fusion stone (e.g., '에픽', '유니크').
+ * @returns {string} The category string (e.g., '고유 에픽', '세트 유니크', '기타').
+ */
+function getFusionStoneCategory(itemName, itemRarity) {
+    const parts = itemName.split(' : ');
+    const prefix = parts.length > 1 ? parts[0] : '';
+
+    let type = '기타';
+    if (FUSION_SET_PREFIXES.includes(prefix)) {
+        type = '세트';
+    } else if (FUSION_UNIQUE_PREFIXES.includes(prefix)) {
+        type = '고유';
+    }
+
+    if (type === '기타') {
+        return '기타';
+    } else {
+        return `${type} ${itemRarity}`;
+    }
+}
+
 function getKstTimestamp() {
     const now = new Date();
     const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
@@ -110,37 +142,44 @@ exports.handler = async function(event, context) {
     const formattedRaritySummary = raritySummary.join(' ');
     // --- End New Logic (Rarity Summary) ---
 
-    // --- New Logic: Process Fusion Stones ---
-    const fusionRarityCounts = {
-        '태초': 0,
-        '에픽': 0,
-        '레전더리': 0,
-        '유니크': 0,
-        '레어': 0,
-    };
+    // --- New Logic: Process Fusion Stones (Categorization) ---
+    const pColumnFusionCounts = [0, 0, 0, 0, 0]; // 고유 에픽, 세트 에픽, 고유 유니크, 세트 유니크, 기타
+    const qColumnFusionCounts = [0, 0, 0, 0, 0]; // 고유 에픽, 세트 에픽, 고유 유니크, 세트 유니크, 기타
 
-    nonWeaponEquips.forEach(equip => {
-        const fusionStone = equip.fusionStone; // Corrected key based on search results
-        console.log('Processing equip:', equip.slotId, 'Fusion Stone found:', fusionStone);
+    equipData.equipment.forEach(equip => {
+        if (equip.fusionStone) {
+            const fusionStoneName = equip.fusionStone.itemName;
+            const fusionStoneRarity = equip.fusionStone.itemRarity;
+            const equipSlotId = equip.slotId;
 
-        if (equip.upgradeInfo && equip.upgradeInfo.itemRarity) {
-            const rarity = equip.upgradeInfo.itemRarity; // Corrected path to rarity
-            if (fusionRarityCounts.hasOwnProperty(rarity)) {
-                fusionRarityCounts[rarity]++;
+            const category = getFusionStoneCategory(fusionStoneName, fusionStoneRarity);
+
+            let targetCounts;
+            if (P_COLUMN_SLOTS.includes(equipSlotId)) {
+                targetCounts = pColumnFusionCounts;
+            } else if (Q_COLUMN_SLOTS.includes(equipSlotId)) {
+                targetCounts = qColumnFusionCounts;
+            } else {
+                return; // Not a relevant slot for fusion stone categorization
+            }
+
+            switch (category) {
+                case '고유 에픽': targetCounts[0]++; break;
+                case '세트 에픽': targetCounts[1]++; break;
+                case '고유 유니크': targetCounts[2]++; break;
+                case '세트 유니크': targetCounts[3]++; break;
+                case '기타': targetCounts[4]++; break;
             }
         }
     });
 
-    let fusionRaritySummary = [];
-    if (fusionRarityCounts['태초'] > 0) fusionRaritySummary.push(`태초${fusionRarityCounts['태초']}`);
-    if (fusionRarityCounts['에픽'] > 0) fusionRaritySummary.push(`에픽${fusionRarityCounts['에픽']}`);
-    if (fusionRarityCounts['레전더리'] > 0) fusionRaritySummary.push(`레전더리${fusionRarityCounts['레전더리']}`);
-    if (fusionRarityCounts['유니크'] > 0) fusionRaritySummary.push(`유니크${fusionRarityCounts['유니크']}`);
-    if (fusionRarityCounts['레어'] > 0) fusionRaritySummary.push(`레어${fusionRarityCounts['레어']}`);
+    const formatFusionCounts = (counts) => {
+        return counts.join('');
+    };
 
-    const formattedFusionRaritySummary = fusionRaritySummary.join(' ');
-    console.log('Formatted Fusion Rarity Summary:', formattedFusionRaritySummary);
-    // --- End New Logic (Fusion Stones) ---
+    const formattedPColumnFusionSummary = formatFusionCounts(pColumnFusionCounts);
+    const formattedQColumnFusionSummary = formatFusionCounts(qColumnFusionCounts);
+    // --- End New Logic: Process Fusion Stones (Categorization) ---
 
     // --- New Logic: Calculate Average Reinforce/Amplification ---
     let totalReinforceAmp = 0;
@@ -182,9 +221,9 @@ exports.handler = async function(event, context) {
 
     // 6. Append data to the sheet
     const timestamp = getKstTimestamp();
-    // Extend range to A:P and add formattedFusionRaritySummary
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedFusionRaritySummary]];
-    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:P`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
+    // Extend range to A:Q and add formattedPColumnFusionSummary, formattedQColumnFusionSummary
+    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary]];
+    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:Q`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
 
     // 7. Return success response
     return {
@@ -192,7 +231,7 @@ exports.handler = async function(event, context) {
       headers: { 'Access-Control-Allow-Origin': '*' },
       body: JSON.stringify({ 
           message: '캐릭터가 성공적으로 추가되었습니다.', 
-          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedFusionRaritySummary }
+          added: { server, nickname, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforce: reinforceValue, amplification: amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary }
       })
     };
 
