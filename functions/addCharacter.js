@@ -123,8 +123,8 @@ exports.handler = async function(event, context) {
         const fusionStone = equip.fusionStone; // Corrected key based on search results
         console.log('Processing equip:', equip.slotId, 'Fusion Stone found:', fusionStone);
 
-        if (fusionStone && fusionStone.itemRarity) {
-            const rarity = fusionStone.itemRarity;
+        if (equip.upgradeInfo && equip.upgradeInfo.itemRarity) {
+            const rarity = equip.upgradeInfo.itemRarity; // Corrected path to rarity
             if (fusionRarityCounts.hasOwnProperty(rarity)) {
                 fusionRarityCounts[rarity]++;
             }
