@@ -181,7 +181,25 @@ exports.handler = async function(event, context) {
         const newRefreshTimestamp = getKstTimestamp();
         const originalRegisterDate = rows[oldestRowIndex - 1][3] || '';
         const updateRange = `${sheetName}!C${oldestRowIndex}:S${oldestRowIndex}`;
-        const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate]];
+        const valuesToUpdate = [[
+            characterId || null,
+            originalRegisterDate || '',
+            newRefreshTimestamp || null,
+            newAdventureName || '-',
+            newGuildName || '-',
+            newFame || 0,
+            newWeaponName || 'N/A',
+            newWeaponRarity || 'N/A',
+            newReinforceValue || 0,
+            newAmplificationValue || 0,
+            refine || 0,
+            formattedRaritySummary || '',
+            averageReinforceAmp || '0.00',
+            formattedPColumnFusionSummary || '',
+            formattedQColumnFusionSummary || '',
+            newJobGrowName || null,
+            newCharacterCreationDate || null
+        ]];
         
         await sheets.spreadsheets.values.update({ spreadsheetId, range: updateRange, valueInputOption: 'USER_ENTERED', resource: { values: valuesToUpdate } });
 
