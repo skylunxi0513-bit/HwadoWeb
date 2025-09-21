@@ -1,2 +1,5 @@
 [functions]
   directory = "functions"
+
+[functions.autoRefresh]
+  schedule = "*/5 * * * *"
