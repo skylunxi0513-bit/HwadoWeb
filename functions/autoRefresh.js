@@ -84,23 +84,27 @@ exports.handler = async function(event, context) {
         let oldestDate = new Date();
         let oldestRowIndex = -1;
 
-        rows.slice(1).forEach((row, index) => {
-            const timestamp = row[4]; // Column E
-            const charDate = parseDate(timestamp);
-            if (charDate && charDate < oldestDate) {
-                oldestDate = charDate;
-                oldestChar = { server: row[0], nickname: row[1] };
-                oldestRowIndex = index + 2; // +1 for slice, +1 for 0-based index
-            }
-        });
+        const characterRows = rows.slice(1); // Exclude header row
 
-        if (!oldestChar) {
-            console.log('Could not find a character to refresh.');
-            return { statusCode: 200, body: 'No character found to refresh.' };
+        const oldestCharInfo = characterRows
+            .map((row, index) => ({
+                server: row[0],
+                nickname: row[1],
+                timestamp: row[4], // Column E
+                date: parseDate(row[4]),
+                rowIndex: index + 2 // Sheet row index (1-based + 1 for header)
+            }))
+            .filter(char => char.date) // Filter out any characters where date parsing failed
+            .sort((a, b) => a.date - b.date)[0]; // Sort by date ascending and pick the first one
+
+        if (!oldestCharInfo) {
+            console.log('Could not find a valid character to refresh.');
+            return { statusCode: 200, body: 'No valid character to refresh.' };
         }
+
+        const { server, nickname, rowIndex: oldestRowIndex } = oldestCharInfo;
         
-        console.log(`Oldest character found: ${oldestChar.nickname} on server ${oldestChar.server}. Refreshing...`);
-        const { server, nickname } = oldestChar;
+        console.log(`Oldest character found: ${nickname} on server ${server}. Refreshing...`);
         const serverId = SERVER_MAP[server];
         if (!serverId) throw new Error(`Invalid server name: ${server}`);
 
