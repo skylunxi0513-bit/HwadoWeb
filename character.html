@@ -443,8 +443,10 @@
             adventureFilterModal.style.display = 'none';
             displayData();
         });
-        adventureFilterModal.addEventListener('click', () => {
-            adventureFilterCloseBtn.click();
+        adventureFilterModal.addEventListener('click', (event) => {
+            if (event.target === adventureFilterModal) {
+                adventureFilterCloseBtn.click();
+            }
         });
         adventureFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') adventureFilterCloseBtn.click(); });
 
