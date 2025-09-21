@@ -267,12 +267,20 @@
                     }
 
                     let countSuffix = '';
-                    if (blackFangCount > 0 && uniqueCount > 0) {
-                        countSuffix = `(${blackFangCount}/${uniqueCount})`;
-                    } else if (blackFangCount > 0) {
-                        countSuffix = `(${blackFangCount})`;
-                    } else if (uniqueCount > 0) {
-                        countSuffix = `(0/${uniqueCount})`; // User requested 0 placeholder
+                    let blackFangColored = blackFangCount > 0 ? `<span style="color: red;">${blackFangCount}</span>` : '0';
+
+                    if (rarity === '레전더리') {
+                        if (uniqueCount > 0) {
+                            countSuffix = `(${uniqueCount})`;
+                        }
+                    } else { // For other rarities
+                        if (blackFangCount > 0 && uniqueCount > 0) {
+                            countSuffix = `(${blackFangColored}/${uniqueCount})`;
+                        } else if (blackFangCount > 0) {
+                            countSuffix = `(${blackFangColored})`;
+                        } else if (uniqueCount > 0) {
+                            countSuffix = `(${blackFangColored}/${uniqueCount})`; // Always show 0 for blackFang if unique exists
+                        }
                     }
 
                     html += `<span style="color:${getWeaponColor(rarity)}">${displayRarity}${count}${countSuffix}</span> `;
