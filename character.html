@@ -269,16 +269,18 @@
                     let countSuffix = '';
                     let blackFangColored = blackFangCount > 0 ? `<span style="color: red;">${blackFangCount}</span>` : '0';
 
-                    if (rarity === '레전더리') {
+                    if (rarity === '레전더리' || rarity === '유니크') { // MODIFIED CONDITION
                         if (uniqueCount > 0) {
-                            countSuffix = `(${uniqueCount})`;
+                            countSuffix = `(${uniqueCount})`; // Only unique count for Legendary and Unique
                         }
                     } else { // For other rarities
                         if (blackFangCount > 0 && uniqueCount > 0) {
                             countSuffix = `(${blackFangColored}/${uniqueCount})`;
-                        } else if (blackFangCount > 0) {
+                        }
+                        else if (blackFangCount > 0) {
                             countSuffix = `(${blackFangColored})`;
-                        } else if (uniqueCount > 0) {
+                        }
+                        else if (uniqueCount > 0) {
                             countSuffix = `(${blackFangColored}/${uniqueCount})`; // Always show 0 for blackFang if unique exists
                         }
                     }
