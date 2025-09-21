@@ -251,8 +251,6 @@
         }
         function parseDate(dateString) {
             if (!dateString) return new Date(0);
-            const creationMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\./);
-            if (creationMatch) return new Date(creationMatch[1], creationMatch[2] - 1, creationMatch[3]);
             const timestampMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
             if (timestampMatch) {
                 let [, year, month, day, ampm, hour, minute, second] = timestampMatch;
@@ -261,6 +259,8 @@
                 if (ampm === '오전' && hour === 12) hour = 0;
                 return new Date(year, month - 1, day, hour, minute, second);
             }
+            const creationMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\./);
+            if (creationMatch) return new Date(creationMatch[1], creationMatch[2] - 1, creationMatch[3]);
             return new Date(0);
         }
 
