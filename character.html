@@ -248,11 +248,34 @@
             if (!summaryString) return '';
             let html = '';
             summaryString.split(' ').forEach(part => {
-                const match = part.match(/([가-힣]+)(\d+)/);
-                if (match) {
-                    let rarity = match[1], count = match[2], displayRarity = rarity;
+                const parts = part.split('|');
+                const rarityMatch = parts[0].match(/([가-힣]+)(\d+)/);
+                if (rarityMatch) {
+                    let rarity = rarityMatch[1], count = rarityMatch[2], displayRarity = rarity;
                     if (rarity === '레전더리') displayRarity = '레전'; else if (rarity === '유니크') displayRarity = '유닠';
-                    html += `<span style="color:${getWeaponColor(rarity)}">${displayRarity}${count}</span> `;
+
+                    let blackFangCount = 0;
+                    let uniqueCount = 0;
+
+                    if (parts.length > 1) {
+                        const blackFangMatch = parts[1].match(/흑아(\d+)/);
+                        if (blackFangMatch) blackFangCount = parseInt(blackFangMatch[1], 10);
+                    }
+                    if (parts.length > 2) {
+                        const uniqueMatch = parts[2].match(/고유(\d+)/);
+                        if (uniqueMatch) uniqueCount = parseInt(uniqueMatch[1], 10);
+                    }
+
+                    let countSuffix = '';
+                    if (blackFangCount > 0 && uniqueCount > 0) {
+                        countSuffix = `(${blackFangCount}/${uniqueCount})`;
+                    } else if (blackFangCount > 0) {
+                        countSuffix = `(${blackFangCount})`;
+                    } else if (uniqueCount > 0) {
+                        countSuffix = `(0/${uniqueCount})`; // User requested 0 placeholder
+                    }
+
+                    html += `<span style="color:${getWeaponColor(rarity)}">${displayRarity}${count}${countSuffix}</span> `;
                 }
             });
             return html.trim();
