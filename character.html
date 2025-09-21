@@ -13,7 +13,7 @@
         .input-container button:hover { background-color: #f0f0f0; }
         #message-area { text-align: center; min-height: 20px; margin-bottom: 20px; color: green; }
         #message-area.error { color: red; }
-        #character-table { margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 1130px; border: 1px solid #ddd; }
+        #character-table { margin: 0 auto; border-collapse: collapse; width: 90%; max-width: 1243px; border: 1px solid #ddd; }
         #character-table th, #character-table td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 15px; }
         #character-table th { background-color: #f2f2f2; cursor: pointer; }
         #character-table th:hover { background-color: #e0e0e0; }
@@ -157,6 +157,8 @@
             { key: 'timestamp', label: '새로고침' },
         ];
         let columnVisibility = columnConfig.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
+        columnVisibility.characterCreationDate = false;
+        columnVisibility.timestamp = false;
 
         // --- Formatting Functions ---
         function formatTimestamp(fullTimestamp) {
