@@ -212,7 +212,7 @@
             else if (rarity === '에픽') nickname = name.includes('서사시') ? '서사시' : '에거시';
             else if (rarity === '태초') {
                 if (name.includes('태초의 별')) nickname = '태별';
-                else if (name.includes('첫')) nickname = '원만 무기';
+                else if (name.includes('첫')) nickname = '원만';
                 else nickname = '태거시';
             }
             let prefix = '';
@@ -246,16 +246,44 @@
         }
 
         // --- Sorting & Filtering Helpers ---
-        const RARITY_ORDER = { '태초': 5, '에픽': 4, '레전더리': 3, '유니크': 2, '레어': 1 };
+        const RARITY_ORDER = { '태초': 5, '에픽': 4, '원만': 3.5, '레전더리': 3, '유니크': 2, '레어': 1 };
         function getWeaponSortScore(char) {
             const { weaponRarity, weaponName, reinforce, amplification } = char;
-            const rarityScore = RARITY_ORDER[weaponRarity] || 0;
-            let subRarityScore = 0;
-            if (weaponRarity === '태초' && weaponName.includes('태거시')) subRarityScore = 1;
-            else if (weaponRarity === '에픽' && weaponName.includes('에거시')) subRarityScore = 1;
-            else if (weaponRarity === '레전더리' && weaponName.includes('레거시')) subRarityScore = 1;
-            const mainValue = Math.max(reinforce || 0, amplification || 0);
-            return [rarityScore, subRarityScore, mainValue];
+
+            // 1. Rarity Score with '원만' adjustment
+            let rarityScore = RARITY_ORDER[weaponRarity] || 0;
+            if (weaponRarity === '태초' && weaponName.includes('첫')) { // Check for '원만 무기'
+                rarityScore = RARITY_ORDER['원만']; // Use the new score
+            }
+
+            // 2. Sub-sorting by Weapon Name within Rarity
+            const WEAPON_NAME_SUB_ORDER = {
+                '태초': { '태거시': 2, '태초의 별': 1 }, // Higher score means higher priority
+                '에픽': { '에거시': 2, '서사시': 1 },
+                '레전더리': { '레거시': 2, '전승': 1 }
+            };
+            let nameSubScore = 0;
+            if (WEAPON_NAME_SUB_ORDER[weaponRarity]) {
+                const specificOrder = WEAPON_NAME_SUB_ORDER[weaponRarity];
+                if (weaponRarity === '태초') {
+                    if (weaponName.includes('태거시')) nameSubScore = specificOrder['태거시'];
+                    else if (weaponName.includes('태초의 별')) nameSubScore = specificOrder['태초의 별'];
+                } else if (weaponRarity === '에픽') {
+                    if (weaponName.includes('에거시')) nameSubScore = specificOrder['에거시'];
+                    else if (weaponName.includes('서사시')) nameSubScore = specificOrder['서사시'];
+                } else if (weaponRarity === '레전더리') {
+                    if (weaponName.includes('레거시')) nameSubScore = specificOrder['레거시'];
+                    else if (weaponName.includes('전승')) nameSubScore = specificOrder['전승'];
+                }
+            }
+
+            // 3. Reinforce/Amplification Weight
+            let finalReinforceAmpValue = reinforce || 0;
+            if (amplification > 0) {
+                finalReinforceAmpValue = amplification + 1.5; // Apply weight
+            }
+
+            return [rarityScore, nameSubScore, finalReinforceAmpValue];
         }
         function getEquipmentSortScore(char) {
             const summary = char.formattedRaritySummary || '';
