@@ -214,7 +214,7 @@ exports.handler = async function(event, context) {
     const reinforceValue = amplificationName ? 0 : reinforce;
 
     // --- New Logic: Process 11 non-weapon equipment slots ---
-    const nonWeaponEquipsFiltered = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE');
+    const nonWeaponEquipsFiltered = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE' && e.slotId !== 'SUPPORT_WEAPON');
 
     const rarityCounts = {
         '태초': 0,
