@@ -426,7 +426,7 @@
                 { key: 'nickname', label: '닉네임' }, // Nickname and Server are now in title
                 { key: 'jobGrowName', label: '직업' },
                 { key: 'fame', label: '명성', format: (val) => Number(val || 0).toLocaleString('en-US') },
-                { key: 'adventureGuild', label: '모험단/길드', format: (val, char) => `길드: ${char.guildName || '-'} / 모험단: ${char.adventureName || '-'}` },
+                { key: 'adventureGuild', label: '', format: (val, char) => `<strong>길드</strong>: ${char.guildName || '-'} / <strong>모험단</strong>: ${char.adventureName || '-'}` },
                 { key: 'weapon', label: '무기', format: (val, char) => {
                     const weapon = { name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine };
                     let mainValue = 0, mainValueColor = '';
