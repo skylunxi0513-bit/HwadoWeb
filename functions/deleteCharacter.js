@@ -39,7 +39,7 @@ exports.handler = async function(event, context) {
             requests: [{
                 deleteDimension: {
                     range: {
-                        sheetId: 0, // Assuming the first sheet (index 0)
+                        sheetId: 2006505424, // Correct sheetId for '캐릭터' sheet
                         dimension: 'ROWS',
                         startIndex: sheetRowIndex - 1, // 0-indexed for API request
                         endIndex: sheetRowIndex // exclusive end index
