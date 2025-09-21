@@ -380,6 +380,8 @@
                 row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
                 const weaponCell = row.insertCell(4);
                 weaponCell.innerHTML = formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine });
+                const scores = getWeaponSortScore(char);
+                weaponCell.innerHTML += `<br><small>R:${scores[0]} N:${scores[1]} A:${scores[2].toFixed(1)}</small>`;
                 row.insertCell(5).innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
                 row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary);
                 row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
