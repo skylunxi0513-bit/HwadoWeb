@@ -435,12 +435,17 @@
         });
 
         // Adventure Filter Modal Listeners
+        document.querySelector('#adventure-filter-modal .modal-content').addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
         adventureFilterCloseBtn.addEventListener('click', () => {
             adventureNameFilter = adventureFilterInput.value;
             adventureFilterModal.style.display = 'none';
             displayData();
         });
-        adventureFilterModal.addEventListener('click', (event) => { if (event.target === adventureFilterModal) adventureFilterCloseBtn.click(); });
+        adventureFilterModal.addEventListener('click', () => {
+            adventureFilterCloseBtn.click();
+        });
         adventureFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') adventureFilterCloseBtn.click(); });
 
     </script>
