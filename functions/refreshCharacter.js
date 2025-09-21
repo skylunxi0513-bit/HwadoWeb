@@ -3,15 +3,16 @@ const fetch = require('node-fetch');
 
 const API_KEY = 'gvn930ycSXuc3OpEcHhWsUx1Ka9El1X5';
 const SERVER_MAP = {
-    '카인': 'cain',
-    '디레지에': 'diregie',
-    '시로코': 'siroco',
-    '프레이': 'prey',
-    '카시야스': 'casillas',
-    '힐더': 'hilder',
-    '안톤': 'anton',
-    '바칼': 'bakal',
+    '카인': 'cain', '디레지에': 'diregie', '시로코': 'siroco', '프레이': 'prey',
+    '카시야스': 'casillas', '힐더': 'hilder', '안톤': 'anton', '바칼': 'bakal',
 };
+
+const BUFFER_JOBS = ['인챈트리스', '크루세이더', '패러메딕', '뮤즈'];
+
+function getRole(jobGrowName) {
+    const cleanJobName = (jobGrowName || '').replace('眞 ', '');
+    return BUFFER_JOBS.includes(cleanJobName) ? '버퍼' : '딜러';
+}
 
 // Constants for fusion stone categorization
 const FUSION_SET_PREFIXES = ['황금', '용투', '정화', '행운', '돌파', '자연', '전장', '영원', '사냥', '영역', '암영', '영혼'];
@@ -205,134 +206,12 @@ exports.handler = async function(event, context) {
     const characterId = charInfoData.rows[0].characterId;
     const newJobGrowName = charInfoData.rows[0].jobGrowName; // Added jobGrowName
     const newCharacterCreationDate = await getCharacterCreationDate(serverId, characterId, API_KEY); // Added character creation date
-
-    const timelineUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/timeline?limit=1&apikey=${API_KEY}`;
-    const statusUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/status?apikey=${API_KEY}`;
-    const equipUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/equip/equipment?apikey=${API_KEY}`;
-
-    const [timelineRes, statusRes, equipRes] = await Promise.all([fetch(timelineUrl), fetch(statusUrl), fetch(equipUrl)]);
-    if (!timelineRes.ok || !statusRes.ok || !equipRes.ok) throw new Error('Neople API 병렬 호출 실패');
-
-    const timelineData = await timelineRes.json();
-    const statusData = await statusRes.json();
-    const equipData = await equipRes.json();
-    console.log('equipData.equipment:', equipData.equipment);
-
-    const newAdventureName = timelineData.adventureName || '-';
-    const newGuildName = timelineData.guildName || '-';
-    const newFame = statusData.status.find(s => s.name === '모험가 명성')?.value || 0;
-
-    const weapon = equipData.equipment.find(e => e.slotId === 'WEAPON');
-    const newWeaponName = weapon?.itemName || 'N/A';
-    const newWeaponRarity = weapon?.itemRarity || 'N/A';
-    const reinforce = weapon?.reinforce || 0;
-    const refine = weapon?.refine || 0;
-    const amplificationName = weapon?.amplificationName;
-    const newAmplificationValue = amplificationName ? reinforce : 0;
-    const newReinforceValue = amplificationName ? 0 : reinforce;
-
-    // --- New Logic: Process 11 non-weapon equipment slots ---
-    const nonWeaponEquipsFiltered = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE' && e.slotId !== 'SUPPORT_WEAPON');
-
-    const rarityCounts = {
-        '태초': 0,
-        '에픽': 0,
-        '레전더리': 0,
-        '유니크': 0,
-        '레어': 0,
-    };
-    const blackFangCounts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
-    const uniqueCounts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
-
-    nonWeaponEquipsFiltered.forEach(equip => {
-        const rarity = equip.itemRarity;
-        if (rarityCounts.hasOwnProperty(rarity)) {
-            rarityCounts[rarity]++;
-            if (equip.itemName && equip.itemName.includes('흑아')) {
-                blackFangCounts[rarity]++;
-            }
-            if (equip.itemName && equip.itemName.includes('고유')) {
-                uniqueCounts[rarity]++;
-            }
-        }
-    });
-
-    let raritySummary = [];
-    const allRarities = ['태초', '에픽', '레전더리', '유니크', '레어'];
-    allRarities.forEach(rarity => {
-        if (rarityCounts[rarity] > 0) {
-            raritySummary.push(`${rarity}${rarityCounts[rarity]}|흑아${blackFangCounts[rarity]}|고유${uniqueCounts[rarity]}`);
-        }
-    });
-
-    const formattedRaritySummary = raritySummary.join(' ');
-    // --- End New Logic (Rarity Summary) ---
-
-    // --- New Logic: Process Fusion Stones (Categorization) ---
-    const pColumnFusionCounts = [0, 0, 0, 0, 0]; // 고유 에픽, 세트 에픽, 고유 유니크, 세트 유니크, 기타
-    const qColumnFusionCounts = [0, 0, 0, 0, 0]; // 고유 에픽, 세트 에픽, 고유 유니크, 세트 유니크, 기타
-
-    equipData.equipment.forEach(equip => {
-        if (equip.upgradeInfo && equip.upgradeInfo.itemName && equip.upgradeInfo.itemRarity) {
-            const fusionStoneName = equip.upgradeInfo.itemName;
-            const fusionStoneRarity = equip.upgradeInfo.itemRarity;
-            const equipSlotId = equip.slotId;
-
-            const category = getFusionStoneCategory(fusionStoneName, fusionStoneRarity);
-
-            let targetCounts;
-            if (P_COLUMN_SLOTS.includes(equipSlotId)) {
-                targetCounts = pColumnFusionCounts;
-            } else if (Q_COLUMN_SLOTS.includes(equipSlotId)) {
-                targetCounts = qColumnFusionCounts;
-            } else {
-                return; // Not a relevant slot for fusion stone categorization
-            }
-
-            switch (category) {
-                case '고유 에픽': targetCounts[0]++; break;
-                case '세트 에픽': targetCounts[1]++; break;
-                case '고유 유니크': targetCounts[2]++; break;
-                case '세트 유니크': targetCounts[3]++; break;
-                case '기타': targetCounts[4]++; break;
-            }
-        }
-    });
-
-    const formatFusionCounts = (counts) => {
-        return counts.join(' ');
-    };
-
-    const formattedPColumnFusionSummary = formatFusionCounts(pColumnFusionCounts);
-    const formattedQColumnFusionSummary = formatFusionCounts(qColumnFusionCounts);
-    // --- End New Logic (Categorization) ---
-
-    // --- New Logic: Calculate Average Reinforce/Amplification ---
-    let totalReinforceAmp = 0;
-    let itemCountForAverage = 0;
-
-    // Add non-weapon equips
-    nonWeaponEquipsFiltered.forEach(equip => {
-        const equipReinforce = equip.reinforce || 0;
-        const equipAmplification = equip.amplification || 0;
-        totalReinforceAmp += (equipAmplification > 0 ? equipAmplification : equipReinforce);
-        itemCountForAverage++;
-    });
-
-    // Add weapon if it's an amplification weapon
-    const isWeaponAmplified = amplificationName; // Use amplificationName which is already extracted
-    if (isWeaponAmplified) {
-        totalReinforceAmp += (reinforce || 0); // Use reinforce which is already extracted
-        itemCountForAverage++;
-    }
-
-    const averageReinforceAmp = itemCountForAverage > 0 ? (totalReinforceAmp / itemCountForAverage).toFixed(2) : '0.00'; // Changed to toFixed(2)
-    // --- End New Logic (Average) ---
+    const newRole = getRole(newJobGrowName); // NEW: Determine role
 
     // 5. Update the sheet
     const newRefreshTimestamp = getKstTimestamp();
-    const updateRange = `${sheetName}!C${sheetRowIndex}:S${sheetRowIndex}`; // Adjusted range to include S column
-    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate]]; // Added newJobGrowName and newCharacterCreationDate
+    const updateRange = `${sheetName}!C${sheetRowIndex}:T${sheetRowIndex}`; // UPDATED: range to include T column
+    const valuesToUpdate = [[characterId, originalRegisterDate, newRefreshTimestamp, newAdventureName, newGuildName, newFame, newWeaponName, newWeaponRarity, newReinforceValue, newAmplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate, newRole]]; // UPDATED: Added newRole
 
     await sheets.spreadsheets.values.update({ spreadsheetId, range: updateRange, valueInputOption: 'USER_ENTERED', resource: { values: valuesToUpdate } });
 
