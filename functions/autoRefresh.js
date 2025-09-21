@@ -75,32 +75,37 @@ exports.handler = async function(event, context) {
 
         const existingData = await sheets.spreadsheets.values.get({ spreadsheetId, range: `${sheetName}!A:E` });
         const rows = existingData.data.values || [];
+        console.log(`Found ${rows.length} total rows in the sheet.`);
+
         if (rows.length <= 1) {
             console.log('No character data to refresh.');
             return { statusCode: 200, body: 'No data.' };
         }
 
-        let oldestChar = null;
-        let oldestDate = new Date();
-        let oldestRowIndex = -1;
-
         const characterRows = rows.slice(1); // Exclude header row
 
+        console.log('Parsing timestamps for all characters...');
         const oldestCharInfo = characterRows
-            .map((row, index) => ({
-                server: row[0],
-                nickname: row[1],
-                timestamp: row[4], // Column E
-                date: parseDate(row[4]),
-                rowIndex: index + 2 // Sheet row index (1-based + 1 for header)
-            }))
+            .map((row, index) => {
+                const charInfo = {
+                    server: row[0],
+                    nickname: row[1],
+                    timestamp: row[4], // Column E
+                    date: parseDate(row[4]),
+                    rowIndex: index + 2 // Sheet row index (1-based + 1 for header)
+                };
+                console.log(`  - Nickname: ${charInfo.nickname}, Timestamp: \'${charInfo.timestamp}\', Parsed Date: ${charInfo.date}`);
+                return charInfo;
+            })
             .filter(char => char.date) // Filter out any characters where date parsing failed
             .sort((a, b) => a.date - b.date)[0]; // Sort by date ascending and pick the first one
 
         if (!oldestCharInfo) {
-            console.log('Could not find a valid character to refresh.');
+            console.log('Could not find a valid character to refresh. All characters might have invalid timestamps.');
             return { statusCode: 200, body: 'No valid character to refresh.' };
         }
+
+        console.log(`Identified oldest character: ${oldestCharInfo.nickname} (Row: ${oldestCharInfo.rowIndex})`);
 
         const { server, nickname, rowIndex: oldestRowIndex } = oldestCharInfo;
         
