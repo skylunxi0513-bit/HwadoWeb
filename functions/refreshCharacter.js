@@ -241,20 +241,29 @@ exports.handler = async function(event, context) {
         '유니크': 0,
         '레어': 0,
     };
+    const blackFangCounts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
+    const uniqueCounts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
 
     nonWeaponEquipsFiltered.forEach(equip => {
         const rarity = equip.itemRarity;
         if (rarityCounts.hasOwnProperty(rarity)) {
             rarityCounts[rarity]++;
+            if (equip.itemName && equip.itemName.includes('흑아')) {
+                blackFangCounts[rarity]++;
+            }
+            if (equip.itemName && equip.itemName.includes('고유')) {
+                uniqueCounts[rarity]++;
+            }
         }
     });
 
     let raritySummary = [];
-    if (rarityCounts['태초'] > 0) raritySummary.push(`태초${rarityCounts['태초']}`);
-    if (rarityCounts['에픽'] > 0) raritySummary.push(`에픽${rarityCounts['에픽']}`);
-    if (rarityCounts['레전더리'] > 0) raritySummary.push(`레전더리${rarityCounts['레전더리']}`);
-    if (rarityCounts['유니크'] > 0) raritySummary.push(`유니크${rarityCounts['유니크']}`);
-    if (rarityCounts['레어'] > 0) raritySummary.push(`레어${rarityCounts['레어']}`);
+    const allRarities = ['태초', '에픽', '레전더리', '유니크', '레어'];
+    allRarities.forEach(rarity => {
+        if (rarityCounts[rarity] > 0) {
+            raritySummary.push(`${rarity}${rarityCounts[rarity]}|흑아${blackFangCounts[rarity]}|고유${uniqueCounts[rarity]}`);
+        }
+    });
 
     const formattedRaritySummary = raritySummary.join(' ');
     // --- End New Logic (Rarity Summary) ---
