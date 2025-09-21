@@ -258,7 +258,7 @@
 
             // 2. Sub-sorting by Weapon Name within Rarity
             const WEAPON_NAME_SUB_ORDER = {
-                '태초': { '태거시': 2, '태초의 별': 1 }, // Higher score means higher priority
+                '태초': { '태거시': 2, '태초의 별': 1, '원만': 0 }, // Added '원만'
                 '에픽': { '에거시': 2, '서사시': 1 },
                 '레전더리': { '레거시': 2, '전승': 1 }
             };
@@ -268,6 +268,7 @@
                 if (weaponRarity === '태초') {
                     if (weaponName.includes('태거시')) nameSubScore = specificOrder['태거시'];
                     else if (weaponName.includes('태초의 별')) nameSubScore = specificOrder['태초의 별'];
+                    else if (weaponName.includes('첫')) nameSubScore = specificOrder['원만']; // Handle '원만'
                 } else if (weaponRarity === '에픽') {
                     if (weaponName.includes('에거시')) nameSubScore = specificOrder['에거시'];
                     else if (weaponName.includes('서사시')) nameSubScore = specificOrder['서사시'];
