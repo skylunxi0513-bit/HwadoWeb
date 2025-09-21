@@ -48,6 +48,13 @@
             gap: 10px;
             margin: 20px 0;
         }
+        #weapon-filter-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center; /* For centering grid items */
+        }
         #filter-checkboxes label {
             display: flex;
             align-items: center;
@@ -515,6 +522,9 @@
                 label.appendChild(checkbox);
                 label.appendChild(document.createTextNode(type));
                 weaponFilterCheckboxes.appendChild(label);
+                if (type === '원만') {
+                    weaponFilterCheckboxes.appendChild(document.createElement('br'));
+                }
             });
         }
 
