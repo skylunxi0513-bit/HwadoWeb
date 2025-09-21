@@ -3,16 +3,15 @@ const fetch = require('node-fetch');
 
 const API_KEY = 'gvn930ycSXuc3OpEcHhWsUx1Ka9El1X5';
 const SERVER_MAP = {
-    '카인': 'cain', '디레지에': 'diregie', '시로코': 'siroco', '프레이': 'prey',
-    '카시야스': 'casillas', '힐더': 'hilder', '안톤': 'anton', '바칼': 'bakal',
+    '카인': 'cain',
+    '디레지에': 'diregie',
+    '시로코': 'siroco',
+    '프레이': 'prey',
+    '카시야스': 'casillas',
+    '힐더': 'hilder',
+    '안톤': 'anton',
+    '바칼': 'bakal',
 };
-
-const BUFFER_JOBS = ['인챈트리스', '크루세이더', '패러메딕', '뮤즈'];
-
-function getRole(jobGrowName) {
-    const cleanJobName = (jobGrowName || '').replace('眞 ', '');
-    return BUFFER_JOBS.includes(cleanJobName) ? '버퍼' : '딜러';
-}
 
 // Constants for fusion stone categorization
 const FUSION_SET_PREFIXES = ['황금', '용투', '정화', '행운', '돌파', '자연', '전장', '영원', '사냥', '영역', '암영', '영혼'];
@@ -186,7 +185,6 @@ exports.handler = async function(event, context) {
     const characterId = charInfoData.rows[0].characterId;
     const newJobGrowName = charInfoData.rows[0].jobGrowName; // Added jobGrowName
     const newCharacterCreationDate = await getCharacterCreationDate(serverId, characterId, API_KEY); // Added character creation date
-    const newRole = getRole(newJobGrowName); // NEW: Determine role
 
     // 2. Fetch Timeline, Status, Equipment data in parallel
     const timelineUrl = `https://api.neople.co.kr/df/servers/${serverId}/characters/${characterId}/timeline?limit=1&apikey=${API_KEY}`;
@@ -331,9 +329,9 @@ exports.handler = async function(event, context) {
 
     // 6. Append data to the sheet
     const timestamp = getKstTimestamp();
-    // Extend range to A:T and add newRole
-    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate, newRole]]; // UPDATED: Added newRole
-    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:T`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } }); // UPDATED: range to A:T
+    // Extend range to A:S and add formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate
+    const valuesToAppend = [[server, nickname, characterId, timestamp, timestamp, adventureName, guildName, fame, weaponName, weaponRarity, reinforceValue, amplificationValue, refine, formattedRaritySummary, averageReinforceAmp, formattedPColumnFusionSummary, formattedQColumnFusionSummary, newJobGrowName, newCharacterCreationDate]];
+    await sheets.spreadsheets.values.append({ spreadsheetId, range: `${sheetName}!A:S`, valueInputOption: 'USER_ENTERED', insertDataOption: 'INSERT_ROWS', resource: { values: valuesToAppend } });
 
     // 7. Return success response
     return {
