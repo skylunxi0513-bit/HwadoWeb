@@ -266,9 +266,9 @@
             if (WEAPON_NAME_SUB_ORDER[weaponRarity]) {
                 const specificOrder = WEAPON_NAME_SUB_ORDER[weaponRarity];
                 if (weaponRarity === '태초') {
-                    if (weaponName.includes('태거시')) nameSubScore = specificOrder['태거시'];
-                    else if (weaponName.includes('태초의 별')) nameSubScore = specificOrder['태초의 별'];
-                    else if (weaponName.includes('첫')) nameSubScore = specificOrder['원만']; // Handle '원만'
+                    if (weaponName.includes('태초의 별')) nameSubScore = specificOrder['태초의 별'];
+                    else if (weaponName.includes('첫')) nameSubScore = specificOrder['원만'];
+                    else nameSubScore = specificOrder['태거시']; // Fallback for all other '태초' weapons
                 } else if (weaponRarity === '에픽') {
                     if (weaponName.includes('에거시')) nameSubScore = specificOrder['에거시'];
                     else if (weaponName.includes('서사시')) nameSubScore = specificOrder['서사시'];
