@@ -270,11 +270,11 @@
                     else if (weaponName.includes('첫')) nameSubScore = specificOrder['원만'];
                     else nameSubScore = specificOrder['태거시']; // Fallback for all other '태초' weapons
                 } else if (weaponRarity === '에픽') {
-                    if (weaponName.includes('에거시')) nameSubScore = specificOrder['에거시'];
-                    else if (weaponName.includes('서사시')) nameSubScore = specificOrder['서사시'];
+                    if (weaponName.includes('서사시의 영웅담')) nameSubScore = specificOrder['서사시'];
+                    else nameSubScore = specificOrder['에거시'];
                 } else if (weaponRarity === '레전더리') {
-                    if (weaponName.includes('레거시')) nameSubScore = specificOrder['레거시'];
-                    else if (weaponName.includes('전승')) nameSubScore = specificOrder['전승'];
+                    if (weaponName.includes('전설 속의 전승')) nameSubScore = specificOrder['전승'];
+                    else nameSubScore = specificOrder['레거시'];
                 }
             }
 
@@ -381,9 +381,6 @@
                 row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
                 const weaponCell = row.insertCell(4);
                 weaponCell.innerHTML = formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine });
-                const scores = getWeaponSortScore(char);
-                weaponCell.innerHTML += `<br><small>R:${scores[0]} N:${scores[1]} A:${scores[2].toFixed(1)}</small>`;
-                weaponCell.innerHTML += `<br><small>Raw Name: ${char.weaponName}</small>`;
                 row.insertCell(5).innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
                 row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary);
                 row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
