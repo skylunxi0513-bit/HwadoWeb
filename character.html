@@ -160,7 +160,22 @@
         <div class="modal-content">
             <h3>캐릭터 상세 정보</h3>
             <div id="character-detail-content"></div>
-            <button id="character-detail-close-btn">닫기</button>
+            <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+                <button id="character-delete-btn" style="width: 45%; background-color: #f44336; color: white;">삭제</button>
+                <button id="character-detail-close-btn" style="width: 45%;">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>캐릭터 삭제 확인</h3>
+            <p>캐릭터의 데이터를 삭제하겠습니까?</p>
+            <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+                <button id="delete-confirm-btn" style="width: 45%; background-color: #f44336; color: white;">확인</button>
+                <button id="delete-cancel-btn" style="width: 45%;">취소</button>
+            </div>
         </div>
     </div>
 
@@ -198,6 +213,14 @@
         const characterDetailModal = document.getElementById('character-detail-modal');
         const characterDetailContent = document.getElementById('character-detail-content');
         const characterDetailCloseBtn = document.getElementById('character-detail-close-btn');
+
+        // Delete Confirmation Modal Elements
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+        const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+
+        // Delete Button in Detail Modal
+        const characterDeleteBtn = document.getElementById('character-delete-btn');
 
         // State
         let characterData = [];
@@ -395,24 +418,43 @@
         }
 
         function displayCharacterDetails(char) {
+            // Set dynamic modal title
+            document.querySelector('#character-detail-modal h3').textContent = `${char.nickname} (${char.server}) 상세 정보`;
+
             let html = '';
             const detailConfig = [
-                { key: 'server', label: '서버' },
-                { key: 'nickname', label: '닉네임' },
+                { key: 'nickname', label: '닉네임' }, // Nickname and Server are now in title
                 { key: 'jobGrowName', label: '직업' },
                 { key: 'fame', label: '명성', format: (val) => Number(val || 0).toLocaleString('en-US') },
-                { key: 'adventureName', label: '모험단' },
-                { key: 'guildName', label: '길드' },
-                { key: 'weapon', label: '무기', format: (val, char) => formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine }) },
+                { key: 'adventureGuild', label: '모험단/길드', format: (val, char) => `${char.adventureName || '-'}, 길드: ${char.guildName || '-'}` },
+                { key: 'weapon', label: '무기', format: (val, char) => {
+                    const weapon = { name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine };
+                    let mainValue = 0, mainValueColor = '';
+                    if (weapon.amplification > 0) { mainValue = weapon.amplification; mainValueColor = '#800080'; }
+                    else if (weapon.reinforce > 0) { mainValue = weapon.reinforce; mainValueColor = '#1E90FF'; }
+                    const actualRefine = Number(weapon.refine || 0);
+                    let prefix = '';
+                    if (mainValue > 0 || actualRefine > 0) prefix = `<span style="color:${mainValueColor}">+${mainValue}</span>(<span style="color:#000">${actualRefine}</span>) `;
+                    return `${prefix}${weapon.name || 'N/A'}`;
+                }},
                 { key: 'averageReinforceAmp', label: '평균 증폭', format: (val) => `<span style="color:#800080">+${val}</span>` },
                 { key: 'equipment', label: '장비', format: (val, char) => formatRaritySummary(char.formattedRaritySummary) },
-                { key: 'venusFusion', label: '베누스 융합', format: (val, char) => formatFusionSummaryDisplay(char.formattedPColumnFusionSummary) },
-                { key: 'nabelFusion', label: '나벨 융합', format: (val, char) => formatFusionSummaryDisplay(char.formattedQColumnFusionSummary) },
+                { key: 'fusionSummary', label: '융합 정보', format: (val, char) => {
+                    const venus = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
+                    const nabel = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary);
+                    let fusionHtml = '';
+                    if (venus) fusionHtml += `베누스 융합: ${venus}`;
+                    if (nabel) fusionHtml += `${venus ? ' / ' : ''}나벨 융합: ${nabel}`;
+                    return fusionHtml || '-';
+                }},
                 { key: 'characterCreationDate', label: '캐릭터 생성일' },
-                { key: 'timestamp', label: '새로고침', format: formatTimestamp },
+                { key: 'timestamp', label: '마지막 새로고침', format: formatTimestamp },
             ];
 
             detailConfig.forEach(item => {
+                // Skip nickname and server as they are in the title
+                if (item.key === 'nickname' || item.key === 'server') return;
+
                 const value = char[item.key];
                 let formattedValue = value || '-';
                 if (item.format) {
@@ -725,6 +767,68 @@
         characterDetailModal.addEventListener('mousedown', (event) => {
             if (event.target === characterDetailModal) {
                 characterDetailModal.style.display = 'none';
+            }
+        });
+
+        // Delete Functionality Listeners
+        let charToDelete = null; // To store the character data for deletion
+
+        characterDeleteBtn.addEventListener('click', () => {
+            // Store the character currently displayed in the detail modal for deletion
+            const nickname = document.querySelector('#character-detail-modal h3').textContent.split(' (')[0];
+            const server = document.querySelector('#character-detail-modal h3').textContent.split(' (')[1].replace(') 상세 정보', '');
+            charToDelete = characterData.find(c => c.server === server && c.nickname === nickname);
+            
+            if (charToDelete) {
+                deleteConfirmModal.style.display = 'flex';
+            }
+        });
+
+        deleteCancelBtn.addEventListener('click', () => {
+            deleteConfirmModal.style.display = 'none';
+            charToDelete = null; // Clear stored character
+        });
+
+        deleteConfirmModal.addEventListener('mousedown', (event) => {
+            if (event.target === deleteConfirmModal) {
+                deleteConfirmModal.style.display = 'none';
+                charToDelete = null; // Clear stored character
+            }
+        });
+
+        deleteConfirmBtn.addEventListener('click', async () => {
+            if (!charToDelete) return;
+
+            showMessage('캐릭터 삭제 중...');
+            deleteConfirmBtn.disabled = true;
+            deleteConfirmBtn.textContent = '삭제 중...';
+
+            try {
+                const response = await fetch('/.netlify/functions/deleteCharacter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ server: charToDelete.server, nickname: charToDelete.nickname })
+                });
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.message);
+
+                showMessage(result.message, false);
+                
+                // Remove from characterData and re-render
+                characterData = characterData.filter(c => !(c.server === charToDelete.server && c.nickname === charToDelete.nickname));
+                displayData();
+
+                // Close all modals
+                characterDetailModal.style.display = 'none';
+                deleteConfirmModal.style.display = 'none';
+
+            } catch (error) {
+                showMessage(error.message, true);
+            } finally {
+                deleteConfirmBtn.disabled = false;
+                deleteConfirmBtn.textContent = '확인';
+                charToDelete = null;
             }
         });
 

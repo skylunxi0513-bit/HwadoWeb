@@ -2,4 +2,6 @@
   directory = "functions"
 
 [functions.autoRefresh]
-  schedule = "* * * * *"
+  schedule = "*/1 * * * *"
+
+[functions.deleteCharacter]
