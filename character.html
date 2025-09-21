@@ -155,6 +155,15 @@
         </div>
     </div>
 
+    <!-- Character Detail Modal -->
+    <div id="character-detail-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>캐릭터 상세 정보</h3>
+            <div id="character-detail-content"></div>
+            <button id="character-detail-close-btn">닫기</button>
+        </div>
+    </div>
+
     <script>
         // Global Elements
         const serverSelect = document.getElementById('server-select');
@@ -184,6 +193,11 @@
         const weaponFilterModal = document.getElementById('weapon-filter-modal');
         const weaponFilterCloseBtn = document.getElementById('weapon-filter-close-btn');
         const weaponFilterCheckboxes = document.getElementById('weapon-filter-checkboxes');
+
+        // Character Detail Modal Elements
+        const characterDetailModal = document.getElementById('character-detail-modal');
+        const characterDetailContent = document.getElementById('character-detail-content');
+        const characterDetailCloseBtn = document.getElementById('character-detail-close-btn');
 
         // State
         let characterData = [];
@@ -379,6 +393,37 @@
             }
             return type;
         }
+
+        function displayCharacterDetails(char) {
+            let html = '';
+            const detailConfig = [
+                { key: 'server', label: '서버' },
+                { key: 'nickname', label: '닉네임' },
+                { key: 'jobGrowName', label: '직업' },
+                { key: 'fame', label: '명성', format: (val) => Number(val || 0).toLocaleString('en-US') },
+                { key: 'adventureName', label: '모험단' },
+                { key: 'guildName', label: '길드' },
+                { key: 'weapon', label: '무기', format: (val, char) => formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine }) },
+                { key: 'averageReinforceAmp', label: '평균 증폭', format: (val) => `<span style="color:#800080">+${val}</span>` },
+                { key: 'equipment', label: '장비', format: (val, char) => formatRaritySummary(char.formattedRaritySummary) },
+                { key: 'venusFusion', label: '베누스 융합', format: (val, char) => formatFusionSummaryDisplay(char.formattedPColumnFusionSummary) },
+                { key: 'nabelFusion', label: '나벨 융합', format: (val, char) => formatFusionSummaryDisplay(char.formattedQColumnFusionSummary) },
+                { key: 'characterCreationDate', label: '캐릭터 생성일' },
+                { key: 'timestamp', label: '새로고침', format: formatTimestamp },
+            ];
+
+            detailConfig.forEach(item => {
+                const value = char[item.key];
+                let formattedValue = value || '-';
+                if (item.format) {
+                    formattedValue = item.format(value, char);
+                }
+                html += `<p><strong>${item.label}:</strong> ${formattedValue}</p>`;
+            });
+
+            characterDetailContent.innerHTML = html;
+            characterDetailModal.style.display = 'flex';
+        }
         function parseDate(dateString) {
             if (!dateString) return new Date(0);
             const timestampMatch = dateString.match(/(\d{4})\. (\d{1,2})\. (\d{1,2})\. (오전|오후) (\d{1,2}):(\d{2}):(\d{2})/);
@@ -515,6 +560,7 @@
         }
 
         async function handleRefreshCharacter(event) {
+            event.preventDefault(); // Prevent default context menu
             const row = event.target.closest('tr');
             if (!row || !row.dataset.server || row.classList.contains('refreshing')) return;
             const { server, nickname } = row.dataset;
@@ -565,7 +611,19 @@
         document.addEventListener('DOMContentLoaded', () => { fetchAndDisplayCharacters(); populateFilterCheckboxes(); populateWeaponFilterCheckboxes(); });
         addButton.addEventListener('click', handleAddCharacter);
         nicknameInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') handleAddCharacter(); });
-        tableBody.addEventListener('click', handleRefreshCharacter);
+        tableBody.addEventListener('contextmenu', handleRefreshCharacter);
+
+        tableBody.addEventListener('click', (event) => {
+            const row = event.target.closest('tr');
+            if (!row || !row.dataset.server) return; // Ensure a valid row is clicked
+
+            const { server, nickname } = row.dataset;
+            const char = characterData.find(c => c.server === server && c.nickname === nickname);
+
+            if (char) {
+                displayCharacterDetails(char);
+            }
+        });
         
         tableHead.addEventListener('click', (event) => {
             const header = event.target.closest('th');
@@ -657,6 +715,16 @@
             if (checkbox.dataset.key) {
                 weaponTypeFilter[checkbox.dataset.key] = checkbox.checked;
                 displayData(); // Re-render table with new filter
+            }
+        });
+
+        // Character Detail Modal Listeners
+        characterDetailCloseBtn.addEventListener('click', () => {
+            characterDetailModal.style.display = 'none';
+        });
+        characterDetailModal.addEventListener('mousedown', (event) => {
+            if (event.target === characterDetailModal) {
+                characterDetailModal.style.display = 'none';
             }
         });
 
