@@ -123,6 +123,14 @@
         </div>
     </div>
 
+    <!-- Job Name Filter Modal -->
+    <div id="job-filter-modal" class="modal-overlay">
+        <div class="modal-content">
+            <input type="text" id="job-filter-input" placeholder="직업명을 입력하세요. (쉼표로 구분)">
+            <button id="job-filter-close-btn">닫기</button>
+        </div>
+    </div>
+
     <script>
         // Global Elements
         const serverSelect = document.getElementById('server-select');
@@ -143,9 +151,15 @@
         const adventureFilterInput = document.getElementById('adventure-filter-input');
         const adventureFilterCloseBtn = document.getElementById('adventure-filter-close-btn');
 
+        // Job Name Filter Modal Elements
+        const jobFilterModal = document.getElementById('job-filter-modal');
+        const jobFilterInput = document.getElementById('job-filter-input');
+        const jobFilterCloseBtn = document.getElementById('job-filter-close-btn');
+
         // State
         let characterData = [];
         let adventureNameFilter = '';
+        let jobNameFilter = '';
         let sortState = { column: 'fame', direction: 'desc' };
 
         const columnConfig = [
@@ -273,7 +287,18 @@
             if (adventureNameFilter) {
                 const filterNames = adventureNameFilter.split(',').map(name => name.trim().toLowerCase()).filter(Boolean);
                 if (filterNames.length > 0) {
-                    dataToDisplay = characterData.filter(char => char.adventureName && filterNames.includes(char.adventureName.toLowerCase()));
+                    dataToDisplay = dataToDisplay.filter(char => char.adventureName && filterNames.includes(char.adventureName.toLowerCase()));
+                }
+            }
+
+            if (jobNameFilter) {
+                const filterNames = jobNameFilter.split(',').map(name => name.trim().toLowerCase()).filter(Boolean);
+                if (filterNames.length > 0) {
+                    dataToDisplay = dataToDisplay.filter(char => {
+                        if (!char.jobGrowName) return false;
+                        const truncatedJobName = char.jobGrowName.replace('眞 ', '').toLowerCase();
+                        return filterNames.includes(truncatedJobName);
+                    });
                 }
             }
 
@@ -317,7 +342,7 @@
                 row.dataset.server = char.server; row.dataset.nickname = char.nickname;
                 row.insertCell(0).textContent = char.adventureName || '-';
                 row.insertCell(1).textContent = char.nickname;
-                row.insertCell(2).textContent = char.jobGrowName || '-';
+                row.insertCell(2).textContent = (char.jobGrowName || '-').replace('眞 ', '');
                 row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
                 const weaponCell = row.insertCell(4);
                 weaponCell.innerHTML = formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine });
@@ -410,6 +435,9 @@
             if (columnKey === 'adventureName') {
                 adventureFilterModal.style.display = 'flex';
                 adventureFilterInput.focus();
+            } else if (columnKey === 'jobGrowName') {
+                jobFilterModal.style.display = 'flex';
+                jobFilterInput.focus();
             } else if (columnKey) {
                 const descDefault = ['fame', 'averageReinforceAmp', 'weapon', 'equipment', 'venusFusion', 'nabelFusion'];
                 const defaultDirection = descDefault.includes(columnKey) ? 'desc' : 'asc';
@@ -448,6 +476,19 @@
             }
         });
         adventureFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') adventureFilterCloseBtn.click(); });
+
+        // Job Filter Modal Listeners
+        jobFilterCloseBtn.addEventListener('click', () => {
+            jobNameFilter = jobFilterInput.value;
+            jobFilterModal.style.display = 'none';
+            displayData();
+        });
+        jobFilterModal.addEventListener('mousedown', (event) => {
+            if (event.target === jobFilterModal) {
+                jobFilterCloseBtn.click();
+            }
+        });
+        jobFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') jobFilterCloseBtn.click(); });
 
     </script>
 </body>
