@@ -148,9 +148,35 @@ exports.handler = async function(event, context) {
         const newReinforceValue = amplificationName ? 0 : reinforce;
 
         const nonWeaponEquipsFiltered = equipData.equipment.filter(e => e.slotId !== 'WEAPON' && e.slotId !== 'TITLE' && e.slotId !== 'SUPPORT_WEAPON');
-        const rarityCounts = {'태초':0,'에픽':0,'레전더리':0,'유니크':0,'레어':0};
-        nonWeaponEquipsFiltered.forEach(e => { if(rarityCounts.hasOwnProperty(e.itemRarity)) rarityCounts[e.itemRarity]++; });
-        const formattedRaritySummary = Object.entries(rarityCounts).filter(([,count])=>count>0).map(([rarity,count])=>`${rarity}${count}`).join(' ');
+
+        const rarityCounts = {
+            '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0,
+        };
+        const blackFangCounts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
+        const uniqueCounts = { '태초': 0, '에픽': 0, '레전더리': 0, '유니크': 0, '레어': 0 };
+
+        nonWeaponEquipsFiltered.forEach(equip => {
+            const rarity = equip.itemRarity;
+            if (rarityCounts.hasOwnProperty(rarity)) {
+                rarityCounts[rarity]++;
+                if (equip.itemName && equip.itemName.includes('흑아')) {
+                    blackFangCounts[rarity]++;
+                }
+                if (equip.itemName && equip.itemName.includes('고유')) {
+                    uniqueCounts[rarity]++;
+                }
+            }
+        });
+
+        let raritySummary = [];
+        const allRarities = ['태초', '에픽', '레전더리', '유니크', '레어'];
+        allRarities.forEach(rarity => {
+            if (rarityCounts[rarity] > 0) {
+                raritySummary.push(`${rarity}${rarityCounts[rarity]}|흑아${blackFangCounts[rarity]}|고유${uniqueCounts[rarity]}`);
+            }
+        });
+
+        const formattedRaritySummary = raritySummary.join(' ');
 
         const pColumnFusionCounts = [0,0,0,0,0], qColumnFusionCounts = [0,0,0,0,0];
         equipData.equipment.forEach(e => {
