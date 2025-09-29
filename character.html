@@ -144,6 +144,14 @@
         </div>
     </div>
 
+    <!-- Fame Filter Modal -->
+    <div id="fame-filter-modal" class="modal-overlay">
+        <div class="modal-content">
+            <input type="number" id="fame-filter-input" placeholder="최소 명성을 입력해주세요.">
+            <button id="fame-filter-close-btn">닫기</button>
+        </div>
+    </div>
+
     <!-- Weapon Filter Modal -->
     <div id="weapon-filter-modal" class="modal-overlay">
         <div class="modal-content">
@@ -204,6 +212,11 @@
         const jobFilterInput = document.getElementById('job-filter-input');
         const jobFilterCloseBtn = document.getElementById('job-filter-close-btn');
 
+        // Fame Filter Modal Elements
+        const fameFilterModal = document.getElementById('fame-filter-modal');
+        const fameFilterInput = document.getElementById('fame-filter-input');
+        const fameFilterCloseBtn = document.getElementById('fame-filter-close-btn');
+
         // Weapon Filter Modal Elements
         const weaponFilterModal = document.getElementById('weapon-filter-modal');
         const weaponFilterCloseBtn = document.getElementById('weapon-filter-close-btn');
@@ -227,6 +240,7 @@
         let adventureNameFilter = '';
         let jobNameFilter = '';
         let weaponTypeFilter = {}; // New state variable
+        let fameFilterValue = 0;
         let sortState = { column: 'fame', direction: 'desc' };
 
         const columnConfig = [
@@ -490,6 +504,11 @@
         function displayData() {
             // 1. Filter
             let dataToDisplay = characterData;
+
+            if (fameFilterValue > 0) {
+                dataToDisplay = dataToDisplay.filter(char => (Number(char.fame) || 0) >= fameFilterValue);
+            }
+
             if (adventureNameFilter) {
                 const filterNames = adventureNameFilter.split(',').map(name => name.trim().toLowerCase()).filter(Boolean);
                 if (filterNames.length > 0) {
@@ -705,7 +724,10 @@
             if (columnKey === 'weapon') {
                 event.preventDefault(); // Prevent default context menu
                 weaponFilterModal.style.display = 'flex';
-                // No input to focus in this modal, checkboxes are generated
+            } else if (columnKey === 'fame') {
+                event.preventDefault();
+                fameFilterModal.style.display = 'flex';
+                fameFilterInput.focus();
             }
         });
 
@@ -746,6 +768,19 @@
             }
         });
         jobFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') jobFilterCloseBtn.click(); });
+
+        // Fame Filter Modal Listeners
+        fameFilterCloseBtn.addEventListener('click', () => {
+            fameFilterValue = Number(fameFilterInput.value) || 0;
+            fameFilterModal.style.display = 'none';
+            displayData();
+        });
+        fameFilterModal.addEventListener('mousedown', (event) => {
+            if (event.target === fameFilterModal) {
+                fameFilterCloseBtn.click();
+            }
+        });
+        fameFilterInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') fameFilterCloseBtn.click(); });
 
         // Weapon Filter Modal Listeners
         weaponFilterCloseBtn.addEventListener('click', () => {
