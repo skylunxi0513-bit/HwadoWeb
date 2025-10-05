@@ -104,10 +104,12 @@
                 <th data-column="adventureName">모험단</th>
                 <th data-column="nickname">닉네임</th>
                 <th data-column="jobGrowName">직업</th>
+                <th data-column="jobFamily">직업군</th>
                 <th data-column="fame">명성</th>
                 <th data-column="weapon">무기</th>
                 <th data-column="averageReinforceAmp">평균 증폭</th>
                 <th data-column="equipment">장비</th>
+                <th data-column="airToGroundSuccessRate">에항 성공률</th>
                 <th data-column="venusFusion">베누스 융합</th>
                 <th data-column="nabelFusion">나벨 융합</th>
                 <th data-column="characterCreationDate">캐릭터 생성일</th>
@@ -245,15 +247,17 @@
 
         const columnConfig = [
             { key: 'adventureName', label: '모험단' }, { key: 'nickname', label: '닉네임' },
-            { key: 'jobGrowName', label: '직업' }, { key: 'fame', label: '명성' },
+            { key: 'jobGrowName', label: '직업' }, { key: 'jobFamily', label: '직업군' }, { key: 'fame', label: '명성' },
             { key: 'weapon', label: '무기' }, { key: 'averageReinforceAmp', label: '평균 증폭' },
-            { key: 'equipment', label: '장비' }, { key: 'venusFusion', label: '베누스 융합' },
+            { key: 'equipment', label: '장비' }, { key: 'airToGroundSuccessRate', label: '에항 성공률' }, { key: 'venusFusion', label: '베누스 융합' },
             { key: 'nabelFusion', label: '나벨 융합' }, { key: 'characterCreationDate', label: '캐릭터 생성일' },
             { key: 'timestamp', label: '새로고침' },
         ];
         let columnVisibility = columnConfig.reduce((acc, col) => ({ ...acc, [col.key]: true }), {});
         columnVisibility.characterCreationDate = false;
         columnVisibility.timestamp = false;
+        columnVisibility.jobFamily = false;
+        columnVisibility.airToGroundSuccessRate = false;
 
         // --- Formatting Functions ---
         function formatTimestamp(fullTimestamp) {
@@ -575,15 +579,24 @@
                 row.insertCell(0).textContent = char.adventureName || '-';
                 row.insertCell(1).textContent = char.nickname;
                 row.insertCell(2).textContent = (char.jobGrowName || '-').replace('眞 ', '');
-                row.insertCell(3).textContent = Number(char.fame || 0).toLocaleString('en-US');
-                const weaponCell = row.insertCell(4);
+                row.insertCell(3).textContent = char.jobFamily || '-';
+                row.insertCell(4).textContent = Number(char.fame || 0).toLocaleString('en-US');
+                const weaponCell = row.insertCell(5);
                 weaponCell.innerHTML = formatWeapon({ name: char.weaponName, rarity: char.weaponRarity, reinforce: char.reinforce, amplification: char.amplification, refine: char.refine });
-                row.insertCell(5).innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
-                row.insertCell(6).innerHTML = formatRaritySummary(char.formattedRaritySummary);
-                row.insertCell(7).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
-                row.insertCell(8).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary);
-                row.insertCell(9).textContent = char.characterCreationDate || '-';
-                row.insertCell(10).textContent = formatTimestamp(char.timestamp);
+                row.insertCell(6).innerHTML = `<span style="color:#800080">+${char.averageReinforceAmp}</span>`;
+                row.insertCell(7).innerHTML = formatRaritySummary(char.formattedRaritySummary);
+                const successRateCell = row.insertCell(8);
+                const rate1 = char.airToGroundSuccessRate1;
+                const rate2 = char.airToGroundSuccessRate2;
+                if (rate1 && rate2 && rate1 === rate2) {
+                    successRateCell.textContent = rate1;
+                } else {
+                    successRateCell.textContent = `${rate1 || 'N/A'}(${rate2 || 'N/A'})`;
+                }
+                row.insertCell(9).innerHTML = formatFusionSummaryDisplay(char.formattedPColumnFusionSummary);
+                row.insertCell(10).innerHTML = formatFusionSummaryDisplay(char.formattedQColumnFusionSummary);
+                row.insertCell(11).textContent = char.characterCreationDate || '-';
+                row.insertCell(12).textContent = formatTimestamp(char.timestamp);
             });
             updateColumnVisibility();
         }
@@ -599,11 +612,32 @@
         // --- Data Fetching and Handling ---
         async function fetchAndDisplayCharacters() {
             try {
-                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:S');
+                const response = await fetch('/.netlify/functions/sheets?sheetName=캐릭터&range=A:V');
                 if (!response.ok) throw new Error('캐릭터 목록을 불러오는 데 실패했습니다.');
                 const { data } = await response.json();
                 if (data) {
-                    characterData = data.map(row => row[0] && row[1] ? { server: row[0] || '', nickname: row[1] || '', timestamp: row[4] || '', adventureName: row[5] || '', guildName: row[6] || '', fame: Number(row[7] || 0), weaponName: row[8] || '', weaponRarity: row[9] || '', reinforce: Number(row[10] || 0), amplification: Number(row[11] || 0), refine: Number(row[12] || 0), formattedRaritySummary: row[13] || '', averageReinforceAmp: row[14] || '0.0', formattedPColumnFusionSummary: row[15] || '', formattedQColumnFusionSummary: row[16] || '', jobGrowName: row[17] || '', characterCreationDate: row[18] || '' } : null).filter(Boolean);
+                    characterData = data.map(row => row[0] && row[1] ? { 
+                        server: row[0] || '', 
+                        nickname: row[1] || '', 
+                        timestamp: row[4] || '', 
+                        adventureName: row[5] || '', 
+                        guildName: row[6] || '', 
+                        fame: Number(row[7] || 0), 
+                        weaponName: row[8] || '', 
+                        weaponRarity: row[9] || '', 
+                        reinforce: Number(row[10] || 0), 
+                        amplification: Number(row[11] || 0), 
+                        refine: Number(row[12] || 0), 
+                        formattedRaritySummary: row[13] || '', 
+                        averageReinforceAmp: row[14] || '0.0', 
+                        formattedPColumnFusionSummary: row[15] || '', 
+                        formattedQColumnFusionSummary: row[16] || '', 
+                        jobGrowName: row[17] || '', 
+                        characterCreationDate: row[18] || '',
+                        jobFamily: row[19] || '',
+                        airToGroundSuccessRate1: row[20] || '0.00%',
+                        airToGroundSuccessRate2: row[21] || '0.00%'
+                    } : null).filter(Boolean);
                     displayData(); // Initial filter, sort, and render
                 }
             } catch (error) { showMessage(error.message, true); }
