@@ -5,28 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>카드첩 계산기 - 화도웹</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .button-container {
-            margin-top: 40px; /* 헤더와 버튼 사이 간격 추가 */
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3열 그리드 레이아웃 */
-            gap: 15px; /* 버튼 사이 간격 */
-        }
-
-        /* 화면이 768px보다 좁아지면 1열로 변경 */
-        @media (max-width: 768px) {
-            .button-container {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 <body>
     <a href="index.html">
         <h1>화도웹</h1>
     </a>
 
-    <div class="button-container">
+    <div class="main-buttons-container">
         <button id="venusBtn">
             <img src="images/card.webp" alt="베누스 카드첩 아이콘">
             베누스 카드첩
