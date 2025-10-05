@@ -129,6 +129,29 @@
                     breakEvenPoint = (baseAveragePrice * 0.97) / coefficient;
                 }
 
+                // --- Profit Probability Calculation ---
+                let profitProbability;
+                let probabilityNote;
+                let profitableItemsCount = 0;
+
+                if (itemList === heugaPotItems) {
+                    const buyPrice = 3300000;
+                    profitableItemsCount = foundItems.filter(item => (item.price * 0.97) > buyPrice).length;
+                    probabilityNote = `※${buyPrice.toLocaleString('en-US')}골드로 구매했을 때 기준`;
+                } else if (itemList === historiaQuartzItems) {
+                    const outcomeValue = averagePrice * 20 * 0.97;
+                    if (outcomeValue > breakEvenPoint) {
+                        profitableItemsCount = 1;
+                    }
+                    probabilityNote = '※손익 분기점으로 구매했을 때 기준';
+                } else { // For all other card packs
+                    const buyPrice = breakEvenPoint;
+                    profitableItemsCount = foundItems.filter(item => (item.price * 0.97) > buyPrice).length;
+                    probabilityNote = '※손익 분기점으로 구매했을 때 기준';
+                }
+
+                profitProbability = (profitableItemsCount / foundItems.length) * 100;
+
                 let tableHTML = '<div class="results-container"><table><thead><tr><th>아이템 이름</th><th>최저가</th></tr></thead><tbody>';
                 foundItems.forEach(item => {
                     tableHTML += `<tr><td>${item.name}</td><td>${item.price.toLocaleString('en-US')} 골드</td></tr>`;
@@ -138,6 +161,8 @@
                 let summaryHTML = `<div class="summary">
                     <div><strong>아이템 평균 가격:</strong> ${Math.round(averagePrice).toLocaleString('en-US')} 골드</div>
                     <div><strong>손익 분기점:</strong> ${Math.round(breakEvenPoint).toLocaleString('en-US')} 골드</div>
+                    <div><strong>이득 볼 확률:</strong> ${profitProbability.toFixed(2)}%</div>
+                    <div class="disclaimer">${probabilityNote}</div>
                 </div>`;
 
                 resultContainer.innerHTML = summaryHTML + tableHTML;
