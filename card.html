@@ -33,6 +33,14 @@
             <img src="images/ancient.webp" alt="흑아 태초 항아리 아이콘">
             흑아 태초 항아리
         </button>
+        <button id="chanranNabelBtn">
+            <img src="images/card.webp" alt="찬란한 나벨 카드첩 아이콘">
+            찬란한 나벨 카드첩
+        </button>
+        <button id="historiaQuartzBtn">
+            <img src="images/quartz.webp" alt="히스토리아 쿼츠 상자 아이콘">
+            히스토리아 쿼츠 상자
+        </button>
     </div>
 
     <div id="result-container"></div>
@@ -43,6 +51,8 @@
         const nabelBtn = document.getElementById('nabelBtn');
         const inaeBtn = document.getElementById('inaeBtn');
         const heugaBtn = document.getElementById('heugaBtn');
+        const chanranNabelBtn = document.getElementById('chanranNabelBtn');
+        const historiaQuartzBtn = document.getElementById('historiaQuartzBtn');
         const resultContainer = document.getElementById('result-container');
 
         // --- Item Lists ---
@@ -64,6 +74,13 @@
             '흑아 태초 변환서 - 용투장의 난', '흑아 태초 변환서 - 칠흑의 정화', '흑아 태초 변환서 - 세렌디피티',
             '흑아 태초 변환서 - 한계를 넘어선 에너지', '흑아 태초 변환서 - 압도적인 자연', '흑아 태초 변환서 - 고대 전장의 발키리',
             '흑아 태초 변환서 - 에테리얼 오브 아츠', '흑아 태초 변환서 - 무리 사냥의 길잡이', '흑아 태초 변환서 - 마력의 영역'
+        ];
+        const chanranNabelCardItems = [
+            '무지의 악 나벨 카드', '오만의 악 아니마 카드', '인공신 3호 나벨 카드', '인공신 2호 아니마 카드',
+            '연구소장 엘디르 카드', '최후의 테아나 카드', '인공신 프로토타입 카드', '과학자 모리 카드'
+        ];
+        const historiaQuartzItems = [
+            '히스토리아 쿼츠'
         ];
 
         // --- Reusable Core Logic ---
@@ -97,11 +114,24 @@
 
                 const totalPrice = foundItems.reduce((sum, item) => sum + item.price, 0);
                 const averagePrice = totalPrice / foundItems.length;
+                
                 let breakEvenPoint;
+                let baseAveragePrice = averagePrice;
+
+                if (itemList === historiaQuartzItems) {
+                    baseAveragePrice = averagePrice * 20;
+                }
+
                 if (itemList === heugaPotItems) {
-                    breakEvenPoint = averagePrice * 0.97;
+                    breakEvenPoint = baseAveragePrice * 0.97;
                 } else {
-                    breakEvenPoint = (averagePrice * 0.97) / 1.2903;
+                    let coefficient;
+                    if (itemList === chanranNabelCardItems || itemList === historiaQuartzItems) {
+                        coefficient = 1.081;
+                    } else {
+                        coefficient = 1.2903;
+                    }
+                    breakEvenPoint = (baseAveragePrice * 0.97) / coefficient;
                 }
 
                 let tableHTML = '<div class="results-container"><table><thead><tr><th>아이템 이름</th><th>최저가</th></tr></thead><tbody>';
@@ -127,6 +157,8 @@
         nabelBtn.addEventListener('click', () => calculateAndDisplay(nabelCardItems));
         inaeBtn.addEventListener('click', () => calculateAndDisplay(inaeCardItems));
         heugaBtn.addEventListener('click', () => calculateAndDisplay(heugaPotItems));
+        chanranNabelBtn.addEventListener('click', () => calculateAndDisplay(chanranNabelCardItems));
+        historiaQuartzBtn.addEventListener('click', () => calculateAndDisplay(historiaQuartzItems));
 
     </script>
 
